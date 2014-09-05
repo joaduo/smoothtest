@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+Copyright (c) 2014 Juju. Inc
 
+Code Licensed under MIT License. See LICENSE file.
 '''
 
 def fake_init(class_, instance=True):
