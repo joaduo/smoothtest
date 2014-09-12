@@ -144,7 +144,7 @@ class TestBase(WebdriverUtils):
         return driver
 
     def _init_webserver_webdriver(self, settings=None, webdriver=None):
-        from webunittest_settings import Settings
+        from smoothtest_settings import Settings
         self.settings = settings if settings != None else Settings()
         base_url = self.settings.web_server_url
         browser = self.settings.webdriver_browser
@@ -163,7 +163,7 @@ class TestBase(WebdriverUtils):
 class TestCase(unittest.TestCase, TestBase):
     def assert_text(self, xpath, value):
         extracted = self.extract_xpath(xpath)
-        msg = (u'Expecting {value} at {xpath}, but got {extracted}'.
+        msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
                format(**locals()))
         self.assertEqual(extracted, value, msg)
         self.screenshot('assert_text', xpath, value) 
