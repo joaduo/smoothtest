@@ -31,10 +31,10 @@ class ChildTestRunner(AutoTestBase):
             self._run_test(pusherror, tpath, *objects)
         return errors
             
-    def wait_io(self, ipc):
-        msg = ipc.read()
+    def wait_io(self, pipe):
+        msg = pipe.recv()
         answer = []
-        while msg:
+        while True:
             for params in msg:
                 cmd, args, kwargs = params 
                 if cmd == self._kill_command:
@@ -45,8 +45,8 @@ class ChildTestRunner(AutoTestBase):
                 except Exception as e:
                     answer.append((None, self.reprex(e)))
                 
-                assert ipc.write(answer)
-                msg = ipc.read()
+                pipe.send(answer)
+                msg = pipe.recv()
     
     def reprex(self, e):
         return repr(e)
