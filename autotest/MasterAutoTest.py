@@ -5,7 +5,11 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-from smoothtest.autotest.base import AutoTestBase
+import select
+import relative_import
+from .base import AutoTestBase
+from .SlaveAutotest import SlaveAutotest
+from .ChildTestRunner import ChildTestRunner
 
 class MasterAutotest(AutoTestBase):
     '''
@@ -16,91 +20,32 @@ class MasterAutotest(AutoTestBase):
     applies policies?
     '''
     
-    def test(self, test_class, methods, parcial_reloads, full_reloads):
-        pass
-    
-#    def _
+    def test(self, test_paths, parcial_reloads, full_reloads):
+        slave = SlaveAutotest(ChildTestRunner)
+        slave.start_subprocess()
+        slave.test(test_paths)
+        wait_input = True
+        while wait_input:
+            #print wait_input
+            rlist, _, _ = select.select([slave._pipe_ipc], [], [])
+            for f in rlist:
+                if f is slave._pipe_ipc:
+                    self._recv_slave(test_paths, slave)
+            wait_input = False
+        slave.kill(block=True, timeout=1)
 
-class PipeMessenger(object):
-    def __init__(self, in_pipe, out_pipe):
-        self._in_pipe = in_pipe
-        self._out_pipe = out_pipe
-    
-    def send_message(self, msg):
-        pass
-    
-    def receive_message(self, block=False):
-        pass
-
-class SlaveAutotest(AutoTestBase):
-    def __init__(self, subprocess_mngr):
-        pass
-    
-    def start_subprocess(self, test_paths):
-        '''
-        pipes
-        fork
-        close pipes
-        test
-        '''
-        pass
-
-    def restart_subprocess(self, test_paths):
-        pass
-    
-    def receive_message(self, block=False):
-        pass
-    
-    def send_message(self, payload):
-        pass
-    
-    def get_in_fd(self):
-        pass
-
-    def kill(self, force=False):
-        pass
-
-    def test(self, changed_paths, test_paths, reload_all=False):
-        pass
-        
-class SubprocessTestRunner(AutoTestBase):
-    '''
-    Responsabilities
-        - import the Test Class
-        - Run test over all methods or specific methods
-        - report any error. Inside tests and outside
-            - Specifically
-    '''
-    def test(self, test_paths):
-        '''
-        test_paths = ['package.module.class.method']
-        check existence
-            report if down
-        do test
-            report if down
-        
-        report import errors
-        
-        :param test_class:
-        :param methods:
-        '''
-        
-    def receive_message(self, block=False):
-        pass
-    
-    def send_message(self, payload):
-        pass
-
-#    def send(self, msg):
-#        pass
-#    
-#    def recieve(self):
-#        pass
+    def _recv_slave(self, test_paths, slave):
+        first = slave._first_test
+        answer = slave.recv_answer(test_paths)
+        if answer[0][0] and not first:
+            self.log.i('Test import error, restarting process and repeating tests %r'%test_paths)
+            slave.test(test_paths)
 
 def smoke_test_module():
-    pass    
+    test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
+    mat = MasterAutotest()
+    mat.test(test_paths, [], [])
+    
 
 if __name__ == "__main__":
     smoke_test_module()
-
-  

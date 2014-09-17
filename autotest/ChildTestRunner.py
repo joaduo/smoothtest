@@ -5,9 +5,10 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-from smoothtest.autotest.base import AutoTestBase
 import importlib
 import unittest
+import relative_import
+from .base import AutoTestBase
 
 class ChildTestRunner(AutoTestBase):
     '''
@@ -17,6 +18,7 @@ class ChildTestRunner(AutoTestBase):
         - Report any errors
     '''
     _kill_command = 'raise SystemExit'
+    _kill_answer = 'doing SystemExit'
     def test(self, test_paths):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
@@ -33,11 +35,13 @@ class ChildTestRunner(AutoTestBase):
             
     def wait_io(self, pipe):
         msg = pipe.recv()
-        answer = []
         while True:
+            answer = []
             for params in msg:
                 cmd, args, kwargs = params 
                 if cmd == self._kill_command:
+                    pipe.send(self._kill_answer)
+                    pipe.close()
                     raise SystemExit(*args, **kwargs)
                 try:
                     result = getattr(self, cmd)(*args, **kwargs)
@@ -107,5 +111,3 @@ def smoke_test_module():
 
 if __name__ == "__main__":
     smoke_test_module()
-
-  
