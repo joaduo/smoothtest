@@ -6,15 +6,15 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 from smoothtest.autotest.base import AutoTestBase
-from inotifyx import IN_ALL_EVENTS
+from inotifyx import IN_CLOSE_WRITE
 import os
 from smoothtest.autotest.InotifyManager import InotifyManager
-from smoothtest.autotest import PathAction
+from smoothtest.autotest.PathAction import PathAction
 
 class SourceWatcher(AutoTestBase):
     def __init__(self):
         #TODO!
-        self._mask = IN_ALL_EVENTS
+        self._mask = IN_CLOSE_WRITE
         self._imngr = InotifyManager()
         self._file_action = {}
         self._dir_actions = {}
@@ -23,9 +23,10 @@ class SourceWatcher(AutoTestBase):
         assert path not in self._file_action
         
         def callback_wrapper(event, action, mnager):
+            self.log.i(event)
             callback(path)
         
-        action = PathAction(path)
+        action = PathAction(path, self._mask)
         action.append(callback_wrapper)
         
         self._imngr.watch(action)
@@ -44,7 +45,7 @@ class SourceWatcher(AutoTestBase):
         pass
     
     def get_fd(self):
-        pass
+        return self._imngr.fd
     
     def _watch_recursively(self, path):
         pass

@@ -55,8 +55,8 @@ class SlaveAutotest(AutoTestBase):
         #TODO: make multiplatform Mac OS works?
         pid, status = os.waitpid(self._child_pid, os.WNOHANG)
         if pid:
-            self.log.i('Child with pid {pid} terminated by himself.'
-                       ' Exit status {status}.'.format(pid=pid, status=status))
+            self.log.i('Child with pid {pid} terminated by himself with'
+                       ' exit status {status}.'.format(pid=pid, status=status))
             return
         
         self.send([
@@ -73,15 +73,15 @@ class SlaveAutotest(AutoTestBase):
         
         if rlist:
             msg = self.recv()
-            assert msg == ChildTestRunner._kill_answer
+            #assert msg == ChildTestRunner._kill_answer
             pid, status = os.waitpid(self._child_pid, 0)
-            self.log.i('Child with pid {pid} gently terminated. '
-                       'Exit status {status}.'.format(pid=pid, status=status))
+            self.log.i('Child with pid {pid} gently terminated with exit '
+                       'status {status}.'.format(pid=pid, status=status))
             return
         
         os.kill(self._child_pid, signal.SIGKILL)
         pid, status = os.waitpid(self._child_pid, 0)
-        self.log.i('Child pid {pid} killed by force. Exit status {status}.'
+        self.log.i('Child pid {pid} killed by force with exit status {status}.'
                    ''.format(pid=pid, status=status))
 
     def test(self, test_paths, block=False, repeat=True):
