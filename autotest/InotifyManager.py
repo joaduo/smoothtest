@@ -63,11 +63,11 @@ class InotifyManager(AutoTestBase):
         if callback in self._post_callbacks:
             self._post_callbacks.remove(callback)
 
-    def register(self, action):
-        self.unregister(action)
+    def watch(self, action):
+        self.unwatch(action)
         self._add_action(action)
 
-    def unregister(self, action):
+    def unwatch(self, action):
         action_wd = self.get_wd_action()
         if action in action_wd:
             wd = action_wd[action]
@@ -125,5 +125,5 @@ if __name__ == '__main__':
 #    path = '/home/jduo/output'
 #    action = PathAction(context, path=path, mask=IN_ALL_EVENTS)
 #    action.appendFunction(actionFunction)
-#    manager.register(action)
+#    manager.watch(action)
 #    manager.block_listening()

@@ -16,7 +16,7 @@ from smoothtest.autotest.base import AutoTestBase
 class PathAction(AutoTestBase):
     '''
     For using the InotifyManager you need to pass PathAction instances to
-    the register and unregister classes.
+    the watch and unregister classes.
     
     This is needed becase PathAction keeps tracks of the state of a file/dir
     in the case of deletion. So InotifyManager knows will watch it's parent
@@ -53,7 +53,7 @@ class PathAction(AutoTestBase):
 
     def _delete_callback(self, event, action, manager):
         self._watch_head = True
-        manager.register(self)
+        manager.watch(self)
 
     def _path_head_callback(self, event, manager):
         '''
@@ -72,7 +72,7 @@ class PathAction(AutoTestBase):
             #No longer watching the head folder
             self._watch_head = False
             #Now we watch the file egain (remove and readds)
-            manager.register(self)
+            manager.watch(self)
             #Call this action to process the file events
             self.__call__(event, manager)
         else:
@@ -82,7 +82,7 @@ class PathAction(AutoTestBase):
         '''
         Append new callback to the action's list of callbacks
         
-        If you add callbacks to a registered action, you need to re-register the
+        If you add callbacks to a registered action, you need to re-watch the
         action on the InotifyManager. (no need to remove)
         
         :param callback: callback to call when an inotify event matches the mask 

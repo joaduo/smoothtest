@@ -1,10 +1,6 @@
 '''
-Copyright (c) 2013, LastSeal S.A.
-Copyright (c) 2011-2012, Joaquin G. Duo
-All rights reserved.
-
-This code is distributed under BSD 3-clause License.
-For details check the LICENSE file in the root of the project.
+Copyright (c) 2014, Juju Inc.
+Copyright (c) 2011-2013, Joaquin G. Duo
 '''
 import logging
 

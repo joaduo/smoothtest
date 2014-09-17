@@ -58,7 +58,7 @@ class InotifyManagerTest(unittest.TestCase):
         all_callback = self._build_action_callback('all', log_list)
         action.append(all_callback, mask=IN_ALL_EVENTS)
         
-        mngr.register(action)
+        mngr.watch(action)
         
         post_callback = self._build_post_callback('General', log_list)
         mngr.append_post_callback(post_callback)
@@ -91,7 +91,7 @@ class InotifyManagerTest(unittest.TestCase):
         
         all_callback = self._build_action_callback('all', log_list)            
         action.append(all_callback, mask=IN_ALL_EVENTS)
-        mngr.register(action)
+        mngr.watch(action)
                 
         self._create_file(path)
         
