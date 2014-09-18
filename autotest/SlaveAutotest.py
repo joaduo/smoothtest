@@ -92,11 +92,12 @@ class SlaveAutotest(AutoTestBase):
         else:
             return self.recv_answer(test_paths, repeat)
 
-    def recv_answer(self, test_paths, repeat=False):
-        msg = [('test', [test_paths], {})]
+    def recv_answer(self, test_paths=[], repeat=False):
         answer = self.recv()
         testing_errors = answer[0][0]
         if not self._first_test and testing_errors and repeat:
+            assert test_paths, 'If repeating where you need to provide test_paths'
+            msg = [('test', [test_paths], {})]
             self.log.i('Test import error, restarting process and repeating tests %r'%test_paths)
             self.restart_subprocess()
             self.send(msg)

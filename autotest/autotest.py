@@ -7,18 +7,16 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import tornado.web
 
-#Hack here!
-#from Ipython.html.notebookapp import launch_new_instance
-
 from tornado.ioloop import IOLoop, PollIOLoop
 from tornado.platform.select import _Select
 from smoothtest.autotest.MasterAutoTest import MasterAutotest
-import logging
 from smoothtest.autotest.SlaveAutotest import SlaveAutotest
 from smoothtest.autotest.ChildTestRunner import ChildTestRunner
 
 import tornado.netutil
 from tornado.httpserver import HTTPServer
+
+
 
 class AutoTestSelect(object):
     def __init__(self):
@@ -64,45 +62,11 @@ class UnblockSelectIOLoop(PollIOLoop):
     def initialize(self, **kwargs):
         super(UnblockSelectIOLoop, self).initialize(impl=_UnblockSelect(), **kwargs)
 
-
-'''
-    I need to setup sockets myself so i can later close them  after forking
-
-    1. `~tornado.tcpserver.TCPServer.listen`: simple single-process::
-
-            server = HTTPServer(app)
-            server.listen(8888)
-            IOLoop.instance().start()
-
-       In many cases, `tornado.web.Application.listen` can be used to avoid
-       the need to explicitly create the `HTTPServer`.
-
-    2. `~tornado.tcpserver.TCPServer.bind`/`~tornado.tcpserver.TCPServer.start`:
-       simple multi-process::
-
-            server = HTTPServer(app)
-            server.bind(8888)
-            server.start(0)  # Forks multiple sub-processes
-            IOLoop.instance().start()
-
-       When using this interface, an `.IOLoop` must *not* be passed
-       to the `HTTPServer` constructor.  `~.TCPServer.start` will always start
-       the server on the default singleton `.IOLoop`.
-
-    3. `~tornado.tcpserver.TCPServer.add_sockets`: advanced multi-process::
-
-            sockets = tornado.netutil.bind_sockets(8888)
-            tornado.process.fork_processes(0)
-            server = HTTPServer(app)
-            server.add_sockets(sockets)
-            IOLoop.instance().start()
-'''
-
 @classmethod
 def configurable_default(cls):
     return UnblockSelectIOLoop
 
-tornado.ioloop.IOLoop.configurable_default = configurable_default
+tornado.ioloop.IOLoop.configure(UnblockSelectIOLoop)
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
