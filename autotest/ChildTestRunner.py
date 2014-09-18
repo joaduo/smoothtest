@@ -7,7 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import importlib
 import unittest
-#import relative_import
+import relative_import
 from .base import AutoTestBase
 
 class ChildTestRunner(AutoTestBase):

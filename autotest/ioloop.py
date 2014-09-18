@@ -5,7 +5,7 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-#import relative_import
+import relative_import
 from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQPoller, ZMQIOLoop
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll
