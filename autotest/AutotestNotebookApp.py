@@ -48,25 +48,19 @@ def install(IOLoop_cls):
 
 #AutoTest version
 class AtPoller(Poller):
-    _tornado_sockets = []
-    @classmethod
-    def set_tornado_sockets(cls, sockets):
-        del cls._tornado_sockets[:]
-        cls._tornado_sockets.extend(sockets)
-        
-    def initialize(self):
+    def _initialize_autotest(self):
         test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
         self._master = MasterAutotest()
-        self._slave = SlaveAutotest(ChildTestRunner, [], dict(sockets=self._tornado_sockets))
+        self._slave = SlaveAutotest(ChildTestRunner)
         self._generator = self._master.test_poll(zmq_poll, test_paths, ['fulcrum/views/sales/tests/about_us.py'], [])
-        self.initialize = lambda:None
+        self._initialize_autotest = lambda:None
 
     def poll(self, timeout=None):
         if timeout is None or timeout < 0:
             timeout = -1
         elif isinstance(timeout, float):
             timeout = int(timeout)
-        self._master.set_sockets(self.sockets)
+        self._master.set_poll_args(self.sockets, timeout)
         return self._generator.next()
 
 #AutoTest version
