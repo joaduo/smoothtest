@@ -21,11 +21,11 @@ class ChildTestRunner(AutoTestBase):
         super(ChildTestRunner, self).__init__()
         self._webdriver = webdriver
         self.after_fork(sockets)
-        
+
     def after_fork(self, sockets):
         for s in sockets:
             s.close()
-    
+
     def test(self, test_paths):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
@@ -39,14 +39,14 @@ class ChildTestRunner(AutoTestBase):
                 continue
             self._run_test(pusherror, tpath, *objects)
         return errors
-            
+
     def wait_io(self, pipe):
         while True:
             self._dispatch_cmds(pipe)
-    
+
     def reprex(self, e):
         return repr(e)
-    
+
     def _run_test(self, pusherror, test_path, module, class_, method):
         try:
             #assert issubclass(class_, TestCase), 'The class must be subclass of unittest.TestCase'
@@ -57,7 +57,7 @@ class ChildTestRunner(AutoTestBase):
             runner.run(suite)
         except Exception as e:
             pusherror(self.reprex(e))
-    
+
     def _import_test(self, pusherror, test_path):
         modstr, clsstr, methstr = self._split_path(test_path)
         try:
@@ -69,7 +69,7 @@ class ChildTestRunner(AutoTestBase):
             pusherror(self.reprex(e))
             return None
         return module, class_, method
-        
+
     def _split_path(self, test_path):
         test_path = test_path.split('.')
         module = '.'.join(test_path[:-2])
@@ -88,7 +88,7 @@ def smoke_test_module():
                     ]
             self.recv = self.recv2
             return cmds
-        
+
         def recv2(self):
             cmds = [
                     ('raise SystemExit', (0,), {}),
@@ -99,10 +99,10 @@ def smoke_test_module():
         def send(self, msg):
             print msg
             return 1
-        
+
         def close(self):
             pass
-    
+
     sr.wait_io(DummyIpc())
 
 if __name__ == "__main__":

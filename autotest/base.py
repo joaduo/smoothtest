@@ -10,14 +10,14 @@ from smoothtest.Logger import Logger
 
 class AutoTestBase(object):
     log = Logger('at')
-    
+
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
     def _dispatch_cmds(self, io_api):
         msg = io_api.recv()
         answer = []
         for params in msg:
-            cmd, args, kwargs = params 
+            cmd, args, kwargs = params
             if cmd == self._kill_command:
                 io_api.send(self._kill_answer)
                 io_api.close()

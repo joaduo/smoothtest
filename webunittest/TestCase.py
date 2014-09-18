@@ -17,16 +17,16 @@ class WebdriverUtils(object):
     __driver = None
     def __init__(self, base_url, browser='PhantomJS', webdriver=None):
         self._init_webdriver(base_url, browser, webdriver)
-    
+
     def _init_webdriver(self, base_url, browser='PhantomJS', webdriver=None):
         if webdriver:
             self.__driver = webdriver
         else:
             self._init_driver(browser)
         self.get_driver().implicitly_wait(self._implicit_wait)
-        self.get_driver().set_window_size(*self._window_size)            
+        #self.get_driver().set_window_size(*self._window_size)
         self._base_url = base_url
-        
+
     def _quit_webdriver(self):
         self.__driver.quit()
         self.__driver = None
@@ -35,14 +35,14 @@ class WebdriverUtils(object):
         if not self.__driver:
             #Firefox, Chrome, PhantomJS
             self.__driver = getattr(webdriver, browser)()
-    
+
     def get_driver(self):
         assert self.__driver, 'driver was not initialized'
         return self.__driver
 
     def screenshot(self, *args, **kwargs):
         pass
-    
+
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
         base = base if base else self._base_url
@@ -53,17 +53,17 @@ class WebdriverUtils(object):
             msg = 'Couldn\'t load page at %r.' % url
             assert self.wait_condition(condition), msg
         return driver
-    
+
     def log_debug(self, msg):
         print msg
-    
+
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
     def wait_condition(self, condition=None):
         '''
         Active wait (polling) function, for a specific condition inside a page.
         '''
-        condition = condition if condition else self._default_condition 
+        condition = condition if condition else self._default_condition
         if isinstance(condition, basestring):
             #Its a javascript script
             def condition_func(driver):
@@ -85,8 +85,8 @@ class WebdriverUtils(object):
             msg = ('Page took too long to load. Increase max_wait (secs) class'
                    ' attr. Or override _wait_script method.')
             self.log_debug(msg)
-        return loaded    
-    
+        return loaded
+
     def _get_xpath_script(self, xpath, ret='node'):
         script = '''
 var xpath = %(xpath)r;
@@ -111,7 +111,7 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
             msg = 'Could not find a node at xpath %r' % xpath
             raise LookupError(msg)
         return e
-    
+
     def extract_xpath(self, xpath, ret='text'):
         return self.select_xpath(xpath, ret)
 
@@ -119,7 +119,7 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
         e = self.select_xpath(xpath)
         e.clear()
         e.send_keys(value)
-        
+
     def click(self, xpath):
         e = self.select_xpath(xpath)
         e.click()
@@ -152,7 +152,7 @@ class TestBase(WebdriverUtils):
         self._init_webdriver(base_url, browser, webdriver)
 
     def _shutdown_webserver_webdriver(self):
-        if (not self.settings.webdriver_keep_open and 
+        if (not self.settings.webdriver_keep_open and
             not self.settings.webdriver_pooling):
             self._quit_webdriver()
 
@@ -166,4 +166,4 @@ class TestCase(unittest.TestCase, TestBase):
         msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
                format(**locals()))
         self.assertEqual(extracted, value, msg)
-        self.screenshot('assert_text', xpath, value) 
+        self.screenshot('assert_text', xpath, value)

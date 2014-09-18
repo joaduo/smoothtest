@@ -18,11 +18,11 @@ class PathAction(AutoTestBase):
     '''
     For using the InotifyManager you need to pass PathAction instances to
     the watch and unregister classes.
-    
+
     This is needed becase PathAction keeps tracks of the state of a file/dir
     in the case of deletion. So InotifyManager knows will watch it's parent
     dir for creation of the file.
-    
+
     from inotifyx import  IN_ALL_EVENTS, IN_CREATE, IN_IGNORED, \
         IN_DELETE_SELF, IN_DELETE, IN_CLOSE_WRITE, IN_ATTRIB, IN_CLOSE, \
         IN_CLOSE_NOWRITE, IN_MOVED_TO
@@ -62,9 +62,9 @@ class PathAction(AutoTestBase):
         dir (head) of the path.
         We need to create a callback for events on the parent's path. This
         method is the callback.
-        
+
         :param event: event of the watched path
-        :param manager: inotify manager instance watching the path 
+        :param manager: inotify manager instance watching the path
         '''
         if event.mask & IN_DELETE_SELF:
             raise RuntimeError('Path head deleted. Can\'t keep watching it: %r'%self.path)
@@ -82,11 +82,11 @@ class PathAction(AutoTestBase):
     def append(self, callback, mask=None):
         '''
         Append new callback to the action's list of callbacks
-        
+
         If you add callbacks to a registered action, you need to re-watch the
         action on the InotifyManager. (no need to remove)
-        
-        :param callback: callback to call when an inotify event matches the mask 
+
+        :param callback: callback to call when an inotify event matches the mask
         :param mask: maks to be matched by the event on the path
         '''
         if mask is None:
@@ -101,18 +101,18 @@ class PathAction(AutoTestBase):
         Remove callback to the action's list of callbacks.
         If no mask is specified, all (mask, callback) associations will be
         removed.
-        
-        :param callback: callbact to call when an inotify event matches the mask 
-        :param mask: optional mask when a specific (mask, callback) pair wants 
+
+        :param callback: callbact to call when an inotify event matches the mask
+        :param mask: optional mask when a specific (mask, callback) pair wants
             to be removed
         '''
-        
-        if mask == None: 
+
+        if mask == None:
             #no mask, then remove callback from all lists
             for mask,functions in self._mask_callbacks.iteritems():
                 if callback in functions:
                     functions.remove(callback)
-        else: 
+        else:
             #remove callback for a specific mask
             if mask in self._mask_callbacks:
                 if callback in self._mask_callbacks[mask]:
@@ -139,18 +139,18 @@ def smoke_test_module():
     from smoothtest.autotest.InotifyManager import InotifyManager
     mngr = InotifyManager()
     action = PathAction(path='loren_ipsum.txt')
-    
+
     callback = lambda ev, mngr: None
     action.append(callback, IN_CREATE)
     print action.path
     print action.real_path
     print mngr._mask_str(action.mask)
-    
+
     action.remove(callback, mask=IN_CREATE)
     action.append(callback, IN_ALL_EVENTS)
     action.remove(callback)
-    
-    
+
+
 
 if __name__ == "__main__":
     smoke_test_module()

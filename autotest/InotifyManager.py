@@ -16,7 +16,7 @@ from smoothtest.autotest.base import AutoTestBase
 
 class InotifyManager(AutoTestBase):
     '''
-    
+
     '''
     def __init__(self):
         self.__wd_action = {}

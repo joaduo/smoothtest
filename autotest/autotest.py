@@ -23,25 +23,25 @@ from tornado.httpserver import HTTPServer
 class AutoTestSelect(object):
     def __init__(self):
         self._sockets = []
-        
+
     def set_sockets(self, sockets):
         self._sockets = sockets
-    
+
     def initialize(self):
         test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
         self._master = MasterAutotest()
         self._slave = SlaveAutotest(ChildTestRunner, [], dict(sockets=self._sockets))
         self._generator = self._master.test(test_paths, ['fulcrum/views/sales/tests/about_us.py'], [])
         self.initialize = lambda:None
-        
+
     def __call__(self, *a, **kw):
         return self._select(*a, **kw)
-    
+
     def _select(self, rlist, wlist, xlist, timeout=None):
         self.initialize()
-        self._master.set_select_args(rlist=rlist, 
-                                     wlist=wlist, 
-                                     xlist=xlist, 
+        self._master.set_select_args(rlist=rlist,
+                                     wlist=wlist,
+                                     xlist=xlist,
                                      timeout=timeout)
         return self._generator.next()
 
@@ -97,7 +97,7 @@ class UnblockSelectIOLoop(PollIOLoop):
             server.add_sockets(sockets)
             IOLoop.instance().start()
 '''
- 
+
 @classmethod
 def configurable_default(cls):
     return UnblockSelectIOLoop

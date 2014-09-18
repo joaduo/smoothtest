@@ -22,75 +22,73 @@ import os
 import time
 
 def getPackagePath(package):
-  if isinstance(package, str):
-    package = __import__(package, fromlist="dummy")
-  return package.__path__[0]
+    if isinstance(package, str):
+        package = __import__(package, fromlist="dummy")
+    return package.__path__[0]
 
 def getObjectModulePath(instace):
-  if instace.__class__.__module__ == '__main__':
-    import __main__
-    module = __main__
-  else:
-    module = __import__(instace.__class__.__module__, fromlist="dummy")
-  return module.__file__
+    if instace.__class__.__module__ == '__main__':
+        import __main__
+        module = __main__
+    else:
+        module = __import__(instace.__class__.__module__, fromlist="dummy")
+    return module.__file__
 
 def realPath(path, retries=1, sleep=0.1):
-  for _ in range(retries + 1):
-    try:
-      return os.path.realpath(path)
-    except Exception as e:
-      time.sleep(sleep)
-  raise e
+    for _ in range(retries + 1):
+        try:
+            return os.path.realpath(path)
+        except Exception as e:
+            time.sleep(sleep)
+    raise e
 
 def pathIsDir(path):
-  return os.path.isdir(path)
+    return os.path.isdir(path)
 
 def pathHead(path):
-  return os.path.split(path)[0]
+    return os.path.split(path)[0]
 
 def pathExists(path, write=False):
-  if write and os.access(path, os.W_OK):
-    return True
-  elif os.access(path, os.R_OK):
-    return True
-  return False
+    if write and os.access(path, os.W_OK):
+        return True
+    elif os.access(path, os.R_OK):
+        return True
+    return False
 
 def splitPath(path, *path_list):
-  split_path = []
-  if isinstance(path, list) or isinstance(path, tuple):
-    for p in path:
-      split_path += splitPath(p)
-  else:
-    split_path += os.path.split(path)
-  if len(path_list) > 0:
-    split_path += splitPath(path_list)
-  return split_path
+    split_path = []
+    if isinstance(path, list) or isinstance(path, tuple):
+        for p in path:
+            split_path += splitPath(p)
+    else:
+        split_path += os.path.split(path)
+    if len(path_list) > 0:
+        split_path += splitPath(path_list)
+    return split_path
 
 def joinPath(path, *path_list):
-  if isinstance(path, list) or isinstance(path, tuple):
-    joint_path = os.path.join(*map(joinPath, path))
-  else:
-    joint_path = path
-  if len(path_list):
-    joint_path = os.path.join(joint_path, joinPath(path_list))
-  return joint_path
+    if isinstance(path, list) or isinstance(path, tuple):
+        joint_path = os.path.join(*map(joinPath, path))
+    else:
+        joint_path = path
+    if len(path_list):
+        joint_path = os.path.join(joint_path, joinPath(path_list))
+    return joint_path
 
 def formatPathPrint(path, line=None, error=False, allow_pyc=False):
-  if not allow_pyc and path.endswith('.pyc'):
-    path = path[:-1]
-  if not line:
-    line = 1
-  path = os.path.realpath(path)
-  return '  File "%s", line %d\n' % (path, line)
+    if not allow_pyc and path.endswith('.pyc'):
+        path = path[:-1]
+    if not line:
+        line = 1
+    path = os.path.realpath(path)
+    return '  File "%s", line %d\n' % (path, line)
 
 def smokeTestModule():
-  from common.log.debugPrint import debugPrint
-  debugPrint(joinPath('/path/to/file', 'some_path', ['some', 'other', 'path']))
-  debugPrint(pathHead('/path/to/file'))
-  debugPrint(pathIsDir('/home/jduo'))
-  debugPrint(pathIsDir('/home/jduo/output.k3d'))
+    from common.log.debugPrint import debugPrint
+    debugPrint(joinPath('/path/to/file', 'some_path', ['some', 'other', 'path']))
+    debugPrint(pathHead('/path/to/file'))
+    debugPrint(pathIsDir('/home/jduo'))
+    debugPrint(pathIsDir('/home/jduo/output.k3d'))
 
 if __name__ == "__main__":
-  smokeTestModule()
-
-
+    smokeTestModule()

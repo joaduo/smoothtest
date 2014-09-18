@@ -18,14 +18,14 @@ class MasterAutotest(AutoTestBase):
     _select_args = {}
     def set_select_args(self, **select_args):
         self._select_args = select_args
-    
-    def test(self, test_paths, parcial_reloads, full_reloads=[], 
+
+    def test(self, test_paths, parcial_reloads, full_reloads=[],
              full_decorator=lambda x:x, slave=None):
         #nice alias useful for callbacks
         #master = self
         #manager of the subprocesses
         slave = slave or SlaveAutotest(ChildTestRunner)
-        
+
         #create callback for re-testing on changes/msgs
         @full_decorator
         def full_callback(path=None):
@@ -33,28 +33,28 @@ class MasterAutotest(AutoTestBase):
         #Monitor changes in files
         watcher = SourceWatcher()
         watcher.watch_file(parcial_reloads[0], full_callback)
-        
+
         #slave's subprocess where tests will be done
         slave.start_subprocess()
         #do first time test (for master)
         full_callback()
-        
+
         def build_rlist():
             #in interactive mode we need to listen to stdin
             rlist = [slave._pipe_ipc, watcher.get_fd()] + list(self._select_args.get('rlist',[]))
             return rlist
-        
+
         def _select(rlist, wlist, xlist, timeout=None):
             if timeout:
                 return select.select(rlist, wlist, xlist, timeout)
             return select.select(rlist, wlist, xlist)
-        
+
         #setup variable to control loop escape
         self.wait_input = True
         while self.wait_input:
             #Wait for any of the inputs to be ready
-            rlist, wlist, xlist = _select(build_rlist(), 
-                                          self._select_args.get('wlist',[]), 
+            rlist, wlist, xlist = _select(build_rlist(),
+                                          self._select_args.get('wlist',[]),
                                           self._select_args.get('xlist',[]),
                                           self._select_args.get('timeout'),
                                           )
@@ -98,7 +98,7 @@ def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
     mat = MasterAutotest()
     mat.test(test_paths, ['MasterAutoTest.py'], []).next()
-    
+
 
 if __name__ == "__main__":
     smoke_test_module()
