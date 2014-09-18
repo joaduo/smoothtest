@@ -17,8 +17,15 @@ class ChildTestRunner(AutoTestBase):
         - Run test over all methods or specific methods
         - Report any errors
     '''
-    _kill_command = 'raise SystemExit'
-    _kill_answer = 'doing SystemExit'
+    def __init__(self, webdriver=None, sockets=[]):
+        super(ChildTestRunner, self).__init__()
+        self._webdriver = webdriver
+        self.after_fork(sockets)
+        
+    def after_fork(self, sockets):
+        for s in sockets:
+            s.close()
+    
     def test(self, test_paths):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
@@ -34,23 +41,8 @@ class ChildTestRunner(AutoTestBase):
         return errors
             
     def wait_io(self, pipe):
-        msg = pipe.recv()
         while True:
-            answer = []
-            for params in msg:
-                cmd, args, kwargs = params 
-                if cmd == self._kill_command:
-                    pipe.send(self._kill_answer)
-                    pipe.close()
-                    raise SystemExit(*args, **kwargs)
-                try:
-                    result = getattr(self, cmd)(*args, **kwargs)
-                    answer.append((result, None))
-                except Exception as e:
-                    answer.append((None, self.reprex(e)))
-                
-                pipe.send(answer)
-                msg = pipe.recv()
+            self._dispatch_cmds(pipe)
     
     def reprex(self, e):
         return repr(e)
@@ -70,6 +62,7 @@ class ChildTestRunner(AutoTestBase):
         modstr, clsstr, methstr = self._split_path(test_path)
         try:
             module = importlib.import_module(modstr)
+            module = reload(module)
             class_ = getattr(module, clsstr)
             method = getattr(class_, methstr)
         except Exception as e:
@@ -89,23 +82,26 @@ def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
     sr = ChildTestRunner()
     class DummyIpc(object):
-        def read(self):
+        def recv(self):
             cmds = [
                     ('test', (test_paths,), {}),
                     ]
-            self.read = self.read2
+            self.recv = self.recv2
             return cmds
         
-        def read2(self):
+        def recv2(self):
             cmds = [
-                    ('raise SystemExit', ('Gently killing the process',), {}),
+                    ('raise SystemExit', (0,), {}),
                     ]
             self.read = lambda : []
             return cmds
 
-        def write(self, msg):
+        def send(self, msg):
             print msg
             return 1
+        
+        def close(self):
+            pass
     
     sr.wait_io(DummyIpc())
 

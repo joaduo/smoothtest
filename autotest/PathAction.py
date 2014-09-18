@@ -10,7 +10,8 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 import os
 from inotifyx import IN_CREATE, IN_DELETE_SELF, IN_MOVED_TO, IN_ALL_EVENTS
 from smoothtest.autotest.path import pathExists, realPath, pathHead
-from common.defaultdict import defaultdict
+#from common.defaultdict import defaultdict
+from collections import defaultdict
 from smoothtest.autotest.base import AutoTestBase
 
 class PathAction(AutoTestBase):
