@@ -6,7 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import select
-import relative_import
+#import relative_import
 from .base import AutoTestBase
 from .SlaveAutotest import SlaveAutotest
 from .ChildTestRunner import ChildTestRunner

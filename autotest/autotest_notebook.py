@@ -5,6 +5,7 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
+from IPython.external.path import path
 from zmq.eventloop import ioloop
 ioloop.install = lambda:None
 

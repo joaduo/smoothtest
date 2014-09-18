@@ -5,7 +5,7 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import relative_import
+#import relative_import
 from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQPoller, ZMQIOLoop
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll
@@ -29,10 +29,6 @@ def install(IOLoop_cls):
     # than the pyzmq IOLoop instance:
     assert (not ioloop.IOLoop.initialized()) or \
         ioloop.IOLoop.instance() is IOLoop.instance(), "tornado IOLoop already initialized"
-    
-    assert tornado_version >= (3,)
-    # tornado 3 has an official API for registering new defaults
-    ioloop.IOLoop.configure(IOLoop_cls)
 
     if tornado_version >= (3,):
         # tornado 3 has an official API for registering new defaults, yay!
@@ -55,7 +51,7 @@ class AtPollerBase(object):
         self._generator = self._master.test_all(test_paths, 
                                                 parcial_loads, full_loads,
                                                 parcial_decorator=parcial_decorator,
-                                                poll=zmq_poll, 
+                                                poll=poll, 
                                                 select=select)
         self.initialize_autotest = lambda:None
 
@@ -63,7 +59,7 @@ class AtPollerBase(object):
 
 class AtSelectPoller(_Select, AtPollerBase):
     def initialize_autotest(self):
-        super(AtSelectPoller, self).initialize_autotest(select=select.select)
+        AtPollerBase.initialize_autotest(self, select=select.select)
     
     def poll(self, timeout):
         self.initialize_autotest()
@@ -81,13 +77,10 @@ class AtSelectPoller(_Select, AtPollerBase):
             events[fd] = events.get(fd, 0) | IOLoop.ERROR
         return events.items()    
 
-class AtSelectIOLoop(ZMQIOLoop):
-    class AtPoller(ZMQPoller):
-        def __init__(self):
-            self._poller = AtSelectPoller()
-            
+
+class AtSelectIOLoop(PollIOLoop):
     def initialize(self, **kwargs):
-        super(AtSelectIOLoop, self).initialize(impl=self.AtPoller(), **kwargs)
+        super(AtSelectIOLoop, self).initialize(impl=AtSelectPoller(), **kwargs)
     
     @staticmethod
     def instance():
@@ -100,7 +93,7 @@ class AtSelectIOLoop(ZMQIOLoop):
 class AtPoller(Poller, AtPollerBase):
     def initialize_autotest(self):
         from zmq.backend import zmq_poll
-        super(AtPoller, self).initialize_autotest(poll=zmq_poll)
+        AtPollerBase.initialize_autotest(self, poll=zmq_poll)
 
     def poll(self, timeout=None):
         self.initialize_autotest()
@@ -117,7 +110,7 @@ class AtPollZMQIOLoop(ZMQIOLoop):
             self._poller = AtPoller()
     
     def initialize(self, **kwargs):
-        super(AtPollZMQIOLoop, self).initialize(impl=self.AtZMQPoller(), **kwargs)
+        super(ZMQIOLoop, self).initialize(impl=self.AtZMQPoller(), **kwargs)
     
     @staticmethod
     def instance():

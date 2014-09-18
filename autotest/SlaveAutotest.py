@@ -9,7 +9,7 @@ import os
 import multiprocessing
 import select
 import signal
-import relative_import
+#import relative_import
 from .base import AutoTestBase
 from .ChildTestRunner import ChildTestRunner
 
