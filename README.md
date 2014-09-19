@@ -12,4 +12,6 @@ General purpose Testing Utilities and also special testing tools for for Web App
 4. Reset sessions, cache and cookies from running selenium instances
 5. Having a pool of webdrivers
 6. Having an eternal pool of webdrivers (in main process) to speed up testing
-
+7. Play a sound on success/failure
+	i. say "3" success "4" failed
+8. Enable remote messages (to enable shortcuts via CLI)
