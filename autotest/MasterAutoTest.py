@@ -129,25 +129,30 @@ class MasterAutotest(AutoTestBase):
         self.wait_input = True
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, slave, watcher, ipython_pipe, parcial_callback)
+            self._dispatch(rlist, slave, watcher, ipython_pipe, locals())
             if do_yield:
                 yield yield_obj
         #We need to kill the child
         slave.kill(block=True, timeout=1)
         
-    def _dispatch(self, rlist, slave, watcher, ipython_pipe, parcial_callback):
+    def _dispatch(self, rlist, slave, watcher, ipython_pipe, _locals):
         #depending on the input, dispatch actions
         for f in rlist:
             #Receive input from child process
             if f is slave._pipe_ipc.fileno():
                 rlist.remove(f)
-                self._recv_slave(parcial_callback, slave)
+                self._recv_slave(_locals['parcial_callback'], slave)
             if f is watcher.get_fd():
                 rlist.remove(f)
                 watcher.dispatch()
             if ipython_pipe and f is ipython_pipe.fileno():
-                self._dispatch_cmds(ipython_pipe)
-                
+                self._dispatch_cmds(ipython_pipe, self._cmds_handler, _locals)
+    
+    def _cmds_handler(self, params, _locals):
+        cmd, args, kw = params
+        if cmd == 'test':
+            _locals['parcial_callback']()
+    
     def _receive_kill(self, *args, **kwargs):
         self._slave.kill(block=True, timeout=3)
     

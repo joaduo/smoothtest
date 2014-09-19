@@ -44,9 +44,6 @@ class ChildTestRunner(AutoTestBase):
         while True:
             self._dispatch_cmds(pipe)
 
-    def reprex(self, e):
-        return repr(e)
-
     def _run_test(self, pusherror, test_path, module, class_, method):
         try:
             #assert issubclass(class_, TestCase), 'The class must be subclass of unittest.TestCase'

@@ -21,7 +21,7 @@ class AutoTestBase(object):
 
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
-    def _dispatch_cmds(self, io_pipe):
+    def _dispatch_cmds(self, io_pipe, handler=None, *largs, **lkwargs):
         msg = io_pipe.recv()
         answer = []
         for params in msg:
@@ -32,12 +32,19 @@ class AutoTestBase(object):
                 io_pipe.close()
                 raise SystemExit(0)
             try:
-                result = getattr(self, cmd)(*args, **kwargs)
+                if hasattr(self, cmd) or not handler:
+                    #raise exception if no handler and no attr
+                    result = getattr(self, cmd)(*args, **kwargs)
+                else:
+                    result = handler(params, *largs, **lkwargs)
                 answer.append((result, None))
             except Exception as e:
                 answer.append((None, self.reprex(e)))
         io_pipe.send(answer)
         return answer
+    
+    def reprex(self, e):
+        return repr(e)
     
     def _receive_kill(self, *args, **kwargs):
         pass
