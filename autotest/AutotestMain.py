@@ -5,12 +5,12 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import os
+import relative_import
 from .AutotestContext import singleton_decorator
+from .base import AutoTestBase
+from IPython import embed
 import multiprocessing
 import sys
-from smoothtest.autotest.base import AutoTestBase
-from IPython import embed
 
 @singleton_decorator
 class AutotestMain(AutoTestBase):
@@ -60,14 +60,14 @@ class AutotestMain(AutoTestBase):
     
     @property
     def test(self):
-        print self.sendb('test')
+        print self.send_recv('test')
 
     def send(self, cmd, *args, **kwargs):
         if self.poll():
             self.log.i('Remaining in buffer: %r'%self.parent_pipe.recv())
         self.parent_pipe.send(self.cmd(cmd, *args, **kwargs))
     
-    def sendb(self, cmd, *args, **kwargs):
+    def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
         return self.parent_pipe.recv()
     
