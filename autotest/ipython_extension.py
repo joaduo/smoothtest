@@ -7,7 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 
 from IPython.core.magic import Magics, magics_class, line_magic
-from smoothtest.autotest.AutotestNotebook import AutotestNotebook
+from smoothtest.autotest.AutotestMain import AutotestMain
 
 @magics_class
 class MyMagics(Magics):
@@ -17,7 +17,7 @@ class MyMagics(Magics):
         "my line magic"
         print("Full access to the main IPython object:", self.shell)
         print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
-        print('an = %s'%(dir(AutotestNotebook())))
+        print('an = %s'%(dir(AutotestMain())))
         return line
     
     @line_magic
