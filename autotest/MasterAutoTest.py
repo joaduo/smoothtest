@@ -69,7 +69,8 @@ class MasterAutotest(AutoTestBase):
         return filtered_sockets, (rlist, wlist, xlist)
     
     def test_all(self, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, slave=None, poll=None, select=None,
+             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
+             slave=None, poll=None, select=None,
              ipython_pipe=None):
         #manager of the subprocesses
         self._slave = slave = slave or SlaveAutotest(ChildTestRunner)

@@ -34,20 +34,21 @@ class AutotestContext(object):
         self.slave = None
         self.ipython_ipc = None
         
-    def initialize(self, wait_type='poll', parcial_decorator=None, ipython_pipe=None):
-        test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-        parcial_loads, full_loads =['fulcrum/views/sales/tests/about_us.py'], []
-        ########
+    def initialize(self, test_paths, parcial_reloads, full_reloads=[],
+             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
+             slave=None, ipython_pipe=None, wait_type='poll'):
         self.master = MasterAutotest()
-        self.slave = SlaveAutotest(ChildTestRunner)
+        self.slave = slave or SlaveAutotest(ChildTestRunner)
         poll = _select = None
         if wait_type == 'poll':
             poll = zmq_poll
         else:
             _select = select.select
         self.poll = self.master.test_all(test_paths, 
-                                        parcial_loads, full_loads,
+                                        parcial_reloads=parcial_reloads, 
+                                        full_reloads=full_reloads,
                                         parcial_decorator=parcial_decorator,
+                                        full_decorator=full_decorator,
                                         slave=self.slave,
                                         poll=poll, 
                                         select=_select,

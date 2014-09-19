@@ -13,8 +13,8 @@ from smoothtest.autotest.base import AutoTestBase
 from IPython import embed
 
 @singleton_decorator
-class AutotestNotebook(AutoTestBase):
-    def init_notebook(self, child_callback):
+class AutotestMain(AutoTestBase):
+    def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
         def new_child():
             try:
@@ -23,10 +23,11 @@ class AutotestNotebook(AutoTestBase):
                 self.log.e(e)
             self.create_child(child_callback)
         self._new_child = new_child
-        s = self #nice alias
-        embed()
-        self.kill_child
-        raise SystemExit(0)
+        if embed_ipython:
+            s = self #nice alias
+            embed()
+            self.kill_child
+            raise SystemExit(0)
     
     @property
     def new_child(self):
