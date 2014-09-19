@@ -27,11 +27,11 @@ class SlaveAutotest(AutoTestBase):
         parent_pipe, child_pipe = multiprocessing.Pipe()
 
         pid = os.fork()
-        if pid:
+        if pid: #parent
             self._child_pid = pid
             self._pipe_ipc = parent_pipe
             return pid
-        else:
+        else: #child
             self._child_cls(*self._child_args, **self._child_kwargs
                             ).wait_io(child_pipe)
 
@@ -59,9 +59,7 @@ class SlaveAutotest(AutoTestBase):
                        ' exit status {status}.'.format(pid=pid, status=status))
             return
 
-        self.send([
-                    (self._child_cls._kill_command, [0], {}),
-                    ])
+        self.send(self.cmd(self._child_cls._kill_command))
 
         if not block:
             return

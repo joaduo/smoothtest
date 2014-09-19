@@ -10,10 +10,7 @@ from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQ
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll
 from tornado.platform.select import _Select
-from .MasterAutoTest import MasterAutotest
-from .SlaveAutotest import SlaveAutotest
-from .ChildTestRunner import ChildTestRunner
-import select
+from smoothtest.autotest.AutotestContext import AutotestContext
 
 def install(IOLoop_cls):
     """set the tornado IOLoop instance with the pyzmq IOLoop.
@@ -38,28 +35,19 @@ def install(IOLoop_cls):
         ioloop.IOLoop._instance = IOLoop_cls.instance()
 
 class AtPollerBase(object):
-    def initialize_autotest(self, poll=None, select=None):
-        test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-        parcial_loads, full_loads =['fulcrum/views/sales/tests/about_us.py'], []
-        ########
-        self._master = MasterAutotest()
-        self._slave = SlaveAutotest(ChildTestRunner)
-        def parcial_decorator(parcial_callback):
-            def wrapper(*a, **kw):
-                print 'Should run %s' % parcial_callback
-            return wrapper
-        self._generator = self._master.test_all(test_paths, 
-                                                parcial_loads, full_loads,
-                                                parcial_decorator=parcial_decorator,
-                                                poll=poll, 
-                                                select=select)
+    def initialize_autotest(self, wait_type):
+        ctx = AutotestContext()
+        ctx.initialize(wait_type)
+        self._master = ctx.master
+        self._slave = ctx.slave
+        self._generator = ctx.poll
         self.initialize_autotest = lambda:None
 
 ###### Using select.select
 
 class AtSelectPoller(_Select, AtPollerBase):
     def initialize_autotest(self):
-        AtPollerBase.initialize_autotest(self, select=select.select)
+        AtPollerBase.initialize_autotest(self, wait_type='select')
     
     def poll(self, timeout):
         self.initialize_autotest()
@@ -92,8 +80,7 @@ class AtSelectIOLoop(PollIOLoop):
 
 class AtPoller(Poller, AtPollerBase):
     def initialize_autotest(self):
-        from zmq.backend import zmq_poll
-        AtPollerBase.initialize_autotest(self, poll=zmq_poll)
+        AtPollerBase.initialize_autotest(self, wait_type='poll')
 
     def poll(self, timeout=None):
         self.initialize_autotest()

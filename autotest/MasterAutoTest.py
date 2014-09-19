@@ -5,7 +5,6 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import select
 import relative_import
 from .base import AutoTestBase
 from .SlaveAutotest import SlaveAutotest
@@ -70,9 +69,10 @@ class MasterAutotest(AutoTestBase):
         return filtered_sockets, (rlist, wlist, xlist)
     
     def test_all(self, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, slave=None, poll=None, select=None):
+             parcial_decorator=lambda x:x, slave=None, poll=None, select=None,
+             ipython_pipe=None):
         #manager of the subprocesses
-        slave = slave or SlaveAutotest(ChildTestRunner)
+        self._slave = slave = slave or SlaveAutotest(ChildTestRunner)
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
@@ -84,7 +84,10 @@ class MasterAutotest(AutoTestBase):
             watcher.watch_file(fpath, parcial_callback)
         
         def local_rlist():
-            return [slave._pipe_ipc.fileno(), watcher.get_fd()]
+            rlist = [slave._pipe_ipc.fileno(), watcher.get_fd()]
+            if ipython_pipe:
+                rlist.append(ipython_pipe.fileno())
+            return rlist
         
         if poll:
             def build_sockets():
@@ -126,126 +129,28 @@ class MasterAutotest(AutoTestBase):
         self.wait_input = True
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, slave, watcher, parcial_callback)
+            self._dispatch(rlist, slave, watcher, ipython_pipe, parcial_callback)
             if do_yield:
                 yield yield_obj
         #We need to kill the child
         slave.kill(block=True, timeout=1)
         
-    def _dispatch(self, rlist, slave, watcher, parcial_callback):
+    def _dispatch(self, rlist, slave, watcher, ipython_pipe, parcial_callback):
         #depending on the input, dispatch actions
         for f in rlist:
             #Receive input from child process
-            if f is slave._pipe_ipc:
+            if f is slave._pipe_ipc.fileno():
                 rlist.remove(f)
                 self._recv_slave(parcial_callback, slave)
             if f is watcher.get_fd():
                 rlist.remove(f)
                 watcher.dispatch()
+            if ipython_pipe and f is ipython_pipe.fileno():
+                self._dispatch_cmds(ipython_pipe)
+                
+    def _receive_kill(self, *args, **kwargs):
+        self._slave.kill(block=True, timeout=3)
     
-    def test_poll(self, poll, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, slave=None):
-        #nice alias useful for callbacks
-        #master = self
-        #manager of the subprocesses
-        slave = slave or SlaveAutotest(ChildTestRunner)
-
-        #create callback for re-testing on changes/msgs
-        @parcial_decorator
-        def parcial_callback(path=None):
-            slave.test(test_paths)
-        
-        #Monitor changes in files
-        watcher = SourceWatcher()
-        for fpath in parcial_reloads:
-            watcher.watch_file(fpath, parcial_callback)
-
-        #slave's subprocess where tests will be done
-        slave.start_subprocess()
-        #do first time test (for master)
-        parcial_callback()
-
-        def build_sockets():
-            #in interactive mode we need to listen to stdin
-            rlist = [slave._pipe_ipc, watcher.get_fd()]
-            sockets = self.lists_to_sockets(rlist, [], [])
-            return sockets + self._poll_sockets
-
-        #setup variable to control loop escape
-        self.wait_input = True
-        while self.wait_input:
-            sockets = poll(build_sockets())
-            sockets, rlist, _, _ = self.filter_sockets(sockets)
-            
-            #depending on the input, dispatch actions
-            for f in rlist:
-                #Receive input from child process
-                if f is slave._pipe_ipc:
-                    rlist.remove(f)
-                    self._recv_slave(parcial_callback, slave)
-                if f is watcher.get_fd():
-                    rlist.remove(f)
-                    watcher.dispatch(timeout=1)
-            if sockets:
-                yield sockets
-        #We need to kill the child
-        slave.kill(block=True, timeout=1)
-
-    def test(self, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, slave=None):
-        #nice alias useful for callbacks
-        #master = self
-        #manager of the subprocesses
-        slave = slave or SlaveAutotest(ChildTestRunner)
-
-        #create callback for re-testing on changes/msgs
-        @parcial_decorator
-        def parcial_callback(path=None):
-            slave.test(test_paths)
-        
-        #Monitor changes in files
-        watcher = SourceWatcher()
-        for fpath in parcial_reloads:
-            watcher.watch_file(fpath, parcial_callback)
-
-        #slave's subprocess where tests will be done
-        slave.start_subprocess()
-        #do first time test (for master)
-        parcial_callback()
-
-        def build_rlist():
-            #in interactive mode we need to listen to stdin
-            rlist = [slave._pipe_ipc, watcher.get_fd()] + list(self._select_args.get('rlist',[]))
-            return rlist
-
-        def _select(rlist, wlist, xlist, timeout=None):
-            if timeout:
-                return select.select(rlist, wlist, xlist, timeout)
-            return select.select(rlist, wlist, xlist)
-
-        #setup variable to control loop escape
-        self.wait_input = True
-        while self.wait_input:
-            #Wait for any of the inputs to be ready
-            rlist, wlist, xlist = _select(build_rlist(),
-                                          self._select_args.get('wlist',[]),
-                                          self._select_args.get('xlist',[]),
-                                          self._select_args.get('timeout'),
-                                          )
-            #depending on the input, dispatch actions
-            for f in rlist:
-                #Receive input from child process
-                if f is slave._pipe_ipc:
-                    rlist.remove(f)
-                    self._recv_slave(parcial_callback, slave)
-                if f is watcher.get_fd():
-                    rlist.remove(f)
-                    watcher.dispatch()
-            if rlist or wlist or xlist:
-                yield rlist, wlist, xlist
-        #We need to kill the child
-        slave.kill(block=True, timeout=1)
-
     def _recv_slave(self, callback, slave):
         #keep value, since it will be changed in slave.recv_answer
         first = slave._first_test
