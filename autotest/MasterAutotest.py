@@ -7,13 +7,13 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import relative_import
 from .base import AutoTestBase
-from .SlaveAutotest import SlaveAutotest
+from .Slave import Slave
 from .ChildTestRunner import ChildTestRunner
 from .SourceWatcher import SourceWatcher
 
 
 
-class MasterAutotest(AutoTestBase):
+class Master(AutoTestBase):
     '''
     '''
     _select_args = {}
@@ -73,7 +73,7 @@ class MasterAutotest(AutoTestBase):
              slave=None, poll=None, select=None,
              ipython_pipe=None):
         #manager of the subprocesses
-        self._slave = slave = slave or SlaveAutotest(ChildTestRunner)
+        self._slave = slave = slave or Slave(ChildTestRunner)
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
@@ -183,7 +183,7 @@ class MasterAutotest(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-    mat = MasterAutotest()
+    mat = Master()
     mat.test(test_paths, ['MasterAutoTest.py'], []).next()
 
 
