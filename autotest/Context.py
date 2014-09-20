@@ -32,7 +32,7 @@ class Context(object):
         self.slave = None
         self.ipython_ipc = None
         
-    def initialize(self, test_paths, parcial_reloads, full_reloads=[],
+    def initialize(self, test_paths=[], parcial_reloads=[], full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, poll=None, select=None, child_conn=None, smoke=False):
         self.master = Master()

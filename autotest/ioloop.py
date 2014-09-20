@@ -4,6 +4,12 @@ Smoothtest
 Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
+
+This file was intended for integrating smoothtest with ipython notebook.
+It lets smoothtest to left a hook at the passive waiting over inputs.
+
+But since Ipython notebook uses multiprocessing seems impossible to pass
+objects to the notebooks. Perhaps i need to investigate a bit more.
 '''
 import relative_import
 from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQPoller, ZMQIOLoop
@@ -37,7 +43,15 @@ def install(IOLoop_cls):
 class AtPollerBase(object):
     def initialize_autotest(self, wait_type):
         ctx = Context()
-        ctx.initialize(wait_type)
+        poll = select = None
+        if wait_type == 'poll':
+            from zmq.backend import zmq_poll
+            poll = zmq_poll
+        else:
+            import select as select_mod
+            select = select_mod.select
+            
+        ctx.initialize(poll=poll, select=select)
         self._master = ctx.master
         self._slave = ctx.slave
         self._generator = ctx.poll

@@ -69,7 +69,7 @@ class Master(AutoTestBase):
                 filtered_sockets.append((s,flags))
         return filtered_sockets, (rlist, wlist, xlist)
     
-    def test(self, test_paths, parcial_reloads, full_reloads=[],
+    def test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, poll=None, select=None,
              child_conn=None, block=True, smoke=False):
