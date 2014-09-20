@@ -7,6 +7,7 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
 from smoothtest.Logger import Logger
+import traceback
 
 class AutoTestBase(object):
     log = Logger('at')
@@ -44,7 +45,7 @@ class AutoTestBase(object):
         return answer
     
     def reprex(self, e):
-        return repr(e)
+        return traceback.format_exc()
     
     def _receive_kill(self, *args, **kwargs):
         pass

@@ -14,18 +14,18 @@ def child_callback(child_pipe):
     def parcial_decorator(parcial_callback):
         def wrapper(*a, **kw):
             print 'Should run %s' % parcial_callback
-            return parcial_callback(*a, **kw)
+            #return parcial_callback(*a, **kw)
         return wrapper
     
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
     parcial_reloads, full_reloads =['fulcrum/views/sales/tests/about_us.py'], []
     
-    ctx.initialize(wait_type='select',
+    ctx.initialize(
                    test_paths=test_paths,
                    parcial_reloads=parcial_reloads,
                    full_reloads=full_reloads,
                    parcial_decorator=parcial_decorator,
-                   ipython_pipe=child_pipe)
+                   child_conn=child_pipe)
     while 1:
         ctx.poll.next()
 

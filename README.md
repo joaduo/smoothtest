@@ -17,3 +17,20 @@ General purpose Testing Utilities and also special testing tools for for Web App
 7. Play a sound on success/failure
 	i. say "3" success "4" failed
 8. Enable remote messages (to enable shortcuts via CLI)
+
+## Test this (make multiplatform)
+
+```python
+from multiprocessing import Process, Pipe
+
+def f(conn):
+    conn.send([42, None, 'hello'])
+    conn.close()
+
+if __name__ == '__main__':
+    parent_conn, child_conn = Pipe()
+    p = Process(target=f, args=(child_conn,))
+    p.start()
+    print parent_conn.recv()   # prints "[42, None, 'hello']"
+    p.join()
+```

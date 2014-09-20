@@ -11,8 +11,6 @@ from .Slave import Slave
 from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher
 
-
-
 class Master(AutoTestBase):
     '''
     '''
@@ -68,10 +66,10 @@ class Master(AutoTestBase):
                 filtered_sockets.append((s,flags))
         return filtered_sockets, (rlist, wlist, xlist)
     
-    def test_all(self, test_paths, parcial_reloads, full_reloads=[],
+    def test(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, poll=None, select=None,
-             ipython_pipe=None):
+             child_conn=None, block=True):
         #manager of the subprocesses
         self._slave = slave = slave or Slave(TestRunner)
         #create callback for re-testing on changes/msgs
@@ -86,9 +84,15 @@ class Master(AutoTestBase):
         
         def local_rlist():
             rlist = [slave._pipe_ipc.fileno(), watcher.get_fd()]
-            if ipython_pipe:
-                rlist.append(ipython_pipe.fileno())
+            if child_conn:
+                rlist.append(child_conn.fileno())
             return rlist
+        
+        def get_zmq_poll():
+            from zmq.backend import zmq_poll
+            return zmq_poll
+        
+        poll = get_zmq_poll() if not(poll or select) else poll
         
         if poll:
             def build_sockets():
@@ -130,12 +134,13 @@ class Master(AutoTestBase):
         self.wait_input = True
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, slave, watcher, ipython_pipe, locals())
+            self._dispatch(rlist, slave, watcher, child_conn, locals())
             if do_yield:
                 yield yield_obj
+            self.wait_input = self.wait_input & block
         #We need to kill the child
         slave.kill(block=True, timeout=1)
-        
+
     def _dispatch(self, rlist, slave, watcher, ipython_pipe, _locals):
         #depending on the input, dispatch actions
         for f in rlist:
@@ -151,7 +156,7 @@ class Master(AutoTestBase):
     
     def _cmds_handler(self, params, _locals):
         cmd, args, kw = params
-        if cmd == 'test':
+        if cmd == 'test_cmd':
             _locals['parcial_callback']()
     
     def _receive_kill(self, *args, **kwargs):
@@ -184,7 +189,7 @@ class Master(AutoTestBase):
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
     mat = Master()
-    mat.test(test_paths, ['MasterAutoTest.py'], []).next()
+    mat.test(test_paths, ['MasterAutoTest.py'], block=False).next()
 
 
 if __name__ == "__main__":

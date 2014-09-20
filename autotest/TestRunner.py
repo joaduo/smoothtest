@@ -10,7 +10,7 @@ import unittest
 import relative_import
 from .base import AutoTestBase
 
-class ChildTestRunner(AutoTestBase):
+class TestRunner(AutoTestBase):
     '''
     Responsabilities
         - Import the Test Class
@@ -18,7 +18,7 @@ class ChildTestRunner(AutoTestBase):
         - Report any errors
     '''
     def __init__(self, webdriver=None, sockets=[]):
-        super(ChildTestRunner, self).__init__()
+        super(TestRunner, self).__init__()
         self._webdriver = webdriver
         self.after_fork(sockets)
 
@@ -77,7 +77,7 @@ class ChildTestRunner(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-    sr = ChildTestRunner()
+    sr = TestRunner()
     class DummyIpc(object):
         def recv(self):
             cmds = [
