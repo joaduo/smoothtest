@@ -111,7 +111,8 @@ class Main(AutoTestBase):
             #This pipe is not needed (parent will use it)
             parent_pipe.close()
             child_callback(child_pipe)
-        
+    
+    @property
     def poll(self):
         return self.parent_pipe.poll()
     
