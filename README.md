@@ -6,6 +6,8 @@ General purpose Testing Utilities and also special testing tools for for Web App
 
 ## TODO
 
+0. Refactor
+0. Create full_callback support and project watching support
 1. Create autotest.py command `path/to/test.py [methods regex] -f [path to projects or files] [-F|-C|-P][--firefox|...]`
 2. Create better command line in ipython (selecting tests, exposing options, selecting browser, sending code)
 3. Improve configuration framework
