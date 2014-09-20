@@ -15,7 +15,7 @@ class SourceWatcher(AutoTestBase):
     def __init__(self):
         #TODO!
         self._mask = IN_CLOSE_WRITE
-        self._imngr = InotifyManager()
+        self._inotify = InotifyManager()
         self._file_action = {}
         self._dir_actions = {}
 
@@ -29,12 +29,16 @@ class SourceWatcher(AutoTestBase):
         action = PathAction(path, self._mask)
         action.append(callback_wrapper)
 
-        self._imngr.watch(action)
+        self._inotify.watch(action)
 
         self._file_action[path] = action
+        
+    def unwatch(self):
+        for action in self._file_action.values():
+            self._inotify.unwatch(action)
 
     def dispatch(self, timeout=0.0):
-        self._imngr.dispatch(timeout)
+        self._inotify.dispatch(timeout)
 
     def watch_recursive(self, dir_path, regex='.*\.py'):
         msg = 'For recursive watching {dir_path} must the directory.'.format(dir_path=dir_path)
@@ -45,7 +49,7 @@ class SourceWatcher(AutoTestBase):
         pass
 
     def get_fd(self):
-        return self._imngr.fd
+        return self._inotify.fd
 
     def _watch_recursively(self, path):
         pass

@@ -78,17 +78,18 @@ class Master(AutoTestBase):
             slave.test(test_paths)
             
         #Monitor changes in files
-        watcher = SourceWatcher()
+        self.watcher = watcher = SourceWatcher()
         for fpath in parcial_reloads:
             watcher.watch_file(fpath, parcial_callback)
         
         def local_rlist():
-            rlist = [slave._pipe_ipc.fileno(), watcher.get_fd()]
+            rlist = [slave.get_conn().fileno(), watcher.get_fd()]
             if child_conn:
                 rlist.append(child_conn.fileno())
             return rlist
         
         def get_zmq_poll():
+            #avoid depending on zmq (only import if poll not present)
             from zmq.backend import zmq_poll
             return zmq_poll
         
@@ -140,19 +141,24 @@ class Master(AutoTestBase):
             self.wait_input = self.wait_input & block
         #We need to kill the child
         slave.kill(block=True, timeout=1)
+        
+    def new_test(self, test_paths, parcial_reloads, full_reloads=[], 
+             child_conn=None, block=True):
+        #TODO: parcial_decorator=lambda x:x, full_decorator=lambda x:x,
+        pass
 
-    def _dispatch(self, rlist, slave, watcher, ipython_pipe, _locals):
+    def _dispatch(self, rlist, slave, watcher, child_conn, _locals):
         #depending on the input, dispatch actions
         for f in rlist:
             #Receive input from child process
-            if f is slave._pipe_ipc.fileno():
+            if f is slave.get_conn().fileno():
                 rlist.remove(f)
                 self._recv_slave(_locals['parcial_callback'], slave)
             if f is watcher.get_fd():
                 rlist.remove(f)
                 watcher.dispatch()
-            if ipython_pipe and f is ipython_pipe.fileno():
-                self._dispatch_cmds(ipython_pipe, self._cmds_handler, _locals)
+            if child_conn and f is child_conn.fileno():
+                self._dispatch_cmds(child_conn, self._cmds_handler, _locals)
     
     def _cmds_handler(self, params, _locals):
         cmd, args, kw = params

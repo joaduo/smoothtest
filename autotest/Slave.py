@@ -20,7 +20,7 @@ class Slave(AutoTestBase):
         self._child_kwargs = child_kwargs
         self._child_cls = child_cls
         self._child_pid = None
-        self._pipe_ipc = None
+        self._parent_conn = None
         self._first_test = True
 
     def start_subprocess(self):
@@ -29,7 +29,7 @@ class Slave(AutoTestBase):
         pid = os.fork()
         if pid: #parent
             self._child_pid = pid
-            self._pipe_ipc = parent_pipe
+            self._parent_conn = parent_pipe
             return pid
         else: #child
             self._child_cls(*self._child_args, **self._child_kwargs
@@ -37,19 +37,19 @@ class Slave(AutoTestBase):
 
     def restart_subprocess(self):
         self.kill(block=True, timeout=self._timeout)
-        if self._pipe_ipc:
-            self._pipe_ipc.close()
+        if self._parent_conn:
+            self._parent_conn.close()
         self._first_test = True
         self.start_subprocess()
 
     def recv(self):
-        return self._pipe_ipc.recv()
+        return self._parent_conn.recv()
 
     def send(self, msg):
-        return self._pipe_ipc.send(msg)
+        return self._parent_conn.send(msg)
 
-    def get_pipe(self):
-        return self._pipe_ipc
+    def get_conn(self):
+        return self._parent_conn
 
     def kill(self, block=False, timeout=None):
         #TODO: make multiplatform Mac OS works?
@@ -65,9 +65,9 @@ class Slave(AutoTestBase):
             return
 
         if timeout:
-            rlist, _, _ = select.select([self._pipe_ipc], [], [], timeout)
+            rlist, _, _ = select.select([self._parent_conn], [], [], timeout)
         else:
-            rlist, _, _ = select.select([self._pipe_ipc], [], [])
+            rlist, _, _ = select.select([self._parent_conn], [], [])
 
         if rlist:
             msg = self.recv()
@@ -83,8 +83,7 @@ class Slave(AutoTestBase):
                    ''.format(pid=pid, status=status))
 
     def test(self, test_paths, block=False, repeat=True):
-        msg = [('test', [test_paths], {})]
-        self.send(msg)
+        self.send(self.cmd('test', test_paths))
         if not block:
             return
         else:

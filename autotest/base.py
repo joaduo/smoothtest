@@ -14,7 +14,7 @@ class AutoTestBase(object):
     
     def cmd(self, cmd, *args, **kwargs):
         #Make it ready for sending
-        return [self._cmd(cmd)]
+        return [self._cmd(cmd, *args, **kwargs)]
     
     def _cmd(self, cmd, *args, **kwargs):
         #use when queying several commands
@@ -49,12 +49,27 @@ class AutoTestBase(object):
     
     def _receive_kill(self, *args, **kwargs):
         pass
+    
+    def split_test_path(self, test_path, meth=False):
+        test_path = test_path.split('.')
+        if meth:
+            offset = -2
+            module = '.'.join(test_path[:offset])
+            class_ = test_path[offset]
+            method = test_path[offset+1]
+            return module, class_, method
+        else: #only module+class
+            offset = -1
+            module = '.'.join(test_path[:offset])
+            class_ = test_path[offset]
+            return module, class_
 
 
 def smoke_test_module():
     base = AutoTestBase()
     base.log.d('Debug')
     base.log.i('Info')
+
 
 if __name__ == "__main__":
     smoke_test_module()

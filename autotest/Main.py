@@ -6,42 +6,64 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import relative_import
-from .Context import Context, singleton_decorator
-from .base import AutoTestBase
 import multiprocessing
 import sys
 import os
+from .Context import Context, singleton_decorator
+from .base import AutoTestBase
+from .TestSearcher import TestSearcher
 
 @singleton_decorator
 class Main(AutoTestBase):
+    
     def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
-        def new_child():
+        def new_child(new_callback=None):
             try:
                 self.kill_child
             except Exception as e:
                 self.log.e(e)
-            self.create_child(child_callback)
+            if new_callback:
+                self.create_child(new_callback)
+            else:
+                self.create_child(child_callback)
         self._new_child = new_child
         if embed_ipython:
-            from IPython import embed
-            s = self #nice alias
-            embed()
+            s = self # nice alias
+            self.embed()
             self.kill_child
             raise SystemExit(0)
+    
+    ishell = None
+    def embed(self, **kwargs):
+        """Call this to embed IPython at the current point in your program.
+        """
+        from IPython.terminal.ipapp import load_default_config
+        from IPython.terminal.embed import InteractiveShellEmbed
+        config = kwargs.get('config')
+        header = kwargs.pop('header', u'')
+        compile_flags = kwargs.pop('compile_flags', None)
+        if config is None:
+            config = load_default_config()
+            config.InteractiveShellEmbed = config.TerminalInteractiveShell
+            kwargs['config'] = config
+        self.ishell = InteractiveShellEmbed.instance(**kwargs)
+        self.ishell(header=header, stack_depth=2, compile_flags=compile_flags)
     
     @property
     def new_child(self):
         self._new_child()
         
-    def new_test(self, test_path_regex, *test_path_regexes):
-        pass
+    def new_test(self, class_path, regex=None, search=True):
+        test_paths, parcial_reloads = TestSearcher().solve_paths((class_path, regex), search=search)
+        child_callback = self.build_callback(test_paths, parcial_reloads)
+        self._new_child(child_callback)
         
     def build_callback(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, wait_type='poll'):
+             slave=None, poll=None, select=None):
         
-        def child_callback(child_pipe):
+        def child_callback(child_conn):
             ctx = Context()
             ctx.initialize(
                            test_paths=test_paths,
@@ -50,10 +72,9 @@ class Main(AutoTestBase):
                            parcial_decorator=parcial_decorator,
                            full_decorator=full_decorator,
                            slave=slave,
-                           #We are the child, so child_pipe is parent_pipe
-                           #from this POV
-                           child_conn=child_pipe,
-                           wait_type=wait_type
+                           child_conn=child_conn,
+                           poll=poll,
+                           select=select,
                            )
             while 1:
                 ctx.poll.next()
@@ -70,6 +91,9 @@ class Main(AutoTestBase):
             #return to ipython
             return pid
         else: #child
+            if self.ishell:
+                self.ishell.exit_now = True
+                #get_ipy
             #Setup IO #not yet needed
             #from cStringIO import StringIO
             #keep old stdout and stderr
@@ -105,7 +129,7 @@ class Main(AutoTestBase):
     @property
     def kill_child(self):
         cmd = self.cmd(self._kill_command)
-        if self.parent_pipe: #pipe is still open
+        if self.parent_pipe and not self.parent_pipe.closed: #pipe is still open
             self.parent_pipe.send(cmd)
             self.log.i(self.parent_pipe.recv())
             self.parent_pipe.close()

@@ -55,6 +55,9 @@ class TestRunner(AutoTestBase):
         except Exception as e:
             pusherror(self.reprex(e))
 
+    def _split_path(self, test_path):
+        return self.split_test_path(test_path, meth=True)
+
     def _import_test(self, pusherror, test_path):
         modstr, clsstr, methstr = self._split_path(test_path)
         try:
@@ -65,13 +68,6 @@ class TestRunner(AutoTestBase):
         except Exception as e:
             pusherror(self.reprex(e))
             return None
-        return module, class_, method
-
-    def _split_path(self, test_path):
-        test_path = test_path.split('.')
-        module = '.'.join(test_path[:-2])
-        class_ = test_path[-2]
-        method = test_path[-1]
         return module, class_, method
 
 
@@ -88,9 +84,9 @@ def smoke_test_module():
 
         def recv2(self):
             cmds = [
-                    ('raise SystemExit', (0,), {}),
+                    (TestRunner._kill_command, (0,), {}),
                     ]
-            self.read = lambda : []
+            self.recv = lambda : []
             return cmds
 
         def send(self, msg):
