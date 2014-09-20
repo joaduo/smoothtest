@@ -56,11 +56,14 @@ class Main(AutoTestBase):
     def new_child(self):
         self._new_child()
         
-    def new_test(self, class_path, regex=None, search=True):
+    def new_test(self, class_path, regex=None, search=True, force=False):
         test_paths, parcial_reloads = TestSearcher().solve_paths((class_path, regex), search=search)
-        child_callback = self.build_callback(test_paths, parcial_reloads)
-        self._new_child(child_callback)
-        
+        if not force:
+            self.send('new_test',  test_paths, parcial_reloads, smoke=self.smoke)
+        else:
+            child_callback = self.build_callback(test_paths, parcial_reloads)
+            self._new_child(child_callback)
+
     def build_callback(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, poll=None, select=None):

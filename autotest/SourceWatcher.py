@@ -34,8 +34,9 @@ class SourceWatcher(AutoTestBase):
         self._file_action[path] = action
         
     def unwatch_all(self):
-        for action in self._file_action.values():
-            self._inotify.unwatch_all(action)
+        for path, action in list(self._file_action.iteritems()):
+            self._inotify.unwatch(action)
+            del self._file_action[path]
 
     def dispatch(self, timeout=0.0):
         self._inotify.dispatch(timeout)

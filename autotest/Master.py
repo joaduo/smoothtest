@@ -74,7 +74,7 @@ class Master(AutoTestBase):
              slave=None, poll=None, select=None,
              child_conn=None, block=True, smoke=False):
         #manager of the subprocesses
-        self._slave = slave = slave or Slave(TestRunner)
+        self.slave = slave = slave or Slave(TestRunner)
 
         #create callback for re-testing on changes/msgs        
         self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
@@ -100,6 +100,7 @@ class Master(AutoTestBase):
         @parcial_decorator
         def parcial_callback(path=None):
             if not smoke:
+                self.log.i('Testing: %r'%list(test_paths))
                 slave.test(test_paths)
             else:
                 self.log.i('Smoke mode. Not running via slave.test(test_paths).')
@@ -183,15 +184,15 @@ class Master(AutoTestBase):
                 rlist.remove(f)
                 watcher.dispatch()
             if child_conn and f is child_conn.fileno():
-                self._dispatch_cmds(child_conn, self._cmds_handler, _locals)
+                self._dispatch_cmds(child_conn, self._cmds_handler)
     
-    def _cmds_handler(self, params, _locals):
+    def _cmds_handler(self, params):
         cmd, args, kw = params
         if cmd == 'test_cmd':
-            _locals['parcial_callback']()
+            self.parcial_callback()
     
     def _receive_kill(self, *args, **kwargs):
-        self._slave.kill(block=True, timeout=3)
+        self.slave.kill(block=True, timeout=3)
     
     def _recv_slave(self, callback, slave):
         #keep value, since it will be changed in slave.recv_answer
