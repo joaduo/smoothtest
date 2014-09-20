@@ -52,6 +52,8 @@ class Slave(AutoTestBase):
         return self._parent_conn
 
     def kill(self, block=False, timeout=None):
+        if not self._child_pid:
+            return
         #TODO: make multiplatform Mac OS works?
         pid, status = os.waitpid(self._child_pid, os.WNOHANG)
         if pid:

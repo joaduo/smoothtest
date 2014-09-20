@@ -74,17 +74,8 @@ class Command(AutoTestBase):
             if paths:
                 test_paths.update(paths)
                 parcial_reloads.update(parcial)
-        main = Main()
-        if args.smoke:
-            def parcial_decorator(parcial_callback):
-                def wrapper(*a, **kw):
-                    print 'Should run %s' % parcial_callback
-                    #return parcial_callback(*a, **kw)
-                return wrapper
-        else:
-            parcial_decorator = lambda x:x
-        child_callback = main.build_callback(test_paths, parcial_reloads,  
-                                             parcial_decorator=parcial_decorator)
+        main = Main(smoke=args.smoke)
+        child_callback = main.build_callback(test_paths, parcial_reloads)
         main.run(child_callback, embed_ipython=not args.no_ipython)
 
 def main(argv=None):

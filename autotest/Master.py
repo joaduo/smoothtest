@@ -14,6 +14,9 @@ from .SourceWatcher import SourceWatcher
 class Master(AutoTestBase):
     '''
     '''
+    def __init__(self):
+        self.watcher = SourceWatcher()
+        
     _select_args = {}
     def set_select_args(self, **select_args):
         self._select_args = select_args
@@ -69,19 +72,52 @@ class Master(AutoTestBase):
     def test(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, poll=None, select=None,
-             child_conn=None, block=True):
+             child_conn=None, block=True, smoke=False):
         #manager of the subprocesses
         self._slave = slave = slave or Slave(TestRunner)
+
+        #create callback for re-testing on changes/msgs        
+        self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
+                       full_reloads, parcial_decorator, full_decorator, slave, smoke)
+        #build the block function listening to events
+        get_event = self._build_get_event(slave, self.watcher, child_conn, poll, select)
+                
+        self.wait_input = True
+        #loop listening events
+        while self.wait_input:
+            do_yield, yield_obj, rlist = get_event()
+            self._dispatch(rlist, slave, self.watcher, child_conn, self.parcial_callback)
+            if do_yield:
+                yield yield_obj
+            self.wait_input = self.wait_input & block
+        #We need to kill the child
+        slave.kill(block=True, timeout=1)
+    
+    def register_test(self, test_paths, parcial_reloads, full_reloads=[],
+             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
+             slave=None, smoke=False):
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
-            slave.test(test_paths)
+            if not smoke:
+                slave.test(test_paths)
+            else:
+                self.log.i('Smoke mode. Not running via slave.test(test_paths).')
             
         #Monitor changes in files
-        self.watcher = watcher = SourceWatcher()
+        self.watcher.unwatch_all()
         for fpath in parcial_reloads:
-            watcher.watch_file(fpath, parcial_callback)
+            self.watcher.watch_file(fpath, parcial_callback)
         
+        #slave's subprocess where tests will be done
+        slave.kill(block=True, timeout=3)
+        slave.start_subprocess()
+        #do first time test (for master)
+        parcial_callback()
+        
+        return parcial_callback
+    
+    def _build_get_event(self, slave, watcher, child_conn, poll=None, select=None):
         def local_rlist():
             rlist = [slave.get_conn().fileno(), watcher.get_fd()]
             if child_conn:
@@ -126,34 +162,23 @@ class Master(AutoTestBase):
                 int_rlist = list(set(rlist) & set(local_rlist()))
                 yield_obj = (yieldrlist, wlist, xlist)
                 return any(yield_obj), yield_obj, int_rlist
+        return get_event
         
-        #slave's subprocess where tests will be done
-        slave.start_subprocess()
-        #do first time test (for master)
-        parcial_callback()
-        
-        self.wait_input = True
-        while self.wait_input:
-            do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, slave, watcher, child_conn, locals())
-            if do_yield:
-                yield yield_obj
-            self.wait_input = self.wait_input & block
-        #We need to kill the child
-        slave.kill(block=True, timeout=1)
-        
-    def new_test(self, test_paths, parcial_reloads, full_reloads=[], 
-             child_conn=None, block=True):
-        #TODO: parcial_decorator=lambda x:x, full_decorator=lambda x:x,
-        pass
+    def new_test(self, test_paths, parcial_reloads, full_reloads=[],
+                 parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
+                 smoke=False):
+        #register new callback (binding new test config into it)
+        self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
+                                   full_reloads, parcial_decorator, 
+                                   full_decorator, self.slave, smoke)
 
-    def _dispatch(self, rlist, slave, watcher, child_conn, _locals):
+    def _dispatch(self, rlist, slave, watcher, child_conn, parcial_callback):
         #depending on the input, dispatch actions
         for f in rlist:
             #Receive input from child process
             if f is slave.get_conn().fileno():
                 rlist.remove(f)
-                self._recv_slave(_locals['parcial_callback'], slave)
+                self._recv_slave(parcial_callback, slave)
             if f is watcher.get_fd():
                 rlist.remove(f)
                 watcher.dispatch()
@@ -194,8 +219,11 @@ class Master(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
+    parcial_reloads = ['MasterAutoTest.py']
     mat = Master()
-    mat.test(test_paths, ['MasterAutoTest.py'], block=False).next()
+#    mat.test(test_paths, parcial_reloads, block=False).next()
+    from pprint import pprint
+    pprint(mat.test_config(test_paths, parcial_reloads))
 
 
 if __name__ == "__main__":

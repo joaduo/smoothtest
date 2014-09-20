@@ -15,7 +15,9 @@ from .TestSearcher import TestSearcher
 
 @singleton_decorator
 class Main(AutoTestBase):
-    
+    def __init__(self, smoke=False):
+        self.smoke = smoke
+        
     def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
         def new_child(new_callback=None):
@@ -75,6 +77,7 @@ class Main(AutoTestBase):
                            child_conn=child_conn,
                            poll=poll,
                            select=select,
+                           smoke=self.smoke,
                            )
             while 1:
                 ctx.poll.next()

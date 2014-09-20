@@ -34,7 +34,7 @@ class Context(object):
         
     def initialize(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, poll=None, select=None, child_conn=None):
+             slave=None, poll=None, select=None, child_conn=None, smoke=False):
         self.master = Master()
         self.slave = slave or Slave(TestRunner)
         self.poll = self.master.test(test_paths, 
@@ -46,6 +46,7 @@ class Context(object):
                                         poll=poll, 
                                         select=select,
                                         child_conn=child_conn,
+                                        smoke=smoke,
                                         )
 
 def smoke_test_module():
