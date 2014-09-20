@@ -5,11 +5,11 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-from smoothtest.autotest.AutotestContext import AutotestContext
-from smoothtest.autotest.AutotestMain import AutotestMain
+from smoothtest.autotest.Context import Context
+from smoothtest.autotest.Main import Main
 
 def child_callback(child_pipe):
-    ctx = AutotestContext()
+    ctx = Context()
     
     def parcial_decorator(parcial_callback):
         def wrapper(*a, **kw):
@@ -30,7 +30,7 @@ def child_callback(child_pipe):
         ctx.poll.next()
 
 def run(embed_ipython=False):
-    AutotestMain().run(child_callback, embed_ipython)
+    Main().run(child_callback, embed_ipython)
 
 def main(argv=None):
     #TODO: disable CTRL+C signal on child!!

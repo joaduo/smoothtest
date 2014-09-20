@@ -13,7 +13,7 @@ import relative_import
 from .base import AutoTestBase
 from .ChildTestRunner import ChildTestRunner
 
-class SlaveAutotest(AutoTestBase):
+class Slave(AutoTestBase):
     def __init__(self, child_cls, child_args=[], child_kwargs={}, timeout=1):
         self._timeout = timeout
         self._child_args = child_args
@@ -105,7 +105,7 @@ class SlaveAutotest(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-    sat = SlaveAutotest(ChildTestRunner, [], {})
+    sat = Slave(ChildTestRunner, [], {})
     sat.start_subprocess()
     print sat.test(test_paths, block=True)
     print sat.test(test_paths, block=True)

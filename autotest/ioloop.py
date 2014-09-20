@@ -10,7 +10,7 @@ from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQ
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll
 from tornado.platform.select import _Select
-from smoothtest.autotest.AutotestContext import AutotestContext
+from smoothtest.autotest.Context import Context
 
 def install(IOLoop_cls):
     """set the tornado IOLoop instance with the pyzmq IOLoop.
@@ -36,7 +36,7 @@ def install(IOLoop_cls):
 
 class AtPollerBase(object):
     def initialize_autotest(self, wait_type):
-        ctx = AutotestContext()
+        ctx = Context()
         ctx.initialize(wait_type)
         self._master = ctx.master
         self._slave = ctx.slave

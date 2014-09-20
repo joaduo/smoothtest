@@ -8,8 +8,8 @@ Code Licensed under MIT License. See LICENSE file.
 #parent_pipe, child_pipe = multiprocessing.Pipe()
 import relative_import
 from zmq.backend import zmq_poll
-from .MasterAutoTest import MasterAutotest
-from .SlaveAutotest import SlaveAutotest
+from .Master import Master
+from .Slave import Slave
 from .ChildTestRunner import ChildTestRunner
 import select
 
@@ -28,7 +28,7 @@ class singleton_decorator(object):
         return self.instance
 
 @singleton_decorator
-class AutotestContext(object):
+class Context(object):
     def __init__(self):
         self.master = None
         self.slave = None
@@ -37,8 +37,8 @@ class AutotestContext(object):
     def initialize(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, ipython_pipe=None, wait_type='poll'):
-        self.master = MasterAutotest()
-        self.slave = slave or SlaveAutotest(ChildTestRunner)
+        self.master = Master()
+        self.slave = slave or Slave(ChildTestRunner)
         poll = _select = None
         if wait_type == 'poll':
             poll = zmq_poll

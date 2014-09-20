@@ -6,14 +6,14 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import relative_import
-from .AutotestContext import singleton_decorator
+from .Context import singleton_decorator
 from .base import AutoTestBase
 from IPython import embed
 import multiprocessing
 import sys
 
 @singleton_decorator
-class AutotestMain(AutoTestBase):
+class Main(AutoTestBase):
     def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
         def new_child():
