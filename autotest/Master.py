@@ -8,7 +8,7 @@ Code Licensed under MIT License. See LICENSE file.
 import relative_import
 from .base import AutoTestBase
 from .Slave import Slave
-from .ChildTestRunner import ChildTestRunner
+from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher
 
 
@@ -73,7 +73,7 @@ class Master(AutoTestBase):
              slave=None, poll=None, select=None,
              ipython_pipe=None):
         #manager of the subprocesses
-        self._slave = slave = slave or Slave(ChildTestRunner)
+        self._slave = slave = slave or Slave(TestRunner)
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):

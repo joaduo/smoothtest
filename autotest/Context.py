@@ -10,7 +10,7 @@ import relative_import
 from zmq.backend import zmq_poll
 from .Master import Master
 from .Slave import Slave
-from .ChildTestRunner import ChildTestRunner
+from .TestRunner import TestRunner
 import select
 
 class singleton_decorator(object):
@@ -38,7 +38,7 @@ class Context(object):
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
              slave=None, ipython_pipe=None, wait_type='poll'):
         self.master = Master()
-        self.slave = slave or Slave(ChildTestRunner)
+        self.slave = slave or Slave(TestRunner)
         poll = _select = None
         if wait_type == 'poll':
             poll = zmq_poll

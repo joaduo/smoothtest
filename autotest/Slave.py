@@ -11,7 +11,7 @@ import select
 import signal
 import relative_import
 from .base import AutoTestBase
-from .ChildTestRunner import ChildTestRunner
+from .TestRunner import TestRunner
 
 class Slave(AutoTestBase):
     def __init__(self, child_cls, child_args=[], child_kwargs={}, timeout=1):
@@ -71,7 +71,7 @@ class Slave(AutoTestBase):
 
         if rlist:
             msg = self.recv()
-            #assert msg == ChildTestRunner._kill_answer
+            #assert msg == TestRunner._kill_answer
             pid, status = os.waitpid(self._child_pid, 0)
             self.log.i('Child with pid {pid} gently terminated with exit '
                        'status {status}.'.format(pid=pid, status=status))
@@ -105,7 +105,7 @@ class Slave(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-    sat = Slave(ChildTestRunner, [], {})
+    sat = Slave(TestRunner, [], {})
     sat.start_subprocess()
     print sat.test(test_paths, block=True)
     print sat.test(test_paths, block=True)
