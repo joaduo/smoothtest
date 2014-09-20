@@ -40,7 +40,7 @@ class TestRunner(AutoTestBase):
             self._run_test(pusherror, tpath, *objects)
         return errors
 
-    def wait_io(self, pipe):
+    def wait_io(self, pipe, stdin=None, stdout=None, stderr=None):
         while True:
             self._dispatch_cmds(pipe)
 

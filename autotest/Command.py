@@ -41,7 +41,7 @@ class Command(AutoTestBase):
         parser = ArgumentParser(description='Start a local sales vs non-sales glidepath server')
         parser.add_argument('tests', type=lambda x: is_valid_file(parser, x),
                             help='Tests to be monitored and run. Triggers parcial_reloads',
-                            default=None, nargs='+')
+                            default=[], nargs='?')
         parser.add_argument('-r', '--methods-regex', type=str,
                             help='Specify regex for Methods matching',
                             default='')

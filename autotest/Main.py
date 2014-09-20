@@ -63,6 +63,7 @@ class Main(AutoTestBase):
         else:
             child_callback = self.build_callback(test_paths, parcial_reloads)
             self._new_child(child_callback)
+        return test_paths, parcial_reloads
 
     def build_callback(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
@@ -112,7 +113,6 @@ class Main(AutoTestBase):
             parent_pipe.close()
             child_callback(child_pipe)
     
-    @property
     def poll(self):
         return self.parent_pipe.poll()
     
@@ -135,10 +135,8 @@ class Main(AutoTestBase):
     
     @property
     def kill_child(self):
-        cmd = self.cmd(self._kill_command)
         if self.parent_pipe and not self.parent_pipe.closed: #pipe is still open
-            self.parent_pipe.send(cmd)
-            self.log.i(self.parent_pipe.recv())
+            self.log.i(self.send_recv(self._kill_command))
             self.parent_pipe.close()
             self.parent_pipe = None
 

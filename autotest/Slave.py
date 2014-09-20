@@ -25,15 +25,25 @@ class Slave(AutoTestBase):
 
     def start_subprocess(self):
         parent_pipe, child_pipe = multiprocessing.Pipe()
+        parent_stdout, child_stdout = multiprocessing.Pipe()
+        parent_stderr, child_stderr = multiprocessing.Pipe()
+        parent_stdin, child_stdin = multiprocessing.Pipe()
 
         pid = os.fork()
         if pid: #parent
             self._child_pid = pid
             self._parent_conn = parent_pipe
+            self._stdin = parent_stdin
+            self._stdout = parent_stdout
+            self._stderr = parent_stderr
             return pid
         else: #child
+            for pp in [parent_pipe, parent_stdin, parent_stdout, parent_stderr]:
+                pp.close()
             self._child_cls(*self._child_args, **self._child_kwargs
-                            ).wait_io(child_pipe)
+                            ).wait_io(child_pipe, 
+                                    child_stdin, child_stdout, child_stderr
+                                      )
 
     def restart_subprocess(self):
         self.kill(block=True, timeout=self._timeout)

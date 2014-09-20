@@ -99,12 +99,15 @@ class Master(AutoTestBase):
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
-            if not smoke:
-                self.log.i('Testing: %r'%list(test_paths))
-                slave.test(test_paths)
-            else:
-                self.log.i('Smoke mode. Not running via slave.test(test_paths).')
-            
+            if test_paths:
+                if not smoke:
+                    self.log.i('Testing: %r'%list(test_paths))
+                    slave.test(test_paths)
+                else:
+                    self.log.i('Smoke mode. Skipping: %r'%list(test_paths))
+            elif not test_paths:
+                self.log.i('No tests to run. Ingoring callback.')
+        
         #Monitor changes in files
         self.watcher.unwatch_all()
         for fpath in parcial_reloads:
