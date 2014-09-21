@@ -95,7 +95,7 @@ class Master(AutoTestBase):
     
     def register_test(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, smoke=False):
+             slave=None, smoke=False, force=False):
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
@@ -113,9 +113,10 @@ class Master(AutoTestBase):
         for fpath in parcial_reloads:
             self.watcher.watch_file(fpath, parcial_callback)
         
-        #slave's subprocess where tests will be done
-        slave.kill(block=True, timeout=3)
-        slave.start_subprocess()
+        if force:
+            #slave's subprocess where tests will be done
+            slave.kill(block=True, timeout=3)
+            slave.start_subprocess()
         #do first time test (for master)
         parcial_callback()
         
@@ -170,11 +171,12 @@ class Master(AutoTestBase):
         
     def new_test(self, test_paths, parcial_reloads, full_reloads=[],
                  parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-                 smoke=False):
+                 smoke=False, force):
         #register new callback (binding new test config into it)
         self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
                                    full_reloads, parcial_decorator, 
-                                   full_decorator, self.slave, smoke)
+                                   full_decorator, self.slave, 
+                                   smoke, force)
 
     def _dispatch(self, rlist, slave, watcher, child_conn, parcial_callback):
         #depending on the input, dispatch actions

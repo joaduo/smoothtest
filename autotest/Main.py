@@ -12,6 +12,7 @@ import os
 from .Context import Context, singleton_decorator
 from .base import AutoTestBase
 from .TestSearcher import TestSearcher
+from .ipython_extension import load_extension
 
 @singleton_decorator
 class Main(AutoTestBase):
@@ -50,6 +51,7 @@ class Main(AutoTestBase):
             config.InteractiveShellEmbed = config.TerminalInteractiveShell
             kwargs['config'] = config
         self.ishell = InteractiveShellEmbed.instance(**kwargs)
+        load_extension(self.ishell, self)
         self.ishell(header=header, stack_depth=2, compile_flags=compile_flags)
     
     @property
@@ -64,6 +66,10 @@ class Main(AutoTestBase):
             child_callback = self.build_callback(test_paths, parcial_reloads)
             self._new_child(child_callback)
         return test_paths, parcial_reloads
+    
+    def send_tests(self, test_paths, parcial_reloads, full_reloads=[],
+                 smoke=False, force=False):
+        self.send('new_test',  test_paths, parcial_reloads, full_reloads, smoke=smoke, force=force)
 
     def build_callback(self, test_paths, parcial_reloads, full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
@@ -98,6 +104,7 @@ class Main(AutoTestBase):
             #return to ipython
             return pid
         else: #child
+            self.log.i('Forking at %s.'%self.__class__.__name__)
             if self.ishell:
                 self.ishell.exit_now = True
                 #get_ipy

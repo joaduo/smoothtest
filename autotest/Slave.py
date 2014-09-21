@@ -38,6 +38,7 @@ class Slave(AutoTestBase):
             self._stderr = parent_stderr
             return pid
         else: #child
+            self.log.i('Forking at %s.'%self.__class__.__name__)
             for pp in [parent_pipe, parent_stdin, parent_stdout, parent_stderr]:
                 pp.close()
             self._child_cls(*self._child_args, **self._child_kwargs
