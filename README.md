@@ -6,7 +6,6 @@ General purpose Testing Utilities and also special testing tools for for Web App
 
 ## TODO
 
-1. Use watchdog https://pypi.python.org/pypi/watchdog/0.3.6
 1. Use ipdb to to step by step testing
 	i. Use step back feature, s.step -1 
 1. Detect CTRL+C and other...

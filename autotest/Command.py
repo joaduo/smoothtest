@@ -70,8 +70,7 @@ class Command(AutoTestBase):
         tst = re.sub(r'\.(pyc)|(py)$', '', tst).strip('.')
         return tst
     
-    def main(self, argv=None):
-        args = self.get_parser().parse_args(argv)
+    def parcial(self, args):
         searcher = TestSearcher()
         test_paths = set()
         parcial_reloads = set()
@@ -81,8 +80,16 @@ class Command(AutoTestBase):
             if paths:
                 test_paths.update(paths)
                 parcial_reloads.update(parcial)
+        
+        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads,
+                           smoke=args.smoke)
+        return test_config
+    
+    def main(self, argv=None):
+        args = self.get_parser().parse_args(argv)
+        
         main = Main(smoke=args.smoke)
-        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads)
+        test_config = self.parcial(args)
         child_callback = main.build_callback(**test_config)
         main.run(child_callback, embed_ipython=not args.no_ipython)
 

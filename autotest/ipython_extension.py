@@ -34,16 +34,18 @@ class AutotestMagics(Magics):
         parser = command.get_parser(file_checking=False)
         args = parser.parse_args(shlex.split(line))
         expanded = self.expand_files(args.tests)
-        ts = TestSearcher()
-        ts_args = [] 
-        for path in expanded:
-            tst = command.claen_path(path)
-            ts_args.append((tst, args.methods_regex))
-        test_paths, parcial_reloads = ts.solve_paths(*ts_args)
-        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads, 
-                           full_reloads=[], smoke=args.smoke)
+        args.tests = expanded
+        test_config = command.parcial(args)
+#        ts = TestSearcher()
+#        ts_args = [] 
+#        for path in expanded:
+#            tst = command._clean_path(path)
+#            ts_args.append((tst, args.methods_regex))
+#        test_paths, parcial_reloads = ts.solve_paths(*ts_args)
+#        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads, 
+#                           full_reloads=[], smoke=args.smoke)
         self.main.send_tests(**test_config)
-        return list(test_paths)
+        return list(test_config['test_paths'])
     
     @line_magic
     def test(self, line):

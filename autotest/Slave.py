@@ -52,18 +52,6 @@ class Slave(AutoTestBase):
                    ]:
             pp.close()
 
-#        else: #child
-#            if watcher:
-#                watcher.unwatch_all()
-#            self.log.i('Forking at %s.'%self.__class__.__name__)
-#            for pp in [parent_pipe, 
-##                       parent_stdin, parent_stdout, parent_stderr
-#                       ]:
-#                pp.close()
-#            self._child_cls(*self._child_args, **self._child_kwargs
-#                            ).wait_io(child_pipe, 
-#                                    stdin=None, stdout=None, stderr=None
-#                                      )
 
     def restart_subprocess(self, watcher):
         self.kill(block=True, timeout=self._timeout)
