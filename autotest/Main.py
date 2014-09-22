@@ -37,6 +37,10 @@ class Main(AutoTestBase):
             self.embed()
             self.kill_child
             raise SystemExit(0)
+        else:
+            #TODO: test it!
+            while self.parent_conn.poll(0):
+                self.log.i(self.parent_conn.recv())
     
     ishell = None
     def embed(self, **kwargs):
