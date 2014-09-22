@@ -86,12 +86,12 @@ class Master(AutoTestBase):
         #loop listening events
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, self.slave, self.watcher, child_conn, self.parcial_callback)
+            self._dispatch(rlist, child_conn)
             if do_yield:
                 yield yield_obj
             self.wait_input = self.wait_input & block
         #We need to kill the child
-        self.slave.kill(block=True, timeout=1)
+        self._receive_kill()
     
     def register_test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
              parcial_decorator=lambda x:x, full_decorator=lambda x:x,
@@ -100,14 +100,8 @@ class Master(AutoTestBase):
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
-            if test_paths:
-                if not smoke:
-                    self.log.i('Testing: %r'%list(test_paths))
-                    self.slave.test(test_paths)
-                else:
-                    self.log.i('Smoke mode. Skipping: %r'%list(test_paths))
-            elif not test_paths:
-                self.log.i('No tests to run. Ingoring callback.')
+            self.log.i('Testing: %r'%list(test_paths))
+            self.slave.test(test_paths, smoke=smoke)
         
         @full_decorator
         def full_callback(self):
@@ -193,16 +187,16 @@ class Master(AutoTestBase):
         #register new callback (binding new test config into it)
         self.parcial_callback = self.register_test(**test_config)
 
-    def _dispatch(self, rlist, slave, watcher, child_conn, parcial_callback):
+    def _dispatch(self, rlist, child_conn):
         #depending on the input, dispatch actions
         for f in rlist:
             #Receive input from child process
-            if f is slave.get_conn().fileno():
+            if f is self.slave.get_conn().fileno():
                 rlist.remove(f)
-                self._recv_slave(parcial_callback, slave)
-            if f is watcher.get_fd():
+                self._recv_slave(self.parcial_callback)
+            if f is self.watcher.get_fd():
                 rlist.remove(f)
-                watcher.dispatch()
+                self.watcher.dispatch()
             if child_conn and f is child_conn.fileno():
                 self._dispatch_cmds(child_conn, self._cmds_handler)
     
@@ -215,12 +209,12 @@ class Master(AutoTestBase):
         self.slave.kill(block=True, timeout=3)
         self.watcher.unwatch_all()
     
-    def _recv_slave(self, callback, slave):
+    def _recv_slave(self, callback):
         #keep value, since it will be changed in slave.recv_answer
-        first = slave._first_test
+        first = self.slave._first_test
         #read the answer sent by the subprocess
         #We do not repeat inside slave since its a blocking operation
-        answer = slave.recv_answer()
+        answer = self.slave.recv_answer()
         #unpack from (testing_errors, exception_errors) tuple
         testing_errors, error = answer[0]
         if (testing_errors or error) and not first:
@@ -245,7 +239,10 @@ def smoke_test_module():
     mat = Master()
 #    mat.test(test_paths, parcial_reloads, block=False).next()
     from pprint import pprint
-    pprint(mat.test_config(test_paths, parcial_reloads))
+    poll = mat.test(test_paths=test_paths, parcial_reloads=parcial_reloads, 
+                    smoke=True, 
+                    block=False)
+    poll.next()
 
 
 if __name__ == "__main__":

@@ -97,8 +97,8 @@ class Slave(AutoTestBase):
         self.log.i('Child pid {pid} killed by force with exit status {status}.'
                    ''.format(pid=pid, status=status))
 
-    def test(self, test_paths, block=False, repeat=True):
-        self.send(self.cmd('test', test_paths))
+    def test(self, test_paths, smoke=False, block=False, repeat=True):
+        self.send(self.cmd('test', test_paths, smoke=smoke))
         if not block:
             return
         else:

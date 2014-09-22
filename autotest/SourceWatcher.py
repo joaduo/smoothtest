@@ -8,12 +8,19 @@ Code Licensed under MIT License. See LICENSE file.
 import relative_import
 import os
 import re
+import time
 from .base import AutoTestBase
-from .path import realPath
 from collections import defaultdict
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+def realPath(path, retries=1, sleep=0.1):
+    for _ in range(retries + 1):
+        try:
+            return os.path.realpath(path)
+        except Exception as e:
+            time.sleep(sleep)
+    raise e
 
 class FileAction(FileSystemEventHandler):
     '''

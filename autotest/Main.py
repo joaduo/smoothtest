@@ -9,7 +9,7 @@ import relative_import
 import multiprocessing
 import sys
 import os
-from .Context import Context, singleton_decorator
+from .Context import singleton_decorator
 from .base import AutoTestBase
 from .TestSearcher import TestSearcher
 from .ipython_extension import load_extension

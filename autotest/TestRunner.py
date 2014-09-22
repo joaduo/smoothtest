@@ -26,11 +26,14 @@ class TestRunner(AutoTestBase):
         for s in sockets:
             s.close()
 
-    def test(self, test_paths):
+    def test(self, test_paths, smoke=False):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
         '''
         errors = []
+        if smoke or not test_paths:
+            self.log.i('Ignoring %r \n  (smoke mode or no tests found)'%list(test_paths))
+            return errors
         pusherror = lambda err: err and errors.append(err)
         for tpath in test_paths:
             pusherror = lambda err: err and errors.append((tpath, err))
