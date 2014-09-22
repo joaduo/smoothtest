@@ -22,6 +22,7 @@ class Main(AutoTestBase):
         
     def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
+        #TODO: remove this below ??
         def new_child(new_callback=None):
             try:
                 self.kill_child
@@ -125,11 +126,11 @@ class Main(AutoTestBase):
     
     @property
     def kill_child(self):
-        self.child_process.terminate()
         if self.parent_conn and not self.parent_conn.closed: #pipe is still open
             self.log.i(self.send_recv(self._kill_command))
             self.parent_conn.close()
             self.parent_conn = None
+        #self.child_process.terminate()
 
 def smoke_test_module():
     pass

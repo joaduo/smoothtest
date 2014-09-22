@@ -18,7 +18,7 @@ class Slave(AutoTestBase):
         self._child_args = child_args
         self._child_kwargs = child_kwargs
         self._child_cls = child_cls
-        self._child_pid = None
+        self.child_process = None
         self._parent_conn = None
         self._first_test = True
 
@@ -27,20 +27,8 @@ class Slave(AutoTestBase):
 #        parent_stdin, child_stdin = multiprocessing.Pipe()
 #        parent_stdout, child_stdout = multiprocessing.Pipe()
 #        parent_stderr, child_stderr = multiprocessing.Pipe()
-
-        pid = os.fork()
-        if pid: #parent
-            self._child_pid = pid
-            self._parent_conn = parent_pipe
-#            self._stdin = parent_stdin
-#            self._stdout = parent_stdout
-#            self._stderr = parent_stderr
-            for pp in [child_pipe, 
-#                       child_stdin, child_stdout, child_stderr
-                       ]:
-                pp.close()
-            return pid
-        else: #child
+        
+        def callback():
             if watcher:
                 watcher.unwatch_all()
             self.log.i('Forking at %s.'%self.__class__.__name__)
@@ -52,6 +40,30 @@ class Slave(AutoTestBase):
                             ).wait_io(child_pipe, 
                                     stdin=None, stdout=None, stderr=None
                                       )
+        
+        self.child_process = multiprocessing.Process(target=callback)
+        self.child_process.start()
+        self._parent_conn = parent_pipe
+#        self._stdin = parent_stdin
+#        self._stdout = parent_stdout
+#        self._stderr = parent_stderr
+        for pp in [child_pipe, 
+#                child_stdin, child_stdout, child_stderr
+                   ]:
+            pp.close()
+
+#        else: #child
+#            if watcher:
+#                watcher.unwatch_all()
+#            self.log.i('Forking at %s.'%self.__class__.__name__)
+#            for pp in [parent_pipe, 
+##                       parent_stdin, parent_stdout, parent_stderr
+#                       ]:
+#                pp.close()
+#            self._child_cls(*self._child_args, **self._child_kwargs
+#                            ).wait_io(child_pipe, 
+#                                    stdin=None, stdout=None, stderr=None
+#                                      )
 
     def restart_subprocess(self, watcher):
         self.kill(block=True, timeout=self._timeout)
@@ -70,15 +82,14 @@ class Slave(AutoTestBase):
         return self._parent_conn
 
     def kill(self, block=False, timeout=None):
-        if not self._child_pid:
+        if not self.child_process:
             return
-        #TODO: make multiplatform Mac OS works?
-        pid, status = os.waitpid(self._child_pid, os.WNOHANG)
-        if pid:
-            self.log.i('Child with pid {pid} terminated by himself with'
-                       ' exit status {status}.'.format(pid=pid, status=status))
+        
+        if not self.child_process.is_alive():
+            self.log.w('Child terminated by himself.'
+                       ' Exitcode:' % self.child_process.exitcode)
             return
-
+        
         self.send(self.cmd(self._child_cls._kill_command))
 
         if not block:
@@ -87,13 +98,13 @@ class Slave(AutoTestBase):
         if self._parent_conn.poll(timeout):
             msg = self.recv()
             #assert msg == TestRunner._kill_answer
-            pid, status = os.waitpid(self._child_pid, 0)
+            pid, status = self.child_process.ident, self.child_process.exitcode
             self.log.i('Child with pid {pid} gently terminated with exit '
                        'status {status}.'.format(pid=pid, status=status))
             return
 
-        os.kill(self._child_pid, signal.SIGKILL)
-        pid, status = os.waitpid(self._child_pid, 0)
+        self.child_process.terminate()
+        pid, status = self.child_process.ident, self.child_process.exitcode
         self.log.i('Child pid {pid} killed by force with exit status {status}.'
                    ''.format(pid=pid, status=status))
 
