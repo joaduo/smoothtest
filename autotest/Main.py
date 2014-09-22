@@ -84,33 +84,23 @@ class Main(AutoTestBase):
         return child_callback
     
     def create_child(self, child_callback):
-        parent_pipe, child_pipe = multiprocessing.Pipe()
-        self.parent_pipe = parent_pipe
-        pid = os.fork()
-        if pid: #parent
-            #Child will use this pipe
-            child_pipe.close()
-            #return to ipython
-            return pid
-        else: #child
+        parent_conn, child_conn = multiprocessing.Pipe()
+        self.parent_conn = parent_conn
+        
+        def callback():
             self.log.i('Forking at %s.'%self.__class__.__name__)
             if self.ishell:
                 self.ishell.exit_now = True
-                #get_ipy
-            #Setup IO #not yet needed
-            #from cStringIO import StringIO
-            #keep old stdout and stderr
-            #self._stdout,  self._stderr = sys.stdout, sys.stderr
-            #sys.stdout = StringIO()
-            #sys.stderr = StringIO()
-            #Close input, parent will listen to it
             sys.stdin.close()
-            #This pipe is not needed (parent will use it)
-            parent_pipe.close()
-            child_callback(child_pipe)
+            parent_conn.close()
+            child_callback(child_conn)
+        
+        self.child_process = multiprocessing.Process(target=callback)
+        self.child_process.start()
+        child_conn.close()
     
     def poll(self):
-        return self.parent_pipe.poll()
+        return self.parent_conn.poll()
     
     @property
     def test(self):
@@ -122,19 +112,20 @@ class Main(AutoTestBase):
 
     def send(self, cmd, *args, **kwargs):
         if self.poll():
-            self.log.i('Remaining in buffer: %r'%self.parent_pipe.recv())
-        self.parent_pipe.send(self.cmd(cmd, *args, **kwargs))
+            self.log.i('Remaining in buffer: %r'%self.parent_conn.recv())
+        self.parent_conn.send(self.cmd(cmd, *args, **kwargs))
     
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self.parent_pipe.recv()
+        return self.parent_conn.recv()
     
     @property
     def kill_child(self):
-        if self.parent_pipe and not self.parent_pipe.closed: #pipe is still open
+        self.child_process.terminate()
+        if self.parent_conn and not self.parent_conn.closed: #pipe is still open
             self.log.i(self.send_recv(self._kill_command))
-            self.parent_pipe.close()
-            self.parent_pipe = None
+            self.parent_conn.close()
+            self.parent_conn = None
 
 def smoke_test_module():
     pass
