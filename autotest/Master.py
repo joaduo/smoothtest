@@ -16,6 +16,7 @@ class Master(AutoTestBase):
     '''
     def __init__(self):
         self.watcher = SourceWatcher()
+        self.slave = Slave(TestRunner)
         
     _select_args = {}
     def set_select_args(self, **select_args):
@@ -69,62 +70,81 @@ class Master(AutoTestBase):
                 filtered_sockets.append((s,flags))
         return filtered_sockets, (rlist, wlist, xlist)
     
-    def test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
-             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, poll=None, select=None,
-             child_conn=None, block=True, smoke=False):
+    def test(self, poll=None, select=None, child_conn=None, block=True, 
+             **test_config):
         #manager of the subprocesses
-        self.slave = slave = slave or Slave(TestRunner)
+        self.slave.start_subprocess()
 
-        #create callback for re-testing on changes/msgs        
-        self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
-                       full_reloads, parcial_decorator, full_decorator, slave, smoke)
+        #create callback for re-testing on changes/msgs
+        self.parcial_callback = self.register_test(**test_config)
+        
         #build the block function listening to events
-        get_event = self._build_get_event(slave, self.watcher, child_conn, poll, select)
-                
+        get_event = self._build_get_event(self.slave, self.watcher, child_conn, 
+                                          poll, select)
+        
         self.wait_input = True
         #loop listening events
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist, slave, self.watcher, child_conn, self.parcial_callback)
+            self._dispatch(rlist, self.slave, self.watcher, child_conn, self.parcial_callback)
             if do_yield:
                 yield yield_obj
             self.wait_input = self.wait_input & block
         #We need to kill the child
-        slave.kill(block=True, timeout=1)
+        self.slave.kill(block=True, timeout=1)
     
-    def register_test(self, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, smoke=False, force=False):
+    def register_test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
+             parcial_decorator=lambda x:x, full_decorator=lambda x:x,
+             full_filter=None, 
+             smoke=False, force=False):
         #create callback for re-testing on changes/msgs
         @parcial_decorator
         def parcial_callback(path=None):
             if test_paths:
                 if not smoke:
                     self.log.i('Testing: %r'%list(test_paths))
-                    slave.test(test_paths)
+                    self.slave.test(test_paths)
                 else:
                     self.log.i('Smoke mode. Skipping: %r'%list(test_paths))
             elif not test_paths:
                 self.log.i('No tests to run. Ingoring callback.')
         
+        @full_decorator
+        def full_callback(self):
+            #to force reloading all modules we directly kill and restart
+            #the process
+            self.restart_subprocess()
+            parcial_callback()
+        
         #Monitor changes in files
         self.watcher.unwatch_all()
-        for fpath in parcial_reloads:
-            self.watcher.watch_file(fpath, parcial_callback)
+        for ppath in parcial_reloads:
+            self.watcher.watch_file(ppath, parcial_callback)
+            
+        for fpath in full_reloads:
+            self.watcher.watch_recursive(fpath, full_callback, 
+                                         path_filter=full_filter)
         
         if force:
             #slave's subprocess where tests will be done
-            slave.kill(block=True, timeout=3)
-            slave.start_subprocess()
+            self.restart_subprocess()
+        
         #do first time test (for master)
         parcial_callback()
         
+        #Start inotify observer:
+        self.watcher.start_observer()
+        
         return parcial_callback
+    
+    def restart_subprocess(self):
+        return self.slave.restart_subprocess(self.watcher)
     
     def _build_get_event(self, slave, watcher, child_conn, poll=None, select=None):
         def local_rlist():
-            rlist = [slave.get_conn().fileno(), watcher.get_fd()]
+            rlist = [slave.get_conn().fileno()]
+            if watcher.get_fd():
+                rlist.append(watcher.get_fd())
             if child_conn:
                 rlist.append(child_conn.fileno())
             return rlist
@@ -169,14 +189,9 @@ class Master(AutoTestBase):
                 return any(yield_obj), yield_obj, int_rlist
         return get_event
         
-    def new_test(self, test_paths, parcial_reloads, full_reloads=[],
-                 parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-                 smoke=False, force):
+    def new_test(self, **test_config):
         #register new callback (binding new test config into it)
-        self.parcial_callback = self.register_test(test_paths, parcial_reloads, 
-                                   full_reloads, parcial_decorator, 
-                                   full_decorator, self.slave, 
-                                   smoke, force)
+        self.parcial_callback = self.register_test(**test_config)
 
     def _dispatch(self, rlist, slave, watcher, child_conn, parcial_callback):
         #depending on the input, dispatch actions
@@ -198,6 +213,7 @@ class Master(AutoTestBase):
     
     def _receive_kill(self, *args, **kwargs):
         self.slave.kill(block=True, timeout=3)
+        self.watcher.unwatch_all()
     
     def _recv_slave(self, callback, slave):
         #keep value, since it will be changed in slave.recv_answer
@@ -212,7 +228,7 @@ class Master(AutoTestBase):
                        'tests.')
             #to force reloading all modules we directly kill and restart
             #the process
-            slave.restart_subprocess()
+            self.restart_subprocess()
             #Now, lets test if reloading all worked
             callback()
         #Notify unexpected errors

@@ -5,11 +5,10 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
+import relative_import
 import os
 import multiprocessing
-import select
 import signal
-import relative_import
 from .base import AutoTestBase
 from .TestRunner import TestRunner
 
@@ -23,35 +22,43 @@ class Slave(AutoTestBase):
         self._parent_conn = None
         self._first_test = True
 
-    def start_subprocess(self):
+    def start_subprocess(self, watcher=None):
         parent_pipe, child_pipe = multiprocessing.Pipe()
-        parent_stdout, child_stdout = multiprocessing.Pipe()
-        parent_stderr, child_stderr = multiprocessing.Pipe()
-        parent_stdin, child_stdin = multiprocessing.Pipe()
+#        parent_stdin, child_stdin = multiprocessing.Pipe()
+#        parent_stdout, child_stdout = multiprocessing.Pipe()
+#        parent_stderr, child_stderr = multiprocessing.Pipe()
 
         pid = os.fork()
         if pid: #parent
             self._child_pid = pid
             self._parent_conn = parent_pipe
-            self._stdin = parent_stdin
-            self._stdout = parent_stdout
-            self._stderr = parent_stderr
+#            self._stdin = parent_stdin
+#            self._stdout = parent_stdout
+#            self._stderr = parent_stderr
+            for pp in [child_pipe, 
+#                       child_stdin, child_stdout, child_stderr
+                       ]:
+                pp.close()
             return pid
         else: #child
+            if watcher:
+                watcher.unwatch_all()
             self.log.i('Forking at %s.'%self.__class__.__name__)
-            for pp in [parent_pipe, parent_stdin, parent_stdout, parent_stderr]:
+            for pp in [parent_pipe, 
+#                       parent_stdin, parent_stdout, parent_stderr
+                       ]:
                 pp.close()
             self._child_cls(*self._child_args, **self._child_kwargs
                             ).wait_io(child_pipe, 
-                                    child_stdin, child_stdout, child_stderr
+                                    stdin=None, stdout=None, stderr=None
                                       )
 
-    def restart_subprocess(self):
+    def restart_subprocess(self, watcher):
         self.kill(block=True, timeout=self._timeout)
         if self._parent_conn:
             self._parent_conn.close()
         self._first_test = True
-        self.start_subprocess()
+        self.start_subprocess(watcher)
 
     def recv(self):
         return self._parent_conn.recv()
@@ -77,12 +84,7 @@ class Slave(AutoTestBase):
         if not block:
             return
 
-        if timeout:
-            rlist, _, _ = select.select([self._parent_conn], [], [], timeout)
-        else:
-            rlist, _, _ = select.select([self._parent_conn], [], [])
-
-        if rlist:
+        if self._parent_conn.poll(timeout):
             msg = self.recv()
             #assert msg == TestRunner._kill_answer
             pid, status = os.waitpid(self._child_pid, 0)

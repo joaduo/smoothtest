@@ -13,6 +13,7 @@ from .Context import Context, singleton_decorator
 from .base import AutoTestBase
 from .TestSearcher import TestSearcher
 from .ipython_extension import load_extension
+from smoothtest.autotest.Master import Master
 
 @singleton_decorator
 class Main(AutoTestBase):
@@ -60,37 +61,25 @@ class Main(AutoTestBase):
         
     def new_test(self, class_path, regex=None, search=True, force=False):
         test_paths, parcial_reloads = TestSearcher().solve_paths((class_path, regex), search=search)
+        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads, 
+                      smoke=self.smoke)
         if not force:
-            self.send('new_test',  test_paths, parcial_reloads, smoke=self.smoke)
+            self.send('new_test', **test_config)
         else:
-            child_callback = self.build_callback(test_paths, parcial_reloads)
+            child_callback = self.build_callback(**test_config)
             self._new_child(child_callback)
         return test_paths, parcial_reloads
     
-    def send_tests(self, test_paths, parcial_reloads, full_reloads=[],
-                 smoke=False, force=False):
-        self.send('new_test',  test_paths, parcial_reloads, full_reloads, smoke=smoke, force=force)
+    def send_tests(self, **test_config):
+        self.send('new_test', **test_config)
 
-    def build_callback(self, test_paths, parcial_reloads, full_reloads=[],
-             parcial_decorator=lambda x:x, full_decorator=lambda x:x, 
-             slave=None, poll=None, select=None):
+    def build_callback(self, **test_config):
         
         def child_callback(child_conn):
-            ctx = Context()
-            ctx.initialize(
-                           test_paths=test_paths,
-                           parcial_reloads=parcial_reloads,
-                           full_reloads=full_reloads,
-                           parcial_decorator=parcial_decorator,
-                           full_decorator=full_decorator,
-                           slave=slave,
-                           child_conn=child_conn,
-                           poll=poll,
-                           select=select,
-                           smoke=self.smoke,
-                           )
+            master = Master()
+            poll = master.test(child_conn=child_conn, **test_config)            
             while 1:
-                ctx.poll.next()
+                poll.next()
         
         return child_callback
     

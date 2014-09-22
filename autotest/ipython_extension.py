@@ -40,8 +40,9 @@ class AutotestMagics(Magics):
             tst = command.claen_path(path)
             ts_args.append((tst, args.methods_regex))
         test_paths, parcial_reloads = ts.solve_paths(*ts_args)
-        self.main.send_tests(test_paths, parcial_reloads, full_reloads=[], 
-                 smoke=args.smoke)
+        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads, 
+                           full_reloads=[], smoke=args.smoke)
+        self.main.send_tests(**test_config)
         return list(test_paths)
     
     @line_magic

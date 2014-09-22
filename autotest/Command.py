@@ -82,7 +82,8 @@ class Command(AutoTestBase):
                 test_paths.update(paths)
                 parcial_reloads.update(parcial)
         main = Main(smoke=args.smoke)
-        child_callback = main.build_callback(test_paths, parcial_reloads)
+        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads)
+        child_callback = main.build_callback(**test_config)
         main.run(child_callback, embed_ipython=not args.no_ipython)
 
 def main(argv=None):
