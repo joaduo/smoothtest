@@ -10,7 +10,7 @@ from smoothtest.Logger import Logger
 import traceback
 
 class AutoTestBase(object):
-    log = Logger('at')
+    log = Logger('autotest')
     
     def cmd(self, cmd, *args, **kwargs):
         #Make it ready for sending
@@ -23,14 +23,12 @@ class AutoTestBase(object):
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
     def _dispatch_cmds(self, io_conn, duplex=True):
-        #import multiprocessing as m
-        import os
         msg = io_conn.recv()
         answer = []
         for params in msg:
             cmd, args, kwargs = params
             if cmd == self._kill_command:
-                self.log.i('Killing myself with pid %s' % os.getpid())
+                self.log.d('Killing myself...')
                 self._receive_kill(*args, **kwargs)
                 duplex and io_conn.send(self._kill_answer)
                 io_conn.close()

@@ -10,44 +10,33 @@ import multiprocessing
 import sys
 from .Context import singleton_decorator
 from .base import AutoTestBase
-from .ipython_extension import load_extension
-from smoothtest.autotest.Master import Master
+from .Master import Master
+
 
 @singleton_decorator
 class Main(AutoTestBase):
     def __init__(self, smoke=False):
         self._timeout = 1
         self.smoke = smoke
+        self.ishell = None
         
-    def run(self, child_callback, embed_ipython=False):
-        self.create_child(child_callback)
-        #TODO: remove this below ??
-#        def new_child(new_callback=None):
-#            try:
-#                self.kill_child
-#            except Exception as e:
-#                self.log.e(e)
-#            if new_callback:
-#                self.create_child(new_callback)
-#            else:
-#                self.create_child(child_callback)
-#        self._new_child = new_child
+    def run(self, embed_ipython=False, block=False, test_config):
+        self.create_child(self.build_callback(test_config))
         if embed_ipython:
             s = self # nice alias
             self.embed()
             self.kill_child
             raise SystemExit(0)
-#        else:
-#            #TODO: test it!
-#            while self.parent_conn.poll(0):
-#                self.log.i(self.parent_conn.recv())
+        elif block:
+            while self.parent_conn.poll(0):
+                self.log.i(self.parent_conn.recv())
     
-    ishell = None
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
         """
         from IPython.terminal.ipapp import load_default_config
         from IPython.terminal.embed import InteractiveShellEmbed
+        from .ipython_extension import load_extension
         config = kwargs.get('config')
         header = kwargs.pop('header', u'')
         compile_flags = kwargs.pop('compile_flags', None)
@@ -67,7 +56,7 @@ class Main(AutoTestBase):
         self.send_recv('new_test', **test_config)
         self.test_config = test_config
 
-    def build_callback(self, **test_config):
+    def build_callback(self, test_config):
         self.test_config = test_config
 
         def child_callback(child_conn):
@@ -122,6 +111,7 @@ class Main(AutoTestBase):
             self.parent_conn = None
         else:
             self.child_process.terminate()
+
 
 def smoke_test_module():
     pass

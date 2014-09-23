@@ -101,8 +101,7 @@ class Command(AutoTestBase):
 
         main = Main(smoke=args.smoke)
         test_config = self.parcial(args)
-        child_callback = main.build_callback(**test_config)
-        main.run(child_callback, embed_ipython=not args.no_ipython)
+        main.run(embed_ipython=not args.no_ipython, test_config)
 
 
 def main(argv=None):

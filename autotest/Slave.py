@@ -9,9 +9,7 @@ import relative_import
 import multiprocessing
 from .base import AutoTestBase
 from .TestRunner import TestRunner
-import os
-import traceback
-    
+
 
 class Slave(AutoTestBase):
     def __init__(self, child_cls, child_args=[], child_kwargs={}, timeout=3):
@@ -27,7 +25,7 @@ class Slave(AutoTestBase):
         parent, child = multiprocessing.Pipe()
         def target():
             post_callback()
-            self.log.i('Forking at %s. pid %r'% (self.__class__.__name__, os.getpid()))
+            self.log.d('Forking at %s' % (self.__class__.__name__))
             parent.close()
             self._child_cls(*self._child_args, **self._child_kwargs
                             ).io_loop(child, 
@@ -54,7 +52,7 @@ class Slave(AutoTestBase):
         return self._parent_conn
 
     def kill(self, block=False, timeout=None):
-        self.log.d('Killing Slave child... ')
+        self.log.d('Killing Slave child with pid %r.' % self._process.ident)
         def end():
             self._process.join()
             self._parent_conn.close()
@@ -83,7 +81,7 @@ class Slave(AutoTestBase):
         else:
             self._process.terminate()
             pid, status = self._process.ident, self._process.exitcode
-            self.log.i('Child pid {pid} killed by force with exit status {status}.'
+            self.log.w('Child pid {pid} killed by force with exit status {status}.'
                        ''.format(pid=pid, status=status))
         end()
 
@@ -92,13 +90,12 @@ class Slave(AutoTestBase):
         if not block:
             return
         else:
-            return self.recv_answer(test_paths, repeat)
+            return self.recv_answer()
 
-    def recv_answer(self, test_paths=[], repeat=False):
+    def recv_answer(self):
         answer = self.recv()
         if answer == self._kill_answer:
-            print '='*80, answer
-            answer = self.recv()
+            self.log.w('Answer is %r. Perhaps you sent two kill commands?')
             return None, None
         self._first_test = False
         return answer[0]

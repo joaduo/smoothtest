@@ -21,13 +21,8 @@ class Logger(object):
     def __configLogging(self, name, level):
         hdlr = logging.StreamHandler()
         hdlr.setLevel(self.handler_level)
-#            logging.basicConfig(level=logging.INFO,
-#                        format='%(asctime)s - %(message)s',
-#                        datefmt='%Y-%m-%d %H:%M:%S')
-#        fmt = logging.Formatter(logging.BASIC_FORMAT, None)
         fmt = logging.Formatter(fmt='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
-        
         hdlr.setFormatter(fmt)
         logging.root.addHandler(hdlr)
         return logging.getLogger(name)

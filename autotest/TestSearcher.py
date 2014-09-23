@@ -14,6 +14,7 @@ import traceback
 from unittest import TestCase
 from inspect import isclass
 
+
 class TestSearcher(AutoTestBase):
     def _build_solve_paths(self, test_path_regex, *test_path_regexes, **kwargs):
         def solve_paths(conn):
@@ -65,13 +66,14 @@ class TestSearcher(AutoTestBase):
         #We need to create a new process to avoid importing the modules
         #in the parent process
         solve = self._build_solve_paths(test_path_regex, *test_path_regexes,  **kwargs)
-        parent_conn, child_conn = Pipe()
+        parent_conn, child_conn = Pipe(duplex=False)
         p = Process(target=solve, args=(child_conn,))
         p.start()
         test_paths, parcial_reloads = parent_conn.recv()   # prints "[42, None, 'hello']"
         parent_conn.close()
         p.join()
         return test_paths, parcial_reloads
+
 
 def smoke_test_module():
     from pprint import pprint
@@ -84,6 +86,7 @@ def smoke_test_module():
                                                  specific_class=True)
     pprint(test_paths)
     pprint(parcial_reloads)
-    
+
+
 if __name__ == "__main__":
     smoke_test_module()

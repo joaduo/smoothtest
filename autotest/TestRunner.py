@@ -94,5 +94,6 @@ def smoke_test_module():
 
     sr.io_loop(DummyIpc())
 
+
 if __name__ == "__main__":
     smoke_test_module()

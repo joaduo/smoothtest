@@ -12,8 +12,6 @@ from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher, realPath
 import re
 import multiprocessing
-import traceback
-import os
 import threading
 
 
@@ -38,6 +36,7 @@ def lists_to_sockets(rlist, wlist, xlist):
         sockets.append((s, flags))
     return sockets
 
+
 def filter_sockets(sockets, exclude):
     '''
     Exclude internal Autotest Sockets from yielded external sockets
@@ -58,6 +57,7 @@ def filter_sockets(sockets, exclude):
         else:
             filtered_sockets.append((s,flags))
     return filtered_sockets, (rlist, wlist, xlist)
+
 
 class Master(AutoTestBase):
     '''
