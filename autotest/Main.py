@@ -8,20 +8,20 @@ Code Licensed under MIT License. See LICENSE file.
 import relative_import
 import multiprocessing
 import sys
-from .Context import singleton_decorator
 from .base import AutoTestBase
 from .Master import Master
 
 
-@singleton_decorator
 class Main(AutoTestBase):
     def __init__(self, smoke=False):
         self._timeout = 1
         self.smoke = smoke
         self.ishell = None
+        self.test_config = {}
         
     def run(self, test_config, embed_ipython=False, block=False):
-        self.create_child(self.build_callback(test_config))
+        self.test_config = test_config
+        self.create_child(self._build_callback())
         if embed_ipython:
             s = self # nice alias
             self.embed()
@@ -52,18 +52,18 @@ class Main(AutoTestBase):
     
     @property
     def new_child(self):
-        self._new_child()
+        self.kill_child
+        self.create_child(self._build_callback())
     
     def send_test(self, **test_config):
         self.send_recv('new_test', **test_config)
         self.test_config = test_config
 
-    def build_callback(self, test_config):
-        self.test_config = test_config
+    def _build_callback(self):
 
         def child_callback(child_conn):
             master = Master(child_conn)
-            poll = master.io_loop(**test_config)            
+            poll = master.io_loop(self.test_config)            
             while 1:
                 poll.next()
         
@@ -107,16 +107,20 @@ class Main(AutoTestBase):
     
     @property
     def kill_child(self):
-        if self._parent_conn and not self._parent_conn.closed: 
-            self.log.i(self.send_recv(self._kill_command))
+        if self._parent_conn and not self._parent_conn.closed:
+            answer = self.send_recv(self._kill_command)
+            self.log.i(answer)
             self._parent_conn.close()
             self._parent_conn = None
+            return answer
         else:
             self.child_process.terminate()
 
 
 def smoke_test_module():
-    pass
+    main = Main()
+    main.run({}, embed_ipython=False, block=False)
+    main.kill_child
 
 if __name__ == "__main__":
     smoke_test_module()
