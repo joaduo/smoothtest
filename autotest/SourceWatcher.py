@@ -7,7 +7,6 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import relative_import
 import os
-import re
 import time
 from .base import AutoTestBase
 from collections import defaultdict
@@ -115,33 +114,38 @@ class FileAction(FileSystemEventHandler):
     def on_modified(self, event):
         self.__call__(event, None)
 
+
 class DirAction(FileAction):
-    def __init__(self, path, path_filter=lambda x:True, event_type=None):
+    def __init__(self, path, path_filter=None, event_type=None):
         self.path_filter = path_filter
         super(DirAction, self).__init__(path, event_type)
-        
+
     def __call__(self, event, manager):
-        if self.path_filter(realPath(event.src_path)):
+        if not self.path_filter:
+            self._call(event, manager)
+        elif self.path_filter(realPath(event.src_path)):
             self._call(event, manager)
 
 
 class SourceWatcher(AutoTestBase):
+    '''
+    Responsible of watching files and directories changes.
+    It triggers callbacks passed for each of these paths.
+    '''
     def __init__(self):
         self._file_actions = {}
         self._dir_actions = {}
         self._observer = None
 
     def watch_file(self, path, callback):
-        dir_path = realPath(os.path.dirname(path))
-
         def callback_wrapper(event, action, mnager):
             self.log.i(event)
             callback(path)
-        
+
         action = self._file_actions.setdefault(path, FileAction(path))
         action.append(callback_wrapper, 'modified')
         #action.append(callback_wrapper, 'created')
-        
+
     def start_observer(self):
         observer = Observer()
         for action in self._file_actions.values():
@@ -150,31 +154,34 @@ class SourceWatcher(AutoTestBase):
 
         for action in self._dir_actions.values():
             observer.schedule(action, action.real_dir, recursive=True)
-        
+
         self._observer = observer
         self._observer.start()
-        
-    def unwatch_all(self):
+
+    def unwatch_all(self, clear=False):
         if self._observer:
             self._observer.stop()
             self._observer.join()
-        self._file_actions.clear()
-        self._dir_actions.clear()
+            self._observer = None
+        if clear:
+            self._file_actions.clear()
+            self._dir_actions.clear()
 
-    def watch_recursive(self, dir_path, callback, path_filter=None):
-        path_filter = path_filter if path_filter else lambda x:True
-        
+    def watch_recursive(self, path, callback, path_filter=None):
+        dir_path = realPath(path)
+        if os.path.exists(dir_path) and os.path.isdir(dir_path):
+            #its a dir, need to wat recursively
+            self._watch_dir(dir_path, callback, path_filter)
+        else:
+            #Its a file!
+            self.watch_file(path, callback)
+
+    def _watch_dir(self, dir_path, callback, path_filter):
         def callback_wrapper(event, action, mnager):
             callback(dir_path)
-            
-        if isinstance(path_filter, basestring):
-            def _path_filter(path):
-                return re.match(path_filter, path)
-        else:
-            assert callable(path_filter)
-            _path_filter = path_filter
 
-        action = self._dir_actions.setdefault(dir_path, DirAction(dir_path, _path_filter))
+        action = self._dir_actions.setdefault(dir_path,
+                                              DirAction(dir_path, path_filter))
         action.append(callback_wrapper, 'modified')
         #action.append(callback_wrapper, 'created')
 
@@ -184,8 +191,10 @@ class SourceWatcher(AutoTestBase):
     def get_fd(self):
         return None
 
+
 def smoke_test_module():
     sw = SourceWatcher()
+
     def callback(path):
         print 'Changed!', repr(path)
     path = __file__ + '.smoke_test_file'

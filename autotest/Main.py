@@ -8,40 +8,39 @@ Code Licensed under MIT License. See LICENSE file.
 import relative_import
 import multiprocessing
 import sys
-import os
 from .Context import singleton_decorator
 from .base import AutoTestBase
-from .TestSearcher import TestSearcher
 from .ipython_extension import load_extension
 from smoothtest.autotest.Master import Master
 
 @singleton_decorator
 class Main(AutoTestBase):
     def __init__(self, smoke=False):
+        self._timeout = 1
         self.smoke = smoke
         
     def run(self, child_callback, embed_ipython=False):
         self.create_child(child_callback)
         #TODO: remove this below ??
-        def new_child(new_callback=None):
-            try:
-                self.kill_child
-            except Exception as e:
-                self.log.e(e)
-            if new_callback:
-                self.create_child(new_callback)
-            else:
-                self.create_child(child_callback)
-        self._new_child = new_child
+#        def new_child(new_callback=None):
+#            try:
+#                self.kill_child
+#            except Exception as e:
+#                self.log.e(e)
+#            if new_callback:
+#                self.create_child(new_callback)
+#            else:
+#                self.create_child(child_callback)
+#        self._new_child = new_child
         if embed_ipython:
             s = self # nice alias
             self.embed()
             self.kill_child
             raise SystemExit(0)
-        else:
-            #TODO: test it!
-            while self.parent_conn.poll(0):
-                self.log.i(self.parent_conn.recv())
+#        else:
+#            #TODO: test it!
+#            while self.parent_conn.poll(0):
+#                self.log.i(self.parent_conn.recv())
     
     ishell = None
     def embed(self, **kwargs):
@@ -63,26 +62,17 @@ class Main(AutoTestBase):
     @property
     def new_child(self):
         self._new_child()
-        
-    def new_test(self, class_path, regex=None, search=True, force=False):
-        test_paths, parcial_reloads = TestSearcher().solve_paths((class_path, regex), search=search)
-        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads, 
-                      smoke=self.smoke)
-        if not force:
-            self.send('new_test', **test_config)
-        else:
-            child_callback = self.build_callback(**test_config)
-            self._new_child(child_callback)
-        return test_paths, parcial_reloads
     
-    def send_tests(self, **test_config):
-        self.send('new_test', **test_config)
+    def send_test(self, **test_config):
+        self.send_recv('new_test', **test_config)
+        self.test_config = test_config
 
     def build_callback(self, **test_config):
-        
+        self.test_config = test_config
+
         def child_callback(child_conn):
-            master = Master()
-            poll = master.test(child_conn=child_conn, **test_config)            
+            master = Master(child_conn)
+            poll = master.io_loop(**test_config)            
             while 1:
                 poll.next()
         
@@ -109,7 +99,7 @@ class Main(AutoTestBase):
     
     @property
     def test(self):
-        answer = self.send_recv('test_cmd')
+        answer = self.send_recv('parcial_callback')
         result, error = answer[0]
         if error:
             self.log.e(error)
@@ -126,11 +116,12 @@ class Main(AutoTestBase):
     
     @property
     def kill_child(self):
-        if self.parent_conn and not self.parent_conn.closed: #pipe is still open
+        if self.parent_conn and not self.parent_conn.closed: 
             self.log.i(self.send_recv(self._kill_command))
             self.parent_conn.close()
             self.parent_conn = None
-        #self.child_process.terminate()
+        else:
+            self.child_process.terminate()
 
 def smoke_test_module():
     pass

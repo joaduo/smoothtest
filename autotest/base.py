@@ -22,29 +22,48 @@ class AutoTestBase(object):
 
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
-    def _dispatch_cmds(self, io_pipe, handler=None, *largs, **lkwargs):
-        msg = io_pipe.recv()
+    def _dispatch_cmds(self, io_conn, duplex=True):
+        msg = io_conn.recv()
         answer = []
         for params in msg:
             cmd, args, kwargs = params
             if cmd == self._kill_command:
                 self._receive_kill(*args, **kwargs)
-                io_pipe.send(self._kill_answer)
-                io_pipe.close()
+                duplex and io_conn.send(self._kill_answer)
+                io_conn.close()
                 raise SystemExit(0)
             try:
-                if hasattr(self, cmd) or not handler:
-                    #raise exception if no handler and no attr
-                    result = getattr(self, cmd)(*args, **kwargs)
-                else:
-                    result = handler(params, *largs, **lkwargs)
+                result = getattr(self, cmd)(*args, **kwargs)
                 answer.append((result, None))
             except Exception as e:
                 answer.append((None, self.reprex(e)))
-        io_pipe.send(answer)
+        duplex and io_conn.send(answer)
         return answer
+
+#    def _dispatch_cmds(self, io_conn, handler=None, *largs, **lkwargs):
+#        msg = io_conn.recv()
+#        answer = []
+#        for params in msg:
+#            cmd, args, kwargs = params
+#            if cmd == self._kill_command:
+#                self._receive_kill(*args, **kwargs)
+#                io_conn.send(self._kill_answer)
+#                io_conn.close()
+#                raise SystemExit(0)
+#            try:
+#                if hasattr(self, cmd) or not handler:
+#                    #raise exception if no handler and no attr
+#                    result = getattr(self, cmd)(*args, **kwargs)
+#                else:
+#                    result = handler(params, *largs, **lkwargs)
+#                answer.append((result, None))
+#            except Exception as e:
+#                answer.append((None, self.reprex(e)))
+#        io_conn.send(answer)
+#        return answer
     
     def reprex(self, e):
+        #TODO: shuoldn't format lat exception,but passed one
         return traceback.format_exc()
     
     def _receive_kill(self, *args, **kwargs):

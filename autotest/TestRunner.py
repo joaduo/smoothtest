@@ -17,14 +17,9 @@ class TestRunner(AutoTestBase):
         - Run test over all methods or specific methods
         - Report any errors
     '''
-    def __init__(self, webdriver=None, sockets=[]):
+    def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
         self._webdriver = webdriver
-        self.after_fork(sockets)
-
-    def after_fork(self, sockets):
-        for s in sockets:
-            s.close()
 
     def test(self, test_paths, smoke=False):
         '''
@@ -37,19 +32,18 @@ class TestRunner(AutoTestBase):
         pusherror = lambda err: err and errors.append(err)
         for tpath in test_paths:
             pusherror = lambda err: err and errors.append((tpath, err))
-            objects = self._import_test(pusherror, tpath)
-            if not objects:
+            class_ = self._import_test(pusherror, tpath)
+            if not class_:
                 continue
-            self._run_test(pusherror, tpath, *objects)
+            self._run_test(pusherror, tpath, class_)
         return errors
 
-    def wait_io(self, pipe, stdin=None, stdout=None, stderr=None):
+    def wait_io(self, conn, stdin=None, stdout=None, stderr=None):
         while True:
-            self._dispatch_cmds(pipe)
+            self._dispatch_cmds(conn)
 
-    def _run_test(self, pusherror, test_path, module, class_, method):
+    def _run_test(self, pusherror, test_path, class_):
         try:
-            #assert issubclass(class_, TestCase), 'The class must be subclass of unittest.TestCase'
             _, _, methstr = self._split_path(test_path)
             suite = unittest.TestSuite()
             suite.addTest(class_(methstr))
@@ -62,16 +56,15 @@ class TestRunner(AutoTestBase):
         return self.split_test_path(test_path, meth=True)
 
     def _import_test(self, pusherror, test_path):
-        modstr, clsstr, methstr = self._split_path(test_path)
+        modstr, clsstr, _ = self._split_path(test_path)
         try:
             module = importlib.import_module(modstr)
             module = reload(module)
-            class_ = getattr(module, clsstr)
-            method = getattr(class_, methstr)
+            class_ = getattr(module, clsstr) 
         except Exception as e:
             pusherror(self.reprex(e))
             return None
-        return module, class_, method
+        return class_
 
 
 def smoke_test_module():
@@ -80,7 +73,7 @@ def smoke_test_module():
     class DummyIpc(object):
         def recv(self):
             cmds = [
-                    ('test', (test_paths,), {}),
+                    ('test', (test_paths,), dict(smoke=True)),
                     ]
             self.recv = self.recv2
             return cmds

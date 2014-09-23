@@ -25,14 +25,9 @@ class singleton_decorator(object):
 
 @singleton_decorator
 class Context(object):
-    def __init__(self):
-        self.master = None
-        self.slave = None
-        self.ipython_ipc = None
-        
     def initialize(self, **test_config):
         self.master = Master()
-        self.poll = self.master.test(**test_config)
+        self.poll = self.master.io_loop(**test_config)
 
 def smoke_test_module():
     pass

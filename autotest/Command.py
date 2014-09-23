@@ -13,6 +13,7 @@ from smoothtest.autotest.base import AutoTestBase
 from smoothtest.autotest.Main import Main
 from smoothtest.autotest.TestSearcher import TestSearcher
 
+
 def is_valid_file(parser, path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
@@ -22,7 +23,8 @@ def is_valid_file(parser, path):
         return path  # return the file path
     else:
         parser.error("The file %s does not exist!" % path)
-        
+
+
 def is_file_or_dir(parser, path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
@@ -33,17 +35,15 @@ def is_file_or_dir(parser, path):
     else:
         parser.error("The file %s does not exist!" % path)
 
+
 class Command(AutoTestBase):
-    def __init__(self):
-        pass
-    
     def get_parser(self, file_checking=True):
         if file_checking:
             is_file = lambda x: is_valid_file(parser, x)
             is_dir_file = lambda x: is_file_or_dir(parser, x)
         else:
-            is_file = lambda x:x
-            is_dir_file = lambda x:x
+            is_file = lambda x: x
+            is_dir_file = lambda x: x
         parser = ArgumentParser(description='Start a local sales vs non-sales glidepath server')
         parser.add_argument('tests', type=is_file,
                             help='Tests to be monitored and run. Triggers parcial_reloads',
@@ -57,41 +57,53 @@ class Command(AutoTestBase):
         parser.add_argument('--smoke',
                             help='Do not run tests. Simply test the whole monitoring system',
                             default=False, action='store_true')
-        parser.add_argument('-f', '--full-reloads', type=is_dir_file,
+        parser.add_argument('-F', '--full-reloads', type=is_dir_file,
                             help='Files or directories to be monitored and triggers of full_reloads.',
-                            default=None, nargs='?')
-#        parser.add_argument('-n', '--no-debug', default=False, action='store_true')
-#        parser.add_argument('-p', '--paste', default=False, action='store_true')
-#        parser.add_argument('-s', '--sales', default=False, action='store_true')
+                            default=[], nargs='+')
+        parser.add_argument('-R', '--full-regex', type=str,
+                            help='Regex to filter files in full reloads directories.',
+                            default='.*')
         return parser
-        
-    def claen_path(self, tst):
+
+    def get_extension_parser(self):
+        parser = self.get_parser(file_checking=False)
+        parser.add_argument('-f', '--force',
+                            help='force reloading tests (+ restarting webdriver)',
+                            default=False, action='store_true')
+        return parser
+
+    def clean_path(self, tst):
         tst = tst.replace(os.path.sep, '.')
         tst = re.sub(r'\.(pyc)|(py)$', '', tst).strip('.')
         return tst
-    
+
     def parcial(self, args):
         searcher = TestSearcher()
         test_paths = set()
         parcial_reloads = set()
         for tst in args.tests:
-            tst  = self.claen_path(tst)
+            tst = self.clean_path(tst)
             paths, parcial = searcher.solve_paths((tst, args.methods_regex))
             if paths:
                 test_paths.update(paths)
                 parcial_reloads.update(parcial)
-        
-        test_config = dict(test_paths=test_paths, parcial_reloads=parcial_reloads,
-                           smoke=args.smoke)
+
+        test_config = dict(test_paths=test_paths,
+                           parcial_reloads=parcial_reloads,
+                           full_reloads=args.full_reloads,
+                           full_filter=args.full_regex,
+                           smoke=args.smoke,
+                           )
         return test_config
-    
+
     def main(self, argv=None):
         args = self.get_parser().parse_args(argv)
-        
+
         main = Main(smoke=args.smoke)
         test_config = self.parcial(args)
         child_callback = main.build_callback(**test_config)
         main.run(child_callback, embed_ipython=not args.no_ipython)
+
 
 def main(argv=None):
     Command().main(argv)

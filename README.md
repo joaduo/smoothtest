@@ -6,6 +6,7 @@ General purpose Testing Utilities and also special testing tools for for Web App
 
 ## TODO
 
+1. Rename parcial to partial
 1. Use ipdb to to step by step testing
 	i. Use step back feature, s.step -1 
 1. Detect CTRL+C and other...

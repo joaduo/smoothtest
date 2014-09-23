@@ -112,6 +112,12 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
             raise LookupError(msg)
         return e
 
+    def has_xpath(self, xpath):
+        try:
+            return self.select_xpath(xpath)
+        except LookupError:
+            return False
+
     def extract_xpath(self, xpath, ret='text'):
         return self.select_xpath(xpath, ret)
 
