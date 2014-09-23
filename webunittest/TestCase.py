@@ -26,6 +26,7 @@ class WebdriverUtils(object):
         self.get_driver().implicitly_wait(self._implicit_wait)
         #self.get_driver().set_window_size(*self._window_size)
         self._base_url = base_url
+        self._wait_timeout = 2
 
     def _quit_webdriver(self):
         self.__driver.quit()
@@ -133,6 +134,9 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
     def fill(self, xpath, value):
         self.fill_input(xpath, value)
         self.screenshot('fill', xpath, value)
+        
+    def wait(self, timeout=None):
+        time.sleep(timeout or self._wait_timeout)
 
 class TestBase(WebdriverUtils):
     __global_webdriver = None

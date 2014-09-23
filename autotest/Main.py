@@ -20,7 +20,7 @@ class Main(AutoTestBase):
         self.smoke = smoke
         self.ishell = None
         
-    def run(self, embed_ipython=False, block=False, test_config):
+    def run(self, test_config, embed_ipython=False, block=False):
         self.create_child(self.build_callback(test_config))
         if embed_ipython:
             s = self # nice alias

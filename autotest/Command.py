@@ -101,7 +101,7 @@ class Command(AutoTestBase):
 
         main = Main(smoke=args.smoke)
         test_config = self.parcial(args)
-        main.run(embed_ipython=not args.no_ipython, test_config)
+        main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
 
 def main(argv=None):
