@@ -38,7 +38,7 @@ class TestRunner(AutoTestBase):
             self._run_test(pusherror, tpath, class_)
         return errors
 
-    def wait_io(self, conn, stdin=None, stdout=None, stderr=None):
+    def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
         while True:
             self._dispatch_cmds(conn)
 
@@ -92,7 +92,7 @@ def smoke_test_module():
         def close(self):
             pass
 
-    sr.wait_io(DummyIpc())
+    sr.io_loop(DummyIpc())
 
 if __name__ == "__main__":
     smoke_test_module()

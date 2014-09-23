@@ -23,11 +23,14 @@ class AutoTestBase(object):
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
     def _dispatch_cmds(self, io_conn, duplex=True):
+        #import multiprocessing as m
+        import os
         msg = io_conn.recv()
         answer = []
         for params in msg:
             cmd, args, kwargs = params
             if cmd == self._kill_command:
+                self.log.i('Killing myself with pid %s' % os.getpid())
                 self._receive_kill(*args, **kwargs)
                 duplex and io_conn.send(self._kill_answer)
                 io_conn.close()
@@ -39,28 +42,6 @@ class AutoTestBase(object):
                 answer.append((None, self.reprex(e)))
         duplex and io_conn.send(answer)
         return answer
-
-#    def _dispatch_cmds(self, io_conn, handler=None, *largs, **lkwargs):
-#        msg = io_conn.recv()
-#        answer = []
-#        for params in msg:
-#            cmd, args, kwargs = params
-#            if cmd == self._kill_command:
-#                self._receive_kill(*args, **kwargs)
-#                io_conn.send(self._kill_answer)
-#                io_conn.close()
-#                raise SystemExit(0)
-#            try:
-#                if hasattr(self, cmd) or not handler:
-#                    #raise exception if no handler and no attr
-#                    result = getattr(self, cmd)(*args, **kwargs)
-#                else:
-#                    result = handler(params, *largs, **lkwargs)
-#                answer.append((result, None))
-#            except Exception as e:
-#                answer.append((None, self.reprex(e)))
-#        io_conn.send(answer)
-#        return answer
     
     def reprex(self, e):
         #TODO: shuoldn't format lat exception,but passed one

@@ -12,6 +12,9 @@ from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher, realPath
 import re
 import multiprocessing
+import traceback
+import os
+import threading
 
 
 def lists_to_sockets(rlist, wlist, xlist):
@@ -102,6 +105,7 @@ class Master(AutoTestBase):
         #We need to kill the child
         self._receive_kill()
 
+    lock = threading.Lock()
     def new_test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
              parcial_decorator=lambda x: x, full_decorator=lambda x: x,
              full_filter=None,
@@ -122,11 +126,12 @@ class Master(AutoTestBase):
                        (list(test_paths), path))
             #to force reloading all modules we directly kill and restart
             #the process
-            self._watcher.unwatch_all()
-            self.restart_subprocess()
-            self._watcher.start_observer()
-            test_callback()
-            
+            with self.lock: #locking is just in case of being bombed
+                self._watcher.unwatch_all()
+                self.restart_subprocess()
+                self._watcher.start_observer()
+                test_callback()
+
         #save for future dispatching
         self.parcial_callback = parcial_callback
         self.full_callback = full_callback
@@ -144,7 +149,7 @@ class Master(AutoTestBase):
             File _watcher thread -> master thread msg
             We use pipes to avoid race conditions on other IO mechanism
             (instead of calling the tests callbacks within the thread)
-            '''
+            '''        
             self._w_m_conn.send(self.cmd('full_callback', path))
 
         self._watcher.unwatch_all(clear=True)
@@ -187,6 +192,8 @@ class Master(AutoTestBase):
             self._watcher.unwatch_all(clear=True)
             self._m_w_conn.close()
             self._w_m_conn.close()
+            if self._child_conn:
+                self._child_conn.close()
         return self._slave.restart_subprocess(post_callback)
 
     def _build_get_event(self, poll=None, select=None):
@@ -258,7 +265,6 @@ class Master(AutoTestBase):
         #read the answer sent by the subprocess
         #We do not repeat inside _slave since its a blocking operation
         answer = self._slave.recv_answer()
-        print answer
         #unpack from (testing_errors, exception_errors) tuple
         testing_errors, error = answer
         if (testing_errors or error) and not first:

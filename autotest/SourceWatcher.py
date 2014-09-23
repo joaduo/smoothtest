@@ -7,19 +7,13 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import relative_import
 import os
-import time
 from .base import AutoTestBase
 from collections import defaultdict
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-def realPath(path, retries=1, sleep=0.1):
-    for _ in range(retries + 1):
-        try:
-            return os.path.realpath(path)
-        except Exception as e:
-            time.sleep(sleep)
-    raise e
+def realPath(path):
+    return os.path.realpath(path)
 
 class FileAction(FileSystemEventHandler):
     '''
@@ -44,8 +38,11 @@ class FileAction(FileSystemEventHandler):
         
     def _call(self, event, manager):
         #call all the callbacks associated with this file 
+        called = set()
         for callback in self._event_callbacks[event.event_type]:
-            callback(event, self, manager)
+            if callback not in called: #avoid calling twice
+                callback(event, self, manager)
+                called.add(callback)
 
     def append(self, callback, event_type=None):
         '''
@@ -121,6 +118,10 @@ class DirAction(FileAction):
         super(DirAction, self).__init__(path, event_type)
 
     def __call__(self, event, manager):
+        #The observer notifies all actions, we need to filter by path Dooh!
+        real_path = realPath(event.src_path)
+        if self.real_path != os.path.commonprefix([self.real_path, real_path]):
+            return
         if not self.path_filter:
             self._call(event, manager)
         elif self.path_filter(realPath(event.src_path)):
@@ -144,9 +145,9 @@ class SourceWatcher(AutoTestBase):
 
         action = self._file_actions.setdefault(path, FileAction(path))
         action.append(callback_wrapper, 'modified')
-        #action.append(callback_wrapper, 'created')
 
     def start_observer(self):
+        self.unwatch_all(clear=False)
         observer = Observer()
         for action in self._file_actions.values():
             #We need to watch directories since watchdog doesn't support files??
@@ -178,12 +179,12 @@ class SourceWatcher(AutoTestBase):
 
     def _watch_dir(self, dir_path, callback, path_filter):
         def callback_wrapper(event, action, mnager):
+            self.log.d('Notifying %r %r' % (event, dir_path))
             callback(dir_path)
 
         action = self._dir_actions.setdefault(dir_path,
                                               DirAction(dir_path, path_filter))
         action.append(callback_wrapper, 'modified')
-        #action.append(callback_wrapper, 'created')
 
     def dispatch(self, timeout=0.0):
         pass

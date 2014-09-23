@@ -5,7 +5,7 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 import logging
 
 class Logger(object):
-    default_level = logging.INFO
+    default_level = logging.DEBUG
     handler_level = logging.DEBUG
     def __init__(self, name, output=None, level=None):
         if not level:
@@ -17,10 +17,17 @@ class Logger(object):
                 output = logging.getLogger(name)
         self.output = output
         self.setLevel(level)
+
     def __configLogging(self, name, level):
         hdlr = logging.StreamHandler()
         hdlr.setLevel(self.handler_level)
-        fmt = logging.Formatter(logging.BASIC_FORMAT, None)
+#            logging.basicConfig(level=logging.INFO,
+#                        format='%(asctime)s - %(message)s',
+#                        datefmt='%Y-%m-%d %H:%M:%S')
+#        fmt = logging.Formatter(logging.BASIC_FORMAT, None)
+        fmt = logging.Formatter(fmt='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+        
         hdlr.setFormatter(fmt)
         logging.root.addHandler(hdlr)
         return logging.getLogger(name)
