@@ -28,8 +28,10 @@ class Main(AutoTestBase):
             self.kill_child
             raise SystemExit(0)
         elif block:
-            while self.parent_conn.poll(0):
-                self.log.i(self.parent_conn.recv())
+            self.log.i(self._parent_conn.recv())
+    
+    def get_conn(self):
+        return self._parent_conn
     
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
@@ -69,7 +71,7 @@ class Main(AutoTestBase):
     
     def create_child(self, child_callback):
         parent_conn, child_conn = multiprocessing.Pipe()
-        self.parent_conn = parent_conn
+        self._parent_conn = parent_conn
         
         def callback():
             self.log.i('Forking at %s.'%self.__class__.__name__)
@@ -84,7 +86,7 @@ class Main(AutoTestBase):
         child_conn.close()
     
     def poll(self):
-        return self.parent_conn.poll()
+        return self._parent_conn.poll()
     
     @property
     def test(self):
@@ -96,19 +98,19 @@ class Main(AutoTestBase):
 
     def send(self, cmd, *args, **kwargs):
         if self.poll():
-            self.log.i('Remaining in buffer: %r'%self.parent_conn.recv())
-        self.parent_conn.send(self.cmd(cmd, *args, **kwargs))
+            self.log.i('Remaining in buffer: %r'%self._parent_conn.recv())
+        self._parent_conn.send(self.cmd(cmd, *args, **kwargs))
     
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self.parent_conn.recv()
+        return self._parent_conn.recv()
     
     @property
     def kill_child(self):
-        if self.parent_conn and not self.parent_conn.closed: 
+        if self._parent_conn and not self._parent_conn.closed: 
             self.log.i(self.send_recv(self._kill_command))
-            self.parent_conn.close()
-            self.parent_conn = None
+            self._parent_conn.close()
+            self._parent_conn = None
         else:
             self.child_process.terminate()
 
