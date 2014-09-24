@@ -35,9 +35,9 @@ class Context(object):
 
 def smoke_test_module():
     ctx = Context()
-    ctx.initialize({}, block=False)
-    for p in ctx.poll:
-        pass
+#    ctx.initialize({}, block=False)
+#    for p in ctx.poll:
+#        pass
 
 if __name__ == "__main__":
     smoke_test_module()

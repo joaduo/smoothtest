@@ -63,7 +63,7 @@ class Main(AutoTestBase):
 
         def child_callback(child_conn):
             master = Master(child_conn)
-            poll = master.io_loop(self.test_config)            
+            poll = master.io_loop(self.test_config)
             while 1:
                 poll.next()
         

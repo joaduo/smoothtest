@@ -14,6 +14,7 @@ from ..base import SmoothTestBase
 import os
 import pkgutil
 import unittest
+import multiprocessing
 
 
 class ModulesAttributesIterator(SmoothTestBase):
@@ -74,12 +75,36 @@ class SmokeTestRunner(SmoothTestBase):
         big_suite = TestSuite(suites)
         TextTestRunner().run(big_suite)
 
-    def _create_test(self, func):
+    def _create_test(self, func, timeout=10):
         log = self.log
+        reprex = self.reprex
         class SmokeTest(TestCase):
-            def testSmokeTest(self):
+            def test_func(self):
                 log('Testing %s' % func.__module__)
-                func()
+                parent, child = multiprocessing.Pipe(duplex=False)
+                def wrapper():
+                    parent.close()
+                    msg = False, None
+                    try: 
+                        func()
+                        msg = True, None
+                    except Exception as e:
+                        msg = False, reprex(e)
+                    child.send(msg)
+                    child.close()
+                    raise SystemExit(0)
+                
+                p = multiprocessing.Process(target=wrapper)
+                p.start()
+                child.close()
+                success, exc = False, None
+                #success on first param
+                #if parent.poll(timeout):
+                success, exc = parent.recv()
+                parent.close()
+                p.join()
+                if not success:
+                    raise Exception(exc)
         return SmokeTest
 
 

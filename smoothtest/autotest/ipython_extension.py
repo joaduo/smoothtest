@@ -60,7 +60,7 @@ def unload_ipython_extension(ipython):
 
 
 def smoke_test_module():
-    AutotestMagics()
+    AutotestMagics(None)
 
 
 if __name__ == "__main__":

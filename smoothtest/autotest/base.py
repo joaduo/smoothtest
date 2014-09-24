@@ -40,10 +40,6 @@ class AutoTestBase(SmoothTestBase):
         duplex and io_conn.send(answer)
         return answer
     
-    def reprex(self, e):
-        #TODO: shuoldn't format lat exception,but passed one
-        return traceback.format_exc()
-    
     def _receive_kill(self, *args, **kwargs):
         pass
     
