@@ -91,8 +91,9 @@ class SmokeTestRunner(SmoothTestBase):
                     except Exception as e:
                         msg = False, reprex(e)
                     child.send(msg)
-                    child.close()
-                    raise SystemExit(0)
+                    child.recv()
+                    #child.close()
+                    #raise SystemExit(0)
                 
                 p = multiprocessing.Process(target=wrapper)
                 p.start()
@@ -101,6 +102,7 @@ class SmokeTestRunner(SmoothTestBase):
                 #success on first param
                 #if parent.poll(timeout):
                 success, exc = parent.recv()
+                p.terminate()
                 parent.close()
                 p.join()
                 if not success:
