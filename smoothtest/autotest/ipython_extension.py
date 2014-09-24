@@ -17,6 +17,7 @@ class AutotestMagics(Magics):
     main = None
 
     def expand_files(self, tests):
+        #TODO: use glob
         p = subprocess.Popen(['bash'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
         out, err = p.communicate('echo %s' % (' '.join(tests)))
         if err:
@@ -48,10 +49,9 @@ def load_extension(ipython, main):
 
 
 def load_ipython_extension(ipython):
-    ip = ipython
     # You can register the class itself without instantiating it.  IPython will
     # call the default constructor on it.
-    ip.register_magics(AutotestMagics)
+    ipython.register_magics(AutotestMagics)
 
 
 def unload_ipython_extension(ipython):

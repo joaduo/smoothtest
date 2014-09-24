@@ -71,7 +71,7 @@ class Logger(object):
     def __call__(self, msg):
         self.info(msg)
 
-def smokeTestModule():
+def smoke_test_module():
     ''' Simple self-contained test for the module '''
     logger = Logger('a.logger')
     logger.setLevel(logging.DEBUG)
@@ -83,4 +83,4 @@ def smokeTestModule():
     logger('Call')
 
 if __name__ == '__main__':
-    smokeTestModule()
+    smoke_test_module()

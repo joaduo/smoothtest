@@ -69,7 +69,7 @@ class TestRunner(AutoTestBase):
 
 def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
-    sr = TestRunner()
+    tr = TestRunner()
     class DummyIpc(object):
         def recv(self):
             cmds = [
@@ -91,8 +91,10 @@ def smoke_test_module():
 
         def close(self):
             pass
-
-    sr.io_loop(DummyIpc())
+    try:
+        tr.io_loop(DummyIpc())
+    except SystemExit as e:
+        tr.log.i(e)
 
 
 if __name__ == "__main__":

@@ -83,8 +83,7 @@ class Master(AutoTestBase):
         self._poll_sockets = sockets
         self._timeout = timeout
     
-    def io_loop(self, poll=None, select=None, block=True, 
-             **test_config):
+    def io_loop(self, test_config, poll=None, select=None, block=True):
         #manager of the subprocesses
         self._slave.start_subprocess()
 
@@ -287,10 +286,7 @@ def smoke_test_module():
     test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
     parcial_reloads = ['MasterAutoTest.py']
     mat = Master()
-#    mat.test(test_paths, parcial_reloads, block=False).next()
-    from pprint import pprint
-    poll = mat.io_loop(test_paths=test_paths, parcial_reloads=parcial_reloads, 
-                    smoke=True, 
+    poll = mat.io_loop(dict(test_paths=test_paths, parcial_reloads=parcial_reloads, smoke=True),
                     block=False)
     for s in poll:
         pass

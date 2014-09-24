@@ -1,55 +1,5 @@
-smoothtest
+SmoothTest
 ==========
 
 General purpose Testing Utilities and also special testing tools for for
 Web Applications
-
-TODO
-----
-
-1.  Rename parcial to partial
-2.  Use ipdb to to step by step testing
-
-    i. Use step back feature, s.step -1
-
-3.  Detect CTRL+C and other...
-4.  Forward output messages to a specific process, so we can visualize
-    in Eclipse (use openfd from a pipe?)
-5.  Restart closed webdriver?
-6.  Use specific profile for webdriver?
-7.  Detect "unable to connect" pages before selecting xpath?
-8.  Create full\_callback support and project watching support
-9.  Create autotest.py command
-    ``path/to/test.py [methods regex] -f [path to projects or files] [-F|-C|-P][--firefox|...]``
-10. Create better command line in ipython (selecting tests, exposing
-    options, selecting browser, sending code)
-11. Improve configuration framework
-12. Reset sessions, cache and cookies from running selenium instances
-13. Having a pool of webdrivers
-14. Having an eternal pool of webdrivers (in main process) to speed up
-    testing
-15. Play a sound on success/failure
-
-    i. say "3" failed "4" Passed import pyttsx engine = pyttsx.init()
-       engine.say('3 Failed, 4 Passed.') engine.runAndWait()
-
-16. Enable remote messages (to enable shortcuts via CLI)
-
-Test this (make multiplatform)
-------------------------------
-
-.. code:: python
-
-    from multiprocessing import Process, Pipe
-
-    def f(conn):
-        conn.send([42, None, 'hello'])
-        conn.close()
-
-    if __name__ == '__main__':
-        parent_conn, child_conn = Pipe()
-        p = Process(target=f, args=(child_conn,))
-        p.start()
-        print parent_conn.recv()   # prints "[42, None, 'hello']"
-        p.join()
-

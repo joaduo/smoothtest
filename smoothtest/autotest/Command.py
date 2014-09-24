@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from smoothtest.autotest.base import AutoTestBase
 from smoothtest.autotest.Main import Main
 from smoothtest.autotest.TestSearcher import TestSearcher
+import sys
 
 
 def is_valid_file(parser, path):
@@ -97,11 +98,26 @@ class Command(AutoTestBase):
         return test_config
 
     def main(self, argv=None):
+        curdir = os.path.abspath(os.curdir)
+        filedir = os.path.abspath(os.path.dirname(__file__))
+        
+        #Remove the dir of this file if we are not in this directory
+        if curdir != filedir and filedir in sys.path:
+            sys.path.remove(filedir)
+        
         args = self.get_parser().parse_args(argv)
 
         main = Main(smoke=args.smoke)
         test_config = self.parcial(args)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
+
+
+def smoke_test_module():
+    c = Command()
+    c.get_parser()
+    parser = c.get_extension_parser()
+    args = parser.parse_args()
+    c.parcial(args)
 
 
 def main(argv=None):

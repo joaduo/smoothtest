@@ -1,5 +1,9 @@
 ## TODO
 
+1. Better test case module resolution
+1. create smoothtest command
+	i. autotest passing parameters or .cfg or .py
+	i. create settings
 1. Rename parcial to partial
 1. Use ipdb to to step by step testing
 	i. Use step back feature, s.step -1 

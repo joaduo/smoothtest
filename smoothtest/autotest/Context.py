@@ -25,12 +25,19 @@ class singleton_decorator(object):
 
 @singleton_decorator
 class Context(object):
-    def initialize(self, **test_config):
-        self.master = Master()
-        self.poll = self.master.io_loop(**test_config)
+    def initialize(self, test_config, **kwargs):
+        self.poll = Master().io_loop(test_config, **kwargs)
+        def fake_initialize(*args, **kwargs):
+            pass
+        #Disable other initializations
+        self.initialize = fake_initialize
+        
 
 def smoke_test_module():
-    pass
+    ctx = Context()
+    ctx.initialize({}, block=False)
+    for p in ctx.poll:
+        pass
 
 if __name__ == "__main__":
     smoke_test_module()

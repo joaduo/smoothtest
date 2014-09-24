@@ -78,15 +78,9 @@ class TestSearcher(AutoTestBase):
 def smoke_test_module():
     from pprint import pprint
     ts = TestSearcher()
-    #from fulcrum.views.sales.tests.about_us.AboutUs.test_contact_invalid
-    test_paths, parcial_reloads = ts.solve_paths(('fulcrum.views.sales.tests.about_us', 'valid'))
+    test_paths, parcial_reloads = ts.solve_paths(('smoothtest.autotest.tests.Context', ''))
     pprint(test_paths)
     pprint(parcial_reloads)
-    test_paths, parcial_reloads = ts.solve_paths(('fulcrum.views.sales.tests.about_us.AboutUs', '_valid'), 
-                                                 specific_class=True)
-    pprint(test_paths)
-    pprint(parcial_reloads)
-
 
 if __name__ == "__main__":
     smoke_test_module()

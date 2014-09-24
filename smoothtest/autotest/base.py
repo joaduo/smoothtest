@@ -6,12 +6,11 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-from smoothtest.Logger import Logger
+import relative_import
 import traceback
+from ..base import SmoothTestBase
 
-class AutoTestBase(object):
-    log = Logger('autotest')
-    
+class AutoTestBase(SmoothTestBase):
     def cmd(self, cmd, *args, **kwargs):
         #Make it ready for sending
         return [self._cmd(cmd, *args, **kwargs)]

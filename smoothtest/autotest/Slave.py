@@ -106,9 +106,8 @@ def smoke_test_module():
     sat.start_subprocess()
     print sat.test(test_paths, block=True)
     print sat.test(test_paths, block=True)
-    sat.kill()
     sat.kill(block=True)
-    print 'parent ended'
+
 
 
 if __name__ == "__main__":
