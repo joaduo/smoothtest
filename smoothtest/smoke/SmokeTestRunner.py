@@ -113,6 +113,7 @@ class SmokeTestRunner(SmoothTestBase):
 def smoke_test_module():
     pass
 
+
 def formatPathPrint(path, line=None, error=False):
     if not line:
         line = 1
