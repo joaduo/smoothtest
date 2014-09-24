@@ -85,7 +85,7 @@ class Slave(AutoTestBase):
                        ''.format(pid=pid, status=status))
         end()
 
-    def test(self, test_paths, smoke=False, block=False, repeat=True):
+    def test(self, test_paths, smoke=False, block=False):
         self.send(self.cmd('test', test_paths, smoke=smoke))
         if not block:
             return
@@ -100,15 +100,14 @@ class Slave(AutoTestBase):
         self._first_test = False
         return answer[0]
 
+
 def smoke_test_module():
-    test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
+    test_paths = ['example_tests.Example.Example.test_example']
     sat = Slave(TestRunner, [], {})
     sat.start_subprocess()
     print sat.test(test_paths, block=True)
     print sat.test(test_paths, block=True)
     sat.kill(block=True)
-
-
 
 if __name__ == "__main__":
     smoke_test_module()

@@ -8,7 +8,7 @@ Code Licensed under MIT License. See LICENSE file.
 import relative_import
 import unittest
 
-class ContextTest(unittest.TestCase):
+class Example(unittest.TestCase):
     def test_example(self):
         print 'Running test at %s!' % __file__
 

@@ -283,7 +283,7 @@ class Master(AutoTestBase):
 
 
 def smoke_test_module():
-    test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
+    test_paths = ['example_tests.Example.Example.test_example']
     parcial_reloads = ['MasterAutoTest.py']
     mat = Master()
     poll = mat.io_loop(dict(test_paths=test_paths, parcial_reloads=parcial_reloads, smoke=True),

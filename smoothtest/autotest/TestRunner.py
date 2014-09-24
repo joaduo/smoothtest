@@ -68,7 +68,7 @@ class TestRunner(AutoTestBase):
 
 
 def smoke_test_module():
-    test_paths = ['fulcrum.views.sales.tests.about_us.AboutUs.test_contact_valid']
+    test_paths = ['example_tests.Example.Example.test_example']
     tr = TestRunner()
     class DummyIpc(object):
         def recv(self):
