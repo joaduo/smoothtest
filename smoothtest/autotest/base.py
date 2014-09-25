@@ -7,8 +7,8 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
 import relative_import
-import traceback
 from ..base import SmoothTestBase
+
 
 class AutoTestBase(SmoothTestBase):
     def cmd(self, cmd, *args, **kwargs):
@@ -62,6 +62,9 @@ def smoke_test_module():
     base = AutoTestBase()
     base.log.d('Debug')
     base.log.i('Info')
+    test_path = 'smoothtest.tests.example.Example.Example.test_example'
+    base.log.i(base.split_test_path(test_path))
+    base.log.i(base.split_test_path(test_path, meth=True))
 
 
 if __name__ == "__main__":

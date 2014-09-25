@@ -10,6 +10,7 @@ from IPython.core.magic import Magics, magics_class, line_magic
 
 import shlex
 import subprocess
+import glob
 
 
 @magics_class
@@ -17,13 +18,10 @@ class AutotestMagics(Magics):
     main = None
 
     def expand_files(self, tests):
-        #TODO: use glob
-        p = subprocess.Popen(['bash'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        out, err = p.communicate('echo %s' % (' '.join(tests)))
-        if err:
-            raise LookupError('Couldn\'t expand with bash files {tests}\n'
-                              ' Error:{err}'.format(tests=tests, err=err))
-        return shlex.split(out)
+        paths = []
+        for tst in tests:
+            paths += glob.glob(tst)
+        return paths
 
     @line_magic
     def autotest(self, line):
@@ -60,7 +58,9 @@ def unload_ipython_extension(ipython):
 
 
 def smoke_test_module():
-    AutotestMagics(None)
+    am = AutotestMagics(None)
+    from pprint import pprint
+    pprint( am.expand_files(['./*.py']))
 
 
 if __name__ == "__main__":

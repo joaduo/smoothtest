@@ -76,7 +76,7 @@ class TestSearcher(AutoTestBase):
 def smoke_test_module():
     from pprint import pprint
     ts = TestSearcher()
-    test_paths, parcial_reloads = ts.solve_paths(('smoothtest.autotest.tests.Context', ''))
+    test_paths, parcial_reloads = ts.solve_paths(('smoothtest.tests.example.Example', ''))
     pprint(test_paths)
     pprint(parcial_reloads)
 

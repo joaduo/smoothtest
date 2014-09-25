@@ -102,7 +102,7 @@ class Slave(AutoTestBase):
 
 
 def smoke_test_module():
-    test_paths = ['example_tests.Example.Example.test_example']
+    test_paths = ['smoothtest.tests.example.Example.Example.test_example']
     sat = Slave(TestRunner, [], {})
     sat.start_subprocess()
     print sat.test(test_paths, block=True)

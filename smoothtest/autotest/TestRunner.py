@@ -68,7 +68,7 @@ class TestRunner(AutoTestBase):
 
 
 def smoke_test_module():
-    test_paths = ['example_tests.Example.Example.test_example']
+    test_paths = ['smoothtest.tests.example.Example']
     tr = TestRunner()
     class DummyIpc(object):
         def recv(self):

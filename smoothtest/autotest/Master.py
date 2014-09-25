@@ -283,7 +283,7 @@ class Master(AutoTestBase):
 
 
 def smoke_test_module():
-    test_paths = ['example_tests.Example.Example.test_example']
+    test_paths = ['smoothtest.tests.example.Example.Example.test_example']
     parcial_reloads = ['MasterAutoTest.py']
     mat = Master()
     poll = mat.io_loop(dict(test_paths=test_paths, parcial_reloads=parcial_reloads, smoke=True),
