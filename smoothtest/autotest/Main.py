@@ -148,18 +148,22 @@ class Main(AutoTestBase):
     
     @property
     def kill_child(self):
+        answer = None
         if self._parent_conn and not self._parent_conn.closed:
             answer = self.send_recv(self._kill_command)
             self.log.i(answer)
             self._parent_conn.close()
             self._parent_conn = None
-            return answer
+            self.child_process.join()
         else:
             self.child_process.terminate()
+            self.child_process.join()
+        self.child_process = None
+        return answer
 
 
 def smoke_test_module():
-    main = Main()
+    main = Main(smoke=True)
     main.run({}, embed_ipython=False, block=False)
     main.kill_child
 
