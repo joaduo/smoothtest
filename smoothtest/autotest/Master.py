@@ -62,10 +62,10 @@ def filter_sockets(sockets, exclude):
 class Master(AutoTestBase):
     '''
     '''
-    def __init__(self, child_conn=None):
+    def __init__(self, child_conn=None, slave=None):
         self._child_conn = child_conn
         self._watcher = SourceWatcher()
-        self._slave = Slave(TestRunner)
+        self._slave = Slave(TestRunner) if not slave else slave
         master, watcher = multiprocessing.Pipe(duplex=False)
         self._m_w_conn = master
         self._w_m_conn = watcher

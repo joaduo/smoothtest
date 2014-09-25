@@ -1,5 +1,6 @@
 ## TODO
 
+1. handle KeyboardInterrupt
 1. Better test case module resolution
 1. create smoothtest command
 	i. autotest passing parameters or .cfg or .py

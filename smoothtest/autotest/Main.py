@@ -10,6 +10,10 @@ import multiprocessing
 import sys
 from .base import AutoTestBase
 from .Master import Master
+from ..settings.solve_settings import solve_settings
+from .Slave import Slave
+from .TestRunner import TestRunner
+from selenium import webdriver
 
 
 class Main(AutoTestBase):
@@ -18,6 +22,7 @@ class Main(AutoTestBase):
         self.smoke = smoke
         self.ishell = None
         self.test_config = {}
+        self._slave = None
         
     def run(self, test_config, embed_ipython=False, block=False):
         self.test_config = test_config
@@ -59,10 +64,22 @@ class Main(AutoTestBase):
         self.send_recv('new_test', **test_config)
         self.test_config = test_config
 
+    def _build_slave(self):
+        if not self._slave and not self.smoke:
+            settings = solve_settings()
+            child_kwargs = {}
+            if settings.webdriver_inmortal_pooling:
+                wd = getattr(webdriver, settings.webdriver_browser)()
+                child_kwargs.update(webdriver=wd)
+            self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
+        return self._slave
+        
     def _build_callback(self):
-
+        #we need build it outside the child process
+        slave = self._build_slave()
+        
         def child_callback(child_conn):
-            master = Master(child_conn)
+            master = Master(child_conn, slave)
             poll = master.io_loop(self.test_config)
             while 1:
                 poll.next()

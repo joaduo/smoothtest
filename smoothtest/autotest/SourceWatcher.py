@@ -11,18 +11,23 @@ from .base import AutoTestBase
 from collections import defaultdict
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+import time
+
 
 def realPath(path):
     return os.path.realpath(path)
+
 
 class FileAction(FileSystemEventHandler):
     '''
 
     '''
-    def __init__(self, path, event_type=None):
+    def __init__(self, path, event_type=None, time_treshold=1):
         self._event_type = event_type
         self._path = path
         self._event_callbacks = defaultdict(list)
+        self._last_time = time.time()
+        self._time_treshold = time_treshold
 
     def __call__(self, event, manager):
         '''
@@ -36,7 +41,14 @@ class FileAction(FileSystemEventHandler):
             return
         self._call(event, manager)
         
+    def _enough_time(self):
+        last = self._last_time
+        now = self._last_time = time.time()
+        return now - last > self._time_treshold
+        
     def _call(self, event, manager):
+        if not self._enough_time():
+            return
         #call all the callbacks associated with this file 
         called = set()
         for callback in self._event_callbacks[event.event_type]:

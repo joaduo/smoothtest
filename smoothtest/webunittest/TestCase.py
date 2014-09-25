@@ -8,6 +8,7 @@ from selenium import webdriver
 import unittest
 import time
 from selenium.common.exceptions import WebDriverException
+from smoothtest.settings.solve_settings import solve_settings
 
 class WebdriverUtils(object):
     _implicit_wait = 30
@@ -139,23 +140,22 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
         time.sleep(timeout or self._wait_timeout)
 
 class TestBase(WebdriverUtils):
-    __global_webdriver = None
+    _global_webdriver = None
     @staticmethod
     def _new_webdriver(settings):
         #TODO: passing a webdriver factory, so we can cycle them
         #locking and releasing them
+        browser = settings.webdriver_browser
         if settings.webdriver_pooling:
-            if not TestBase.__global_webdriver:
-                browser = settings.webdriver_browser
-                TestBase.__global_webdriver = getattr(webdriver, browser)()
-            driver = TestBase.__global_webdriver
+            if not TestBase._global_webdriver:
+                TestBase._global_webdriver = getattr(webdriver, browser)()
+            driver = TestBase._global_webdriver
         else:
             driver = getattr(webdriver, browser)()
         return driver
 
     def _init_webserver_webdriver(self, settings=None, webdriver=None):
-        from smoothtest_settings import Settings
-        self.settings = settings if settings != None else Settings()
+        self.settings = settings if settings else solve_settings()
         base_url = self.settings.web_server_url
         browser = self.settings.webdriver_browser
         webdriver = webdriver if webdriver else TestBase._new_webdriver(self.settings)

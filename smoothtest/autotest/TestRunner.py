@@ -10,6 +10,7 @@ import unittest
 import relative_import
 from .base import AutoTestBase
 
+
 class TestRunner(AutoTestBase):
     '''
     Responsabilities
@@ -19,7 +20,12 @@ class TestRunner(AutoTestBase):
     '''
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
-        self._webdriver = webdriver
+        self._init_webdriver(webdriver)
+
+    def _init_webdriver(self, webdriver):
+        if webdriver:
+            from ..webunittest.TestCase import TestBase
+            TestBase._global_webdriver = webdriver
 
     def test(self, test_paths, smoke=False):
         '''

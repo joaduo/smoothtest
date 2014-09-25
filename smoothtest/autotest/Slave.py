@@ -95,7 +95,8 @@ class Slave(AutoTestBase):
     def recv_answer(self):
         answer = self.recv()
         if answer == self._kill_answer:
-            self.log.w('Answer is %r. Perhaps you sent two kill commands?')
+            self.log.w('Answer is %r. Perhaps you sent two kill commands?' % 
+                       answer)
             return None, None
         self._first_test = False
         return answer[0]
