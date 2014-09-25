@@ -1,5 +1,45 @@
 ## TODO
 
+1. Allow several child processes at Main level
+	selecting a default one
+	sending tests to them all
+	Main -> Master + Slave || SourceWatcher -> TestRunner
+	L> TestSearcher
+	
+	BrowserList
+		list
+		default
+		names
+	
+	BrowserPool
+		ffox
+		chrome
+		phantomjs
+		new_browser browser name
+	
+	Main
+		ffox.test
+		s.ffox
+		s.chrome
+		s.phantomjs
+		s.browsers
+		s.pool.test
+		s.pool.ffox
+	
+	BrowserProcess
+		__init__ browser name smoke
+		start
+		send
+		send_recv
+		recv
+		kill @prop
+		test @prop
+		new_test
+		toggle_smoke @prop
+		_build_slave
+		_get_webdriver
+	
+	
 1. handle KeyboardInterrupt
 1. Better test case module resolution
 1. create smoothtest command
