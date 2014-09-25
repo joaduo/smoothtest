@@ -64,12 +64,36 @@ class Main(AutoTestBase):
         self.send_recv('new_test', **test_config)
         self.test_config = test_config
 
-    def _build_slave(self):
-        if not self._slave and not self.smoke:
+    def new_browser(self, browser=None):
+        #Build the new slave
+        if browser:
+            m = dict(f='Firefox',
+                     c='Chrome',
+                     p='PhantomJS',
+                     )
+            browser = m.get(browser.lower()[0],m['f'])
+        self._build_slave(force=True, browser=browser)
+        self.new_child
+
+    @property
+    def ffox(self):
+        self.new_browser('f')
+    
+    @property
+    def chrome(self):
+        self.new_browser('c')
+        
+    @property
+    def phantomjs(self):
+        self.new_browser('p')        
+
+    def _build_slave(self, force=False, browser=None):
+        if (not self._slave or force) and not self.smoke:
             settings = solve_settings()
+            browser = browser or settings.webdriver_browser
             child_kwargs = {}
             if settings.webdriver_inmortal_pooling:
-                wd = getattr(webdriver, settings.webdriver_browser)()
+                wd = getattr(webdriver, browser)()
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave

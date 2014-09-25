@@ -42,6 +42,8 @@ class FileAction(FileSystemEventHandler):
         self._call(event, manager)
         
     def _enough_time(self):
+        if not self._time_treshold:
+            return True
         last = self._last_time
         now = self._last_time = time.time()
         return now - last > self._time_treshold
