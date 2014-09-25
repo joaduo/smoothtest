@@ -5,7 +5,7 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import relative_import
+import rel_imp; rel_imp.init()
 import multiprocessing
 import sys
 from .base import AutoTestBase

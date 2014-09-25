@@ -11,7 +11,7 @@ It lets smoothtest to left a hook at the passive waiting over inputs.
 But since Ipython notebook uses multiprocessing seems impossible to pass
 objects to the notebooks. Perhaps i need to investigate a bit more.
 '''
-import relative_import
+import rel_imp; rel_imp.init()
 from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQPoller, ZMQIOLoop
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll

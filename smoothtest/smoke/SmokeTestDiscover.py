@@ -3,7 +3,7 @@
 Simple RPC
 Copyright (c) 2013, Joaquin G. Duo
 '''
-import relative_import
+import rel_imp; rel_imp.init()
 from unittest.loader import TestLoader
 from unittest.case import TestCase
 from unittest.runner import TextTestRunner

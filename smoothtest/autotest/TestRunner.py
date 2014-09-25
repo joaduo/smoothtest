@@ -7,7 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import importlib
 import unittest
-import relative_import
+import rel_imp; rel_imp.init()
 from .base import AutoTestBase
 
 

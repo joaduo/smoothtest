@@ -6,7 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 #parent_pipe, child_pipe = multiprocessing.Pipe()
-import relative_import
+import rel_imp; rel_imp.init()
 from .Master import Master
 
 class singleton_decorator(object):

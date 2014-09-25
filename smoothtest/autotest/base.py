@@ -6,7 +6,7 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-import relative_import
+import rel_imp; rel_imp.init()
 from ..base import SmoothTestBase
 
 
