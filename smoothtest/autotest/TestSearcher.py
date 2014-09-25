@@ -37,8 +37,6 @@ class TestSearcher(AutoTestBase):
                     else:
                         modstr = tst_pth
                         mod = importlib.import_module(tst_pth)
-#                        from pprint import pprint
-#                        pprint (list(vars(mod).iteritems()))
                         for _, cls in vars(mod).iteritems():
                             if not isclass(cls) or not issubclass(cls, test_class):
                                 continue

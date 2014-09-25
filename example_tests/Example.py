@@ -5,7 +5,6 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import relative_import
 import unittest
 
 class Example(unittest.TestCase):

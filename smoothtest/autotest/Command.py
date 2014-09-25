@@ -73,17 +73,12 @@ class Command(AutoTestBase):
                             default=False, action='store_true')
         return parser
 
-    def clean_path(self, tst):
-        tst = tst.replace(os.path.sep, '.')
-        tst = re.sub(r'\.(pyc)|(py)$', '', tst).strip('.')
-        return tst
-
     def parcial(self, args):
         searcher = TestSearcher()
         test_paths = set()
         parcial_reloads = set()
         for tst in args.tests:
-            tst = self.clean_path(tst)
+            tst = self._path_to_modstr(tst)
             paths, parcial = searcher.solve_paths((tst, args.methods_regex))
             if paths:
                 test_paths.update(paths)
@@ -116,7 +111,7 @@ def smoke_test_module():
     c = Command()
     c.get_parser()
     parser = c.get_extension_parser()
-    args = parser.parse_args()
+    args = parser.parse_args([])
     c.parcial(args)
 
 

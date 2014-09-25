@@ -11,14 +11,14 @@ class Logger(object):
         if not level:
             level = self.default_level
         if not output:
-            if not len(logging.root.handlers):
-                output = self.__configLogging(name, level)
+            if not logging.root.handlers:
+                output = self._config_output(name, level)
             else:
                 output = logging.getLogger(name)
         self.output = output
         self.setLevel(level)
 
-    def __configLogging(self, name, level):
+    def _config_output(self, name, level):
         hdlr = logging.StreamHandler()
         hdlr.setLevel(self.handler_level)
         fmt = logging.Formatter(fmt='%(asctime)s - %(message)s',
@@ -26,6 +26,8 @@ class Logger(object):
         hdlr.setFormatter(fmt)
         logging.root.addHandler(hdlr)
         return logging.getLogger(name)
+    
+#    def _redirect_to
 
     def critical(self, msg):
         self.output.critical(str(msg))

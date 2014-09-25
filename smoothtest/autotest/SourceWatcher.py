@@ -206,7 +206,7 @@ def smoke_test_module():
     print sw._file_actions,  sw._dir_actions
     sw.start_observer()
     import time
-    sec = 3
+    sec = 0.5
     time.sleep(0.5)
     if os.path.exists(path):
         os.remove(path)
