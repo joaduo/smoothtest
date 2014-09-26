@@ -49,7 +49,7 @@ class WebdriverUtils(object):
             self._driver = webdriver
         else:
             self._init_driver(browser)
-        self.get_driver().implicitly_wait(self._implicit_wait)
+        #self.get_driver().implicitly_wait(self._implicit_wait)
         #self.get_driver().set_window_size(*self._window_size)
         self._base_url = base_url
         self._wait_timeout = 2
@@ -103,7 +103,7 @@ class WebdriverUtils(object):
     def _init_driver(self, browser):
         if not self._driver:
             #Firefox, Chrome, PhantomJS
-            self._driver = getattr(webdriver, browser)()
+            self._driver = new_driver(browser)
 
     def get_driver(self):
         assert self._driver, 'driver was not initialized'
@@ -146,7 +146,8 @@ class WebdriverUtils(object):
         driver = self.get_driver()
         url = urlparse.urljoin(self._base_url, path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
-            self.log.w('BEWARE: sometimes PhantomJS fails with https urls!'
+            self.log.d('PhantomJS fails with https if you don\'t pass '
+                       'service_args=[\'--ignore-ssl-errors=true\']' 
                        ' Trying to fetch {url!r}'.format(url=url))
         self.log.d('Fetching page at {url!r}'.format(url=url))
         driver.get(url)
@@ -243,6 +244,13 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
     def wait(self, timeout=None):
         time.sleep(timeout or self._wait_timeout)
 
+
+def new_driver(browser, *args, **kwargs):
+    if browser == 'PhantomJS':
+        kwargs.update(service_args=['--ignore-ssl-errors=true'])
+    return getattr(webdriver, browser)(*args, **kwargs)
+
+
 class TestBase(WebdriverUtils):
     _global_webdriver = None
     @staticmethod
@@ -256,10 +264,10 @@ class TestBase(WebdriverUtils):
         browser = settings.webdriver_browser
         if settings.webdriver_pooling:
             if not TestBase._global_webdriver:
-                TestBase._global_webdriver = getattr(webdriver, browser)()
+                TestBase._global_webdriver = new_driver(browser)
             driver = TestBase._global_webdriver
         else:
-            driver = getattr(webdriver, browser)()
+            driver = new_driver(browser)
         return driver
 
     def _init_webserver_webdriver(self, settings=None, webdriver=None):
