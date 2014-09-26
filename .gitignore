@@ -1,3 +1,8 @@
+#local things
+local_deploy.sh
+upload_juju.sh
+venv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

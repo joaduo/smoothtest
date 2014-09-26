@@ -25,7 +25,7 @@ class TestRunner(AutoTestBase):
     def _init_webdriver(self, webdriver):
         if webdriver:
             from ..webunittest.TestCase import TestBase
-            TestBase._global_webdriver = webdriver
+            TestBase.set_webdriver(webdriver)
 
     def test(self, test_paths, smoke=False):
         '''

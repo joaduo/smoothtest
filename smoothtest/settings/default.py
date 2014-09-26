@@ -17,8 +17,7 @@ class DefaultSettings(object):
     webdriver_inmortal_pooling = False
     webdriver_keep_open = False
 
-    screenshots_enabled = False
-    screenshots_level = 0
+    screenshot_level = 0
 
 
 def smoke_test_module():

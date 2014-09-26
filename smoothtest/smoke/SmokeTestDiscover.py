@@ -70,7 +70,8 @@ class SmokeTestDiscover(SmoothTestBase):
         func_dict = self.inspector.iter_modules(package, filter_, reload_=False)
         for module, funcs in func_dict:
             has_test = filter(lambda x: x.__name__ == self._func_name, funcs)
-            unit_test = filter(lambda x: isinstance(x, TypeType) and issubclass(x, unittest.TestCase), funcs)
+            unit_test = filter(lambda x: isinstance(x, TypeType) 
+                               and issubclass(x, unittest.TestCase), funcs)
             #smokeTest exists, or is not this module
             if not (has_test or unit_test):
                 yield module
@@ -78,7 +79,7 @@ class SmokeTestDiscover(SmoothTestBase):
     def discover_run(self, package, modules=[]):
         total = 0
         failed = 0
-        for mod, func in self._gather(package):
+        for mod, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
             if self._run_test(mod):
@@ -87,6 +88,9 @@ class SmokeTestDiscover(SmoothTestBase):
         return total, failed
 
     def _run_test(self, mod):
+        #call this same script with a different argument
+        #we need to test them in another process to avoid concurrency
+        #between tests
         cmd = 'python %r -t %s' % (__file__, mod.__name__)
         return subprocess.call(shlex.split(cmd))
 
@@ -107,16 +111,17 @@ class SmokeTestDiscover(SmoothTestBase):
 
 class SmokeCommand(SmoothTestBase):
     def get_parser(self):
-        parser = ArgumentParser(description='Start a local sales vs non-sales glidepath server')
+        parser = ArgumentParser(description='Start a local sales vs'
+                                ' non-sales glidepath server')
         parser.add_argument('-t', '--tests', type=str,
-                            help='Specify the modules to run smoke tests from.',
-                            default=[], nargs='+')
+                    help='Specify the modules to run smoke tests from.',
+                    default=[], nargs='+')
         parser.add_argument('-p', '--packages', type=str,
-                            help='Specify the packages to discover smoke tests from.',
-                            default=[], nargs='+')
+                    help='Specify the packages to discover smoke tests from.',
+                    default=[], nargs='+')
         parser.add_argument('-i', '--ignore-missing',
-                            help='Ignore missing smoke tests.',
-                            default=False, action='store_true')
+                    help='Ignore missing smoke tests.',
+                    default=False, action='store_true')
         return parser
     
     def _test_modules(self, tests):
@@ -156,11 +161,15 @@ class SmokeCommand(SmoothTestBase):
             self._test_modules(args.tests)
         elif args.packages:
             total, failed = self._discover_run(args.packages, missing=not args.ignore_missing)
-            self.log.i('Total={total} Failed={failed}'.format(**locals()))
+            if failed:
+                self.log.i('TOTAL: {total} FAILED: {failed}'.format(**locals()))
+            else:
+                self.log.i('All {total} tests OK'.format(**locals()))
 
 
 def smoke_test_module():
     pass
+
 
 def main(argv=None):
     SmokeCommand().main(argv)
