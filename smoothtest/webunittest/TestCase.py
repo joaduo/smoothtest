@@ -15,6 +15,7 @@ from threading import Lock
 from smoothtest.Logger import Logger
 import logging
 import re
+from smoothtest.base import SmoothTestBase
 
 _with_screenshot = '_with_screenshot'
 _zero_screenshot = '_zero_screenshot'
@@ -145,11 +146,16 @@ class WebdriverUtils(object):
         driver = self.get_driver()
         url = urlparse.urljoin(self._base_url, path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
-            self.log.w('BEWARE: sometimes PhantomJS fails with https urls!')
+            self.log.w('BEWARE: sometimes PhantomJS fails with https urls!'
+                       ' Trying to fetch {url!r}'.format(url=url))
+        self.log.d('Fetching page at {url!r}'.format(url=url))
         driver.get(url)
-        if check_load:
-            msg = 'Couldn\'t load page at %r.' % url
-            assert self.wait_condition(condition), msg
+        #Errors
+        msg = 'Couldn\'t load page at {url!r}'.format(url=url)
+        if check_load and not self.wait_condition(condition):
+            raise LookupError(msg)
+        if isinstance(driver, webdriver.PhantomJS) and driver.current_url == u'about:blank':
+            raise LookupError(msg + '. Url is u"about:blank"')
         return driver
 
     def log_debug(self, msg):
@@ -203,10 +209,12 @@ var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
         try:
             e = dr.execute_script(self._get_xpath_script(xpath, ret))
         except WebDriverException as e:
-            msg = 'WebDriverException: Could not select xpath {xpath!r}. Error: {e}'.format(**locals())
+            msg = ('WebDriverException: Could not select xpath {xpath!r} '
+                'for page {dr.current_url!r}\n Error:\n {e}'.format(**locals()))
             raise LookupError(msg)
         if not e and ret == 'node':
-            msg = 'Could not find a node at xpath %r' % xpath
+            msg = ('Could not find a node at xpath {xpath!r}'
+                   ' for page at {dr.current_url!r}'.format(**locals()))
             raise LookupError(msg)
         return e
 
@@ -270,7 +278,7 @@ class TestBase(WebdriverUtils):
 #def branch(m):
 #    return m
 
-class TestCase(unittest.TestCase, TestBase):
+class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
     def assert_text(self, xpath, value):
         extracted = self.extract_xpath(xpath)
         msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
