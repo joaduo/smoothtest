@@ -259,7 +259,7 @@ class TestBase(WebdriverUtils):
         base_url = self._settings.web_server_url
         browser = self._settings.webdriver_browser
         webdriver = webdriver if webdriver else TestBase._new_webdriver(self._settings)
-        self._init_webdriver(base_url, browser, webdriver, settings.screenshot_level)
+        self._init_webdriver(base_url, browser, webdriver, self._settings.screenshot_level)
 
     def _shutdown_webserver_webdriver(self):
         if (not self._settings.webdriver_keep_open and
