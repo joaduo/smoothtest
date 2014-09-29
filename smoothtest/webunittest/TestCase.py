@@ -138,7 +138,10 @@ class WebdriverUtils(object):
         dr.save_screenshot(filename)
 
     def screenshot(self, *args, **kwargs):
-        pass
+        self.log.w('WebdriverUtils.screenshot not yet implemented.')
+    
+    def assert_screenshot(self, name, valid=None):
+        self.log.w('WebdriverUtils.assert_screenshot not yet implemented.')
 
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
@@ -157,6 +160,9 @@ class WebdriverUtils(object):
             raise LookupError(msg)
         if isinstance(driver, webdriver.PhantomJS) and driver.current_url == u'about:blank':
             raise LookupError(msg + '. Url is u"about:blank"')
+        if url != driver.current_url:
+            self.log.d('Fetching {url!r} and we got {driver.current_url|r}.'
+                       .format(**locals()))
         return driver
 
     def log_debug(self, msg):
