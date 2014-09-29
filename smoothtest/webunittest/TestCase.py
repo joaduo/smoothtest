@@ -195,14 +195,14 @@ class WebdriverUtils(object):
         for i in range(1, top+1):
             loaded = condtn(self.get_driver())
             if loaded:
-                self.log_debug('Condition "%s" is True.' % condition)
+                self.log.d('Condition "%s" is True.' % condition)
                 break
-            self.log_debug('Waiting condition "%s" to be True.' % condition)
+            self.log.d('Waiting condition "%s" to be True.' % condition)
             time.sleep(float(i)/parts)
         if not loaded:
             msg = ('Page took too long to load. Increase max_wait (secs) class'
                    ' attr. Or override _wait_script method.')
-            self.log_debug(msg)
+            self.log.d(msg)
         return loaded
 
     def _get_xpath_script(self, xpath, ret='node'):
