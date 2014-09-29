@@ -41,6 +41,21 @@ class Main(AutoTestBase):
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
         """
+        iptyhon_msg = ('Could not embed Ipython, falling back to ipdb'
+                       ' shell. Exception: %r')
+        ipdb_msg = ('Could not embed ipdb, falling back to pdb'
+                       ' shell. Exception: %r')
+        try:
+            self._embed_ipython(**kwargs)
+        except Exception as e:
+            self.log.w(iptyhon_msg % e)
+            try:
+                import ipdb; ipdb.set_trace()
+            except Exception as e:
+                self.log.e(ipdb_msg % e)
+                import pdb ; pdb.set_trace()
+
+    def _embed_ipython(self, **kwargs):
         from IPython.terminal.ipapp import load_default_config
         from IPython.terminal.embed import InteractiveShellEmbed
         from .ipython_extension import load_extension
@@ -53,8 +68,9 @@ class Main(AutoTestBase):
             kwargs['config'] = config
         self.ishell = InteractiveShellEmbed.instance(**kwargs)
         load_extension(self.ishell, self)
-        self.ishell(header=header, stack_depth=2, compile_flags=compile_flags)
-    
+        #Stack depth is 3 because we use self.embed first
+        self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
+            
     @property
     def new_child(self):
         self.kill_child
