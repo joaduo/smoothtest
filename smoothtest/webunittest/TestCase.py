@@ -137,6 +137,13 @@ class WebdriverUtils(object):
         self.log.e('Saving exception screenshot to: %r' % filename)
         dr.save_screenshot(filename)
 
+    _quick_sshot_count = 0
+    def _quick_screenshot(self):
+        self._quick_sshot_count += 1
+        filename = '{count:03d}.quick_screenshot.png'.format(**locals())
+        self.log.i('Saving exception screenshot to: %r' % filename)
+        self.get_driver().save_screenshot(filename)        
+
     def screenshot(self, *args, **kwargs):
         self.log.w('WebdriverUtils.screenshot not yet implemented.')
     
