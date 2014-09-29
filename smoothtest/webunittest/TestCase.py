@@ -168,7 +168,7 @@ class WebdriverUtils(object):
         if isinstance(driver, webdriver.PhantomJS) and driver.current_url == u'about:blank':
             raise LookupError(msg + '. Url is u"about:blank"')
         if url != driver.current_url:
-            self.log.d('Fetching {url!r} and we got {driver.current_url|r}.'
+            self.log.d('Fetching {url!r} and we got {driver.current_url!r}.'
                        .format(**locals()))
         return driver
 
