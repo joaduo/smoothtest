@@ -150,6 +150,9 @@ class WebdriverUtils(object):
     def assert_screenshot(self, name, valid=None):
         self.log.w('WebdriverUtils.assert_screenshot not yet implemented.')
 
+    def current_path(self):
+        return urlparse(self.get_driver().current_url).path
+
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
         base = base if base else self._base_url
