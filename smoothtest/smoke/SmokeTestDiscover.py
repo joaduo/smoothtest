@@ -77,14 +77,14 @@ class SmokeTestDiscover(SmoothTestBase):
                 yield module
 
     def discover_run(self, package, modules=[]):
-        total = 0
-        failed = 0
+        total = []
+        failed = []
         for mod, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
             if self._run_test(mod):
-                failed += 1
-            total +=1
+                failed.append(mod.__name__)
+            total.append(mod.__name__)
         return total, failed
 
     def _run_test(self, mod):
@@ -136,10 +136,10 @@ class SmokeCommand(SmoothTestBase):
                 line = 1
             path = os.path.realpath(path)
             return '  File "%s", line %d\n' % (path, line)
-        total, failed = 0, 0
+        total, failed = [], []
         s = SmokeTestDiscover()
-        for pkg_str in packages:
-            pkg = importlib.import_module(self._path_to_modstr(pkg_str))
+        for pkg_pth in packages:
+            pkg = importlib.import_module(self._path_to_modstr(pkg_pth))
             #run and count
             t,f = s.discover_run(pkg)
             total += t
@@ -147,11 +147,11 @@ class SmokeCommand(SmoothTestBase):
             #Print missing
             if missing:
                 for m in s.get_missing(pkg):
-                    f = m.__file__
-                    if f.endswith('.pyc'):
-                        f = f[:-1]
+                    pth = m.__file__
+                    if pth.endswith('.pyc'):
+                        pth = f[:-1]
                     s.log('Missing test in module %s' % m)
-                    s.log(formatPathPrint(f))
+                    s.log(formatPathPrint(pth))
         #return results
         return total, failed
     
@@ -162,9 +162,10 @@ class SmokeCommand(SmoothTestBase):
         elif args.packages:
             total, failed = self._discover_run(args.packages, missing=not args.ignore_missing)
             if failed:
-                self.log.i('TOTAL: {total} FAILED: {failed}'.format(**locals()))
+                self.log.i('TOTAL: {total} FAILED: {failed}'.
+                           format(total=len(total), failed=failed))
             else:
-                self.log.i('All {total} tests OK'.format(**locals()))
+                self.log.i('All {total} tests OK'.format(total=len(total)))
 
 
 def smoke_test_module():
