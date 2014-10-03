@@ -4,18 +4,24 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import urlparse
-from selenium import webdriver
-import unittest
 import time
-from selenium.common.exceptions import WebDriverException
-from smoothtest.settings.solve_settings import solve_settings
-import inspect
-from types import MethodType
-from threading import Lock
-from smoothtest.Logger import Logger
 import logging
 import re
-from smoothtest.base import SmoothTestBase
+import inspect
+import sys
+#We want to use the new version of unittest in <= python 2.6
+if sys.version_info < (2,7):
+    import unittest2 as unittest
+else:
+    import unittest
+from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
+from functools import wraps
+from types import MethodType
+from threading import Lock
+from ..settings.solve_settings import solve_settings
+from ..Logger import Logger
+from ..base import SmoothTestBase
 
 _with_screenshot = '_with_screenshot'
 _zero_screenshot = '_zero_screenshot'
@@ -59,7 +65,7 @@ class WebdriverUtils(object):
     def _decorate_exc_sshot(self, meth_filter=None):
         self._exc_sshot_count = 0
         fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
-                                   or not n.startswith('_'))
+                                   or n.startswith('test'))
         meth_filter = meth_filter or fltr
         self._sshot_lock = Lock()
         for name, method in inspect.getmembers(self):
@@ -76,6 +82,7 @@ class WebdriverUtils(object):
                 
     def _decorate(self, name, method, zero_screeshot=False):
         if not zero_screeshot:
+            @wraps(method)
             def dec(*args, **kwargs):
                 try:
                     return method(*args, **kwargs)
@@ -85,6 +92,7 @@ class WebdriverUtils(object):
                         self._sshot_lock.release()
                     raise
         else:
+            @wraps(method)
             def dec(*args, **kwargs):
                 #block any further exception screenshot, until
                 #we return from this call
@@ -208,41 +216,63 @@ class WebdriverUtils(object):
             self.log.d(msg)
         return loaded
 
-    def _get_xpath_script(self, xpath, ret='node'):
-        script = '''
+    def _get_xpath_script(self, xpath, ret='node', single=True):
+        if single:
+            script = '''
 var xpath = %(xpath)r;
-var e = document.evaluate(xpath, document, null, 9, null).singleNodeValue;
-        '''% locals()
+//FIRST_ORDERED_NODE_TYPE = 9
+var e = document.evaluate(xpath, document, null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+if('wholeText' in e){
+  e = e.wholeText;
+}
+return e;
+            '''
+        else:
+            script = '''
+var xpath = %(xpath)r;
+//var xpath = '//h2';
+//XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5
+var es = document.evaluate(xpath, document, null,
+    XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+var r = es.iterateNext();
+var eslist = [];
+while(r){
+    if('wholeText' in r){
+      r = r.wholeText;
+    }
+    eslist.push(r);
+    r = es.iterateNext();
+}
+return eslist;
+//console.log(eslist);
+        '''
         ret_dict = dict(
                         node='return e',
                         text='return e.textContent',
                         click='e.click()',
                         )
-        script += '\n %s ;' % ret_dict.get(ret, ret)
-        return script
+        return script % locals()
 
-    def select_xpath(self, xpath, ret='node'):
+    def select_xpath(self, xpath, single=True):
         dr = self.get_driver()
         try:
-            e = dr.execute_script(self._get_xpath_script(xpath, ret))
+            e = dr.execute_script(self._get_xpath_script(xpath, single))
         except WebDriverException as e:
             msg = ('WebDriverException: Could not select xpath {xpath!r} '
                 'for page {dr.current_url!r}\n Error:\n {e}'.format(**locals()))
-            raise LookupError(msg)
-        if not e and ret == 'node':
-            msg = ('Could not find a node at xpath {xpath!r}'
-                   ' for page at {dr.current_url!r}'.format(**locals()))
             raise LookupError(msg)
         return e
 
     def has_xpath(self, xpath):
         try:
-            return self.select_xpath(xpath)
+            self.select_xpath(xpath)
+            return True
         except LookupError:
             return False
 
-    def extract_xpath(self, xpath, ret='text'):
-        return self.select_xpath(xpath, ret)
+    def extract_xpath(self, xpath, single=True):
+        return self.select_xpath(xpath, single)
 
     def fill_input(self, xpath, value):
         e = self.select_xpath(xpath)
