@@ -77,6 +77,7 @@ class ChildBase(AutoTestBase):
         #use when queying several commands
         return AutotestCmd(cmd, args, kwargs)
 
+
 class ParentBase(ChildBase):
     def start_subprocess(self, callback, pre=''):
         parent, child = multiprocessing.Pipe()
@@ -113,11 +114,11 @@ class ParentBase(ChildBase):
     def fmt_answers(self, msg):
         output = ''
         for ans in msg:
-            output += str(self._fmt_answer(ans))
+            output += str(self._fmt_answer(ans)) + '\n'
         return output
     
     def _fmt_answer(self, answer):
-        return 'cmd:%s result: %r, errors: %s\n' % (answer.sent_cmd.cmd, 
+        return 'cmd:%s result: %r, errors: %s' % (answer.sent_cmd.cmd, 
                                                  answer.result, answer.error)
 
     def _get_answer(self, answers, cmd):
@@ -143,10 +144,11 @@ class ParentBase(ChildBase):
         
         if not self._subprocess.is_alive():
             self.log.w('Child terminated by himself.'
-                       ' Exitcode:' % self._subprocess.exitcode)
+                       ' Exitcode: %r' % self._subprocess.exitcode)
             end()
+            return answer
         
-        self._subprocess_conn.send(self.cmd(self._kill_command))
+        self.send(self._kill_command)
 
         if not block:
             return answer
@@ -167,6 +169,7 @@ class ParentBase(ChildBase):
         end()
         return answer
 
+
 def smoke_test_module():
     class TR(object):
         def test(self):
@@ -178,6 +181,31 @@ def smoke_test_module():
     test_path = 'smoothtest.tests.example.Example.Example.test_example'
     base.log.i(base.split_test_path(test_path))
     base.log.i(base.split_test_path(test_path, meth=True))
+    class PBTest(ParentBase):
+        def dummy_cmd(self, *args, **kwargs):
+            self.log.d(str(args))
+            self.log.d(str(kwargs))
+            return 'dummy answer'
+    pb = PBTest()
+    def build_callback(secs):
+        def callback(conn):
+            import time
+            pb.log('Child callback')
+            time.sleep(secs)
+            while True:
+                pb._dispatch_cmds(conn)
+        return callback
+    pb.start_subprocess(build_callback(0), pre='Child1')
+    args = (1, 'two', set()) 
+    kwargs = dict(example=30)
+    pb.send(pb.dummy_cmd, *args, **kwargs)
+    ans = pb.recv()[0]
+    pb.log.d(ans)
+    assert ans.sent_cmd.args == args
+    assert ans.sent_cmd.kwargs == kwargs
+    pb.kill(block=True, timeout=0.1)
+    pb.start_subprocess(build_callback(0.5), pre='Child2')
+    pb.kill(block=True, timeout=0.1)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import importlib
 import unittest
 import rel_imp; rel_imp.init()
 from .base import ChildBase
+from pprint import pformat
 
 
 class TestRunner(ChildBase):
@@ -35,13 +36,19 @@ class TestRunner(ChildBase):
         if smoke or not test_paths:
             self.log.i('Ignoring %r \n  (smoke mode or no tests found)'%list(test_paths))
             return errors
-        pusherror = lambda err: err and errors.append(err)
         for tpath in test_paths:
             pusherror = lambda err: err and errors.append((tpath, err))
             class_ = self._import_test(pusherror, tpath)
             if not class_:
                 continue
             self._run_test(pusherror, tpath, class_)
+        total = len(test_paths)
+        if not errors:
+            self.log.i('All %s OK' % total)
+        else:
+            failed = pformat([t for t,_ in errors])
+            self.log.i('Total %s Failed (%s):\n  %s' % 
+                       (total, len(errors), failed))
         return errors
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):

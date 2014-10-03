@@ -233,14 +233,13 @@ def smoke_test_module():
     sw.watch_recursive(os.path.dirname(__file__), callback)
     print sw._file_actions,  sw._dir_actions
     sw.start_observer()
-    import time
-    sec = 0.5
-    time.sleep(0.5)
+    sec = 0.05
+    time.sleep(sec)
     if os.path.exists(path):
         os.remove(path)
     with open(path,'w') as f:
         f.write('Hello World!')
-    time.sleep(0.5)
+    time.sleep(sec)
     if os.path.exists(path):
         os.remove(path)
     time.sleep(sec)
