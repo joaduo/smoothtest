@@ -74,6 +74,7 @@ class Slave(AutoTestBase):
 
         if self._parent_conn.poll(timeout):
             msg = self.recv()
+            self.log.d('Receiving kill answer %r' % msg)
             assert msg == TestRunner._kill_answer
             pid, status = self._process.ident, self._process.exitcode
             self.log.i('Child with pid {pid} gently terminated with exit '

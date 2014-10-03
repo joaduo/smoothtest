@@ -13,6 +13,7 @@ from .SourceWatcher import SourceWatcher, realPath
 import re
 import multiprocessing
 import threading
+import select as select_mod
 
 
 def lists_to_sockets(rlist, wlist, xlist):
@@ -58,6 +59,10 @@ def filter_sockets(sockets, exclude):
             filtered_sockets.append((s,flags))
     return filtered_sockets, (rlist, wlist, xlist)
 
+def get_zmq_poll():
+    #avoid depending on zmq (only import if poll not present)
+    from zmq.backend import zmq_poll
+    return zmq_poll
 
 class Master(AutoTestBase):
     '''
@@ -75,6 +80,7 @@ class Master(AutoTestBase):
         self._poll_timeout = 0        
         #select inputs
         self._select_args = {}
+        self._restart_lock = threading.Lock()
         
     def set_select_args(self, **select_args):
         self._select_args = select_args
@@ -104,7 +110,6 @@ class Master(AutoTestBase):
         #We need to kill the child
         self._receive_kill()
 
-    lock = threading.Lock()
     def new_test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
              parcial_decorator=lambda x: x, full_decorator=lambda x: x,
              full_filter=None,
@@ -125,7 +130,7 @@ class Master(AutoTestBase):
                        (list(test_paths), path))
             #to force reloading all modules we directly kill and restart
             #the process
-            with self.lock: #locking is just in case of being bombed
+            with self._restart_lock: #locking is just in case of being bombed
                 self._watcher.unwatch_all()
                 self.restart_subprocess()
                 self._watcher.start_observer()
@@ -203,13 +208,9 @@ class Master(AutoTestBase):
                 rlist.append(self._child_conn.fileno())
             return rlist
         
-        def get_zmq_poll():
-            #avoid depending on zmq (only import if poll not present)
-            from zmq.backend import zmq_poll
-            return zmq_poll
-        
-        poll = get_zmq_poll() if not(poll or select) else poll
-        
+        #If not set, set the io wait method
+        select = select_mod.select if not(poll or select) else select
+
         if poll:
             def build_sockets():
                 #in interactive mode we need to listen to stdin
@@ -228,6 +229,7 @@ class Master(AutoTestBase):
     
             def get_event():
                 rlist = build_rlist()
+                lrlist = local_rlist()
                 wlist = self._select_args.get('wlist',[])
                 xlist = self._select_args.get('xlist',[])
                 timeout = self._select_args.get('timeout')
@@ -237,8 +239,8 @@ class Master(AutoTestBase):
                     rlist, wlist, xlist = select(rlist, wlist, xlist)
                 #filter internal fds/sockets, don't yield them
                 #and make a separated list
-                yieldrlist = list(set(rlist) - set(local_rlist()))
-                int_rlist = list(set(rlist) & set(local_rlist()))
+                yieldrlist = list(set(rlist) - set(lrlist))
+                int_rlist = list(set(rlist) & set(lrlist))
                 yield_obj = (yieldrlist, wlist, xlist)
                 return any(yield_obj), yield_obj, int_rlist
         return get_event

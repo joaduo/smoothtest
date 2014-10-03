@@ -181,6 +181,8 @@ class Main(AutoTestBase):
 def smoke_test_module():
     main = Main(smoke=True)
     main.run({}, embed_ipython=False, block=False)
+    import time
+    time.sleep(0.5)
     main.kill_child
 
 if __name__ == "__main__":
