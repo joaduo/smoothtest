@@ -8,11 +8,10 @@ Code Licensed under MIT License. See LICENSE file.
 import importlib
 import unittest
 import rel_imp; rel_imp.init()
-from .base import AutoTestBase
-from smoothtest.autotest.base import AutotestCmd
+from .base import ChildBase
 
 
-class TestRunner(AutoTestBase):
+class TestRunner(ChildBase):
     '''
     Responsabilities
         - Import the Test Class
@@ -21,9 +20,9 @@ class TestRunner(AutoTestBase):
     '''
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
-        self._init_webdriver(webdriver)
+        self._set_webdriver(webdriver)
 
-    def _init_webdriver(self, webdriver):
+    def _set_webdriver(self, webdriver):
         if webdriver:
             from ..webunittest.TestCase import TestBase
             TestBase.set_webdriver(webdriver)
@@ -75,6 +74,7 @@ class TestRunner(AutoTestBase):
 
 
 def smoke_test_module():
+    from .base import AutotestCmd
     test_paths = ['smoothtest.tests.example.Example']
     tr = TestRunner()
     class DummyIpc(object):

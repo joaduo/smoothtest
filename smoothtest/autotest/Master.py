@@ -6,7 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
-from .base import AutoTestBase
+from .base import ChildBase
 from .Slave import Slave
 from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher, realPath
@@ -14,6 +14,7 @@ import re
 import multiprocessing
 import threading
 import select as select_mod
+
 
 
 def lists_to_sockets(rlist, wlist, xlist):
@@ -66,11 +67,11 @@ def get_zmq_poll():
     return zmq_poll
 
 
-class Master(AutoTestBase):
+class Master(ChildBase):
     '''
     '''
-    def __init__(self, child_conn=None, slave=None):
-        self._child_conn = child_conn
+    def __init__(self, parent_conn=None, slave=None):
+        self._parent_conn = parent_conn
         self._watcher = SourceWatcher()
         self._slave = Slave(TestRunner) if not slave else slave
         master, watcher = multiprocessing.Pipe(duplex=False)
@@ -148,7 +149,7 @@ class Master(AutoTestBase):
             We use pipes to avoid race conditions on other IO mechanism
             (instead of calling the tests callbacks within the thread)
             '''
-            self._w_m_conn.send(self.cmd('parcial_callback', path))
+            self._w_m_conn.send(self.cmd(self.parcial_callback, path))
         
         def full_msg(path):
             '''
@@ -156,7 +157,7 @@ class Master(AutoTestBase):
             We use pipes to avoid race conditions on other IO mechanism
             (instead of calling the tests callbacks within the thread)
             '''        
-            self._w_m_conn.send(self.cmd('full_callback', path))
+            self._w_m_conn.send(self.cmd(self.full_callback, path))
 
         self._watcher.unwatch_all(clear=True)
         for ppath in parcial_reloads:
@@ -195,19 +196,20 @@ class Master(AutoTestBase):
 
     def restart_subprocess(self):
         def post_callback():
+            #post-fork callback to close open fd
             self._watcher.unwatch_all(clear=True)
             self._m_w_conn.close()
             self._w_m_conn.close()
-            if self._child_conn:
-                self._child_conn.close()
+            if self._parent_conn:
+                self._parent_conn.close()
         return self._slave.restart_subprocess(post_callback)
 
     def _build_get_event(self, poll=None, select=None):
         def local_rlist():
             rlist = [self._slave.get_conn().fileno(), 
                      self._m_w_conn.fileno()]
-            if self._child_conn:
-                rlist.append(self._child_conn.fileno())
+            if self._parent_conn:
+                rlist.append(self._parent_conn.fileno())
             return rlist
         
         #If not set, set the io wait method
@@ -254,8 +256,8 @@ class Master(AutoTestBase):
                 #Receive input from child process
                 if f is self._slave.get_conn().fileno():
                     self._recv_slave()
-                if self._child_conn and f is self._child_conn.fileno():
-                    self._dispatch_cmds(self._child_conn)
+                if self._parent_conn and f is self._parent_conn.fileno():
+                    self._dispatch_cmds(self._parent_conn)
                 if f is self._m_w_conn.fileno():
                     self._dispatch_cmds(self._m_w_conn, duplex=False)
             except Exception as e:
@@ -263,8 +265,8 @@ class Master(AutoTestBase):
                            .format(f=f, rlist=rlist, e=e)) 
 
     def _receive_kill(self, *args, **kwargs):
-        self._slave.kill(block=True, timeout=3)
         self._watcher.unwatch_all()
+        self._slave.kill(block=True, timeout=3)
 
     def _recv_slave(self):
         first = self._slave._first_test

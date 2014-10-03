@@ -5,11 +5,9 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-
+import rel_imp; rel_imp.init()
 from IPython.core.magic import Magics, magics_class, line_magic
-
 import shlex
-import subprocess
 import glob
 
 
@@ -23,12 +21,7 @@ class AutotestMagics(Magics):
             paths += glob.glob(tst)
         return paths
 
-    @line_magic
-    def autotest(self, line):
-        '''
-        
-        :param line:
-        '''
+    def __common(self, line):
         from .Command import Command
         command = Command()
         parser = command.get_extension_parser()
@@ -37,13 +30,26 @@ class AutotestMagics(Magics):
         args.full_reloads = self.expand_files(args.full_reloads)
         test_config = command.parcial(args)
         test_config.update(force=args.force)
-        #Update set values
-        for k,v in self.main.test_config.iteritems():
-            if not test_config.get(k):
-                test_config[k] = v
-        test_config['smoke'] = args.smoke
+        return args, test_config
+    
+    def _send(self, test_config):
         self.main.send_test(**test_config)
+
+    @line_magic
+    def autotest(self, line):
+        args, test_config = self.__common(line)
+        if args.update:
+            #Update set values
+            for k,v in self.main.test_config.iteritems():
+                if not test_config.get(k):
+                    test_config[k] = v
+            if args.smoke is not None:
+                test_config['smoke'] = True
+            if args.nosmoke is not None:
+                test_config['smoke'] = False
+        self._send(test_config)
         return test_config
+            
 
 
 def load_extension(ipython, main):

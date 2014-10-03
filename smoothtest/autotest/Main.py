@@ -6,9 +6,8 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
-import multiprocessing
 import sys
-from .base import AutoTestBase
+from .base import ParentBase
 from .Master import Master
 from ..settings.solve_settings import solve_settings
 from .Slave import Slave
@@ -16,7 +15,7 @@ from .TestRunner import TestRunner
 from selenium import webdriver
 
 
-class Main(AutoTestBase):
+class Main(ParentBase):
     def __init__(self, smoke=False):
         self._timeout = 1
         self.smoke = smoke
@@ -27,7 +26,7 @@ class Main(AutoTestBase):
     def run(self, test_config, embed_ipython=False, block=False):
         self.log.set_pre_post(pre='Main ')
         self.test_config = test_config
-        self.create_child(self._build_callback())
+        self.create_child()
         if embed_ipython:
             s = self # nice alias
             self.embed()
@@ -76,7 +75,7 @@ class Main(AutoTestBase):
     @property
     def new_child(self):
         self.kill_child
-        self.create_child(self._build_callback())
+        self.create_child()
     
     def send_test(self, **test_config):
         self.send_recv('new_test', **test_config)
@@ -106,47 +105,29 @@ class Main(AutoTestBase):
         self.new_browser('p')        
 
     def _build_slave(self, force=False, browser=None):
-        if (not self._slave or force) and not self.smoke:
+        if (not self._slave or force):
             settings = solve_settings()
             browser = browser or settings.webdriver_browser
             child_kwargs = {}
-            if settings.webdriver_inmortal_pooling:
+            if settings.webdriver_inmortal_pooling and not self.smoke:
                 wd = getattr(webdriver, browser)()
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave
-        
-    def _build_callback(self):
-        #we need build it outside the child process
+
+    def create_child(self):
         slave = self._build_slave()
         
-        def child_callback(child_conn):
-            master = Master(child_conn, slave)
+        def callback(conn):
+            if self.ishell:
+                self.ishell.exit_now = True
+            sys.stdin.close()
+            master = Master(conn, slave)
             poll = master.io_loop(self.test_config)
             while 1:
                 poll.next()
         
-        return child_callback
-    
-    def create_child(self, child_callback):
-        parent_conn, child_conn = multiprocessing.Pipe()
-        self._subprocess_conn = parent_conn
-        
-        def callback():
-            self.log.set_pre_post(pre='Master ')
-            self.log.d('Forked process')
-            if self.ishell:
-                self.ishell.exit_now = True
-            sys.stdin.close()
-            parent_conn.close()
-            child_callback(child_conn)
-        
-        self._subprocess = multiprocessing.Process(target=callback)
-        self._subprocess.start()
-        child_conn.close()
-    
-    def poll(self):
-        return self._subprocess_conn.poll()
+        super(Main, self).start_subprocess(callback, pre='Master')
     
     @property
     def test(self):
@@ -158,28 +139,17 @@ class Main(AutoTestBase):
         return ans
 
     def send(self, cmd, *args, **kwargs):
-        if self.poll():
-            self.log.i('Remaining in buffer: %r'%self._subprocess_conn.recv())
-        self._subprocess_conn.send(self.cmd(cmd, *args, **kwargs))
-    
+        while self.poll():
+            self.log.i('Remaining in buffer: %r'%self.recv())
+        return super(Main, self).send(cmd, *args, **kwargs)
+
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self._subprocess_conn.recv()
+        return self.recv()
     
     @property
     def kill_child(self):
-        return self._kill_subprocess(block=True, timeout=3)
-#        if self._subprocess_conn and not self._subprocess_conn.closed:
-#            answer = self.send_recv(self._kill_command)
-#            self.log.i(answer)
-#            self._subprocess_conn.close()
-#            self._subprocess_conn = None
-#            self._subprocess.join()
-#        else:
-#            self._subprocess.terminate()
-#            self._subprocess.join()
-#        self._subprocess = None
-#        return answer
+        return self.kill(block=True, timeout=3)
 
 
 def smoke_test_module():

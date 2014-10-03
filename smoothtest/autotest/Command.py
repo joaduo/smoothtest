@@ -57,7 +57,7 @@ class Command(AutoTestBase):
                             default=False, action='store_true')
         parser.add_argument('--smoke',
                             help='Do not run tests. Simply test the whole monitoring system',
-                            default=False, action='store_true')
+                            default=None, action='store_true')
         parser.add_argument('-F', '--full-reloads', type=is_dir_file,
                             help='Files or directories to be monitored and triggers of full_reloads.',
                             default=[], nargs='+')
@@ -71,6 +71,12 @@ class Command(AutoTestBase):
         parser.add_argument('-f', '--force',
                             help='force reloading tests (+ restarting webdriver)',
                             default=False, action='store_true')
+        parser.add_argument('-u', '--update',
+                            help='update test config',
+                            default=False, action='store_true')
+        parser.add_argument('--nosmoke',
+                            help='force no-smoke for updating',
+                            default=None, action='store_true')
         return parser
 
     def parcial(self, args):

@@ -9,22 +9,30 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 import rel_imp; rel_imp.init()
 from ..base import SmoothTestBase
 from collections import namedtuple
+import multiprocessing
+from types import MethodType, FunctionType
 
 cmd_fields = 'cmd args kwargs'
 AutotestCmd = namedtuple('AutotestCmd', cmd_fields)
 AutotestAnswer = namedtuple('AutotestAnswer', 'sent_cmd result error')
 
 class AutoTestBase(SmoothTestBase):
-    def cmd(self, cmd, *args, **kwargs):
-        #Make it ready for sending
-        cmd = [self._cmd(cmd, *args, **kwargs)]
-        self.log.d('Packing cmd={cmd}'.format(cmd=cmd))
-        return cmd
-    
-    def _cmd(self, cmd, *args, **kwargs):
-        #use when queying several commands
-        return AutotestCmd(cmd, args, kwargs)
+    def split_test_path(self, test_path, meth=False):
+        test_path = test_path.split('.')
+        if meth:
+            offset = -2
+            module = '.'.join(test_path[:offset])
+            class_ = test_path[offset]
+            method = test_path[offset+1]
+            return module, class_, method
+        else: #only module+class
+            offset = -1
+            module = '.'.join(test_path[:offset])
+            class_ = test_path[offset]
+            return module, class_
 
+
+class ChildBase(AutoTestBase):
     _kill_command = 'raise SystemExit'
     _kill_answer = 'doing SystemExit'
     def _dispatch_cmds(self, io_conn, duplex=True):
@@ -52,6 +60,53 @@ class AutoTestBase(SmoothTestBase):
     
     def _receive_kill(self, *args, **kwargs):
         pass
+
+    def _get_cmd_str(self, cmd):
+        if isinstance(cmd, MethodType):
+            cmd = cmd.im_func.func_name
+        if isinstance(cmd, FunctionType):
+            cmd = cmd.func_name
+        return cmd
+
+    def cmd(self, cmd, *args, **kwargs):
+        #Make it ready for sending        
+        return [self._cmd(self._get_cmd_str(cmd), *args, **kwargs)]
+    
+    def _cmd(self, cmd, *args, **kwargs):
+        #use when queying several commands
+        return AutotestCmd(cmd, args, kwargs)
+
+class ParentBase(ChildBase):
+    def start_subprocess(self, callback, pre=''):
+        parent, child = multiprocessing.Pipe()
+        #Add space if defined
+        pre = pre if not pre else pre + ' '
+        def target():
+            parent.close()
+            self.log.set_pre_post(pre=pre)
+            self.log.d('Forked process started...')
+            callback(child)
+        
+        self._subprocess = multiprocessing.Process(target=target)
+        self._subprocess.start()
+        self._subprocess_conn = parent
+        child.close()
+        
+    def restart_subprocess(self, callback):
+        self.kill(block=True, timeout=self._timeout)
+        self.start_subprocess(callback)
+
+    def kill(self, block=False, timeout=None):
+        return self._kill_subprocess(block, timeout)
+    
+    def send(self, cmd, *args, **kwargs):
+        self._subprocess_conn.send(self.cmd(cmd, *args, **kwargs))
+        
+    def recv(self):
+        return self._subprocess_conn.recv()
+
+    def poll(self):
+        return self._subprocess_conn.poll()
     
     def fmt_answers(self, msg):
         output = ''
@@ -64,9 +119,13 @@ class AutoTestBase(SmoothTestBase):
                                                  answer.result, answer.error)
 
     def _get_answer(self, answers, cmd):
+        cmd = self._get_cmd_str(cmd)
         for ans in answers:
             if ans.sent_cmd.cmd == cmd:
                 return ans
+    
+    def get_conn(self):
+        return self._subprocess_conn
     
     def _kill_subprocess(self, block=False, timeout=None):
         self.log.d('Killing Slave child with pid %r.' % self._subprocess.ident)
@@ -106,27 +165,12 @@ class AutoTestBase(SmoothTestBase):
         end()
         return answer
 
-    def split_test_path(self, test_path, meth=False):
-        test_path = test_path.split('.')
-        if meth:
-            offset = -2
-            module = '.'.join(test_path[:offset])
-            class_ = test_path[offset]
-            method = test_path[offset+1]
-            return module, class_, method
-        else: #only module+class
-            offset = -1
-            module = '.'.join(test_path[:offset])
-            class_ = test_path[offset]
-            return module, class_
-
-
-class ParentChildBase(object):
-    pass
-
 def smoke_test_module():
-    base = AutoTestBase()
-    print base.cmd(base.split_test_path)
+    class TR(object):
+        def test(self):
+            pass
+    base = ChildBase()
+    base.log.d(base.cmd(TR.test))
     base.log.d('Debug')
     base.log.i('Info')
     test_path = 'smoothtest.tests.example.Example.Example.test_example'
