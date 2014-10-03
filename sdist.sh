@@ -3,7 +3,7 @@ pandoc --from=markdown --to=rst --output=README README.md
 
 app="smoothtest"
 
-rm ../dist/$app-*.tar.gz
+rm dist/$app\-*.tar.gz
 
 python -m unittest discover && python setup.py sdist && python setup.py check -r
 
@@ -13,7 +13,7 @@ python -m unittest discover && python setup.py sdist && python setup.py check -r
 	cd venv
 	virtualenv ./
 	source bin/activate
-	pip install ../dist/$app-*.tar.gz
+	pip install ../dist/$app\-*.tar.gz
 	pip uninstall $app -y
 	cd ..
 	#rm venv -Rf
