@@ -5,9 +5,9 @@ app="smoothtest"
 
 rm dist/$app\-*.tar.gz
 
-python -m unittest discover && python setup.py sdist && python setup.py check -r
+python setup.py sdist && python setup.py check -r
 
-
+if [ "$1" == "venv" ] ;  then
 	#test installation
 	mkdir venv -p
 	cd venv
@@ -17,6 +17,7 @@ python -m unittest discover && python setup.py sdist && python setup.py check -r
 	pip uninstall $app -y
 	cd ..
 	#rm venv -Rf
+fi
 
 echo 
 echo "upload with: python setup.py sdist upload -r pypi"

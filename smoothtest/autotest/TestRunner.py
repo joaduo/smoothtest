@@ -9,6 +9,7 @@ import importlib
 import unittest
 import rel_imp; rel_imp.init()
 from .base import AutoTestBase
+from smoothtest.autotest.base import AutotestCmd
 
 
 class TestRunner(AutoTestBase):
@@ -79,20 +80,20 @@ def smoke_test_module():
     class DummyIpc(object):
         def recv(self):
             cmds = [
-                    ('test', (test_paths,), dict(smoke=True)),
+                    AutotestCmd('test', (test_paths,), dict(smoke=True)),
                     ]
             self.recv = self.recv2
             return cmds
 
         def recv2(self):
             cmds = [
-                    (TestRunner._kill_command, (0,), {}),
+                    AutotestCmd(TestRunner._kill_command, (0,), {}),
                     ]
             self.recv = lambda : []
             return cmds
 
         def send(self, msg):
-            print msg
+            print 'Sending:', msg
             return 1
 
         def close(self):

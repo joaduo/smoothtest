@@ -59,10 +59,12 @@ def filter_sockets(sockets, exclude):
             filtered_sockets.append((s,flags))
     return filtered_sockets, (rlist, wlist, xlist)
 
+
 def get_zmq_poll():
     #avoid depending on zmq (only import if poll not present)
     from zmq.backend import zmq_poll
     return zmq_poll
+
 
 class Master(AutoTestBase):
     '''
@@ -170,7 +172,7 @@ class Master(AutoTestBase):
             self.restart_subprocess()
 
         #do first time test (for master)
-        parcial_callback()
+        parcial_callback('First run')
 
         #Start inotify observer:
         self._watcher.start_observer()
@@ -248,40 +250,27 @@ class Master(AutoTestBase):
     def _dispatch(self, rlist):
         #depending on the input, dispatch actions
         for f in rlist:
-            #Receive input from child process
-            if f is self._slave.get_conn().fileno():
-                self._recv_slave(self.parcial_callback)
-            if self._child_conn and f is self._child_conn.fileno():
-                self._dispatch_cmds(self._child_conn)
-            if f is self._m_w_conn.fileno():
-                self._dispatch_cmds(self._m_w_conn, duplex=False)
+            try:
+                #Receive input from child process
+                if f is self._slave.get_conn().fileno():
+                    self._recv_slave()
+                if self._child_conn and f is self._child_conn.fileno():
+                    self._dispatch_cmds(self._child_conn)
+                if f is self._m_w_conn.fileno():
+                    self._dispatch_cmds(self._m_w_conn, duplex=False)
+            except Exception as e:
+                self.log.e('Exception while dispatching {f} from {rlist}. {e!r}'
+                           .format(f=f, rlist=rlist, e=e)) 
 
     def _receive_kill(self, *args, **kwargs):
         self._slave.kill(block=True, timeout=3)
         self._watcher.unwatch_all()
 
-    def _recv_slave(self, callback):
-        #keep value, since it will be changed in _slave.recv_answer
+    def _recv_slave(self):
         first = self._slave._first_test
-        #read the answer sent by the subprocess
-        #We do not repeat inside _slave since its a blocking operation
         answer = self._slave.recv_answer()
-        #unpack from (testing_errors, exception_errors) tuple
-        testing_errors, error = answer
-        if (testing_errors or error) and not first:
-            self.log.w('Test\'s import errors, restarting process and repeating '
-                       'tests.')
-            #to force reloading all modules we directly kill and restart
-            #the process
-            self.restart_subprocess()
-            #Now, lets test if reloading all worked
-            callback()
-        #Notify unexpected errors
-        if testing_errors:
-            self.log.e(testing_errors)
-        if error:
-            self.log.e(error)
-        return answer
+        if answer.error or answer.result and not first:
+            self.full_callback('Error on non-first run')        
 
 
 def smoke_test_module():

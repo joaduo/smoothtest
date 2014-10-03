@@ -37,6 +37,11 @@ class AutotestMagics(Magics):
         args.full_reloads = self.expand_files(args.full_reloads)
         test_config = command.parcial(args)
         test_config.update(force=args.force)
+        #Update set values
+        for k,v in self.main.test_config.iteritems():
+            if not test_config.get(k):
+                test_config[k] = v
+        test_config['smoke'] = args.smoke
         self.main.send_test(**test_config)
         return test_config
 

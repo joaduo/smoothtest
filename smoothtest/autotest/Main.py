@@ -25,6 +25,7 @@ class Main(AutoTestBase):
         self._slave = None
         
     def run(self, test_config, embed_ipython=False, block=False):
+        self.log.set_pre_post(pre='Main ')
         self.test_config = test_config
         self.create_child(self._build_callback())
         if embed_ipython:
@@ -33,10 +34,10 @@ class Main(AutoTestBase):
             self.kill_child
             raise SystemExit(0)
         elif block:
-            self.log.i(self._parent_conn.recv())
+            self.log.i(self._subprocess_conn.recv())
     
     def get_conn(self):
-        return self._parent_conn
+        return self._subprocess_conn
     
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
@@ -66,6 +67,7 @@ class Main(AutoTestBase):
             config = load_default_config()
             config.InteractiveShellEmbed = config.TerminalInteractiveShell
             kwargs['config'] = config
+        kwargs.setdefault('display_banner', False)
         self.ishell = InteractiveShellEmbed.instance(**kwargs)
         load_extension(self.ishell, self)
         #Stack depth is 3 because we use self.embed first
@@ -128,54 +130,56 @@ class Main(AutoTestBase):
     
     def create_child(self, child_callback):
         parent_conn, child_conn = multiprocessing.Pipe()
-        self._parent_conn = parent_conn
+        self._subprocess_conn = parent_conn
         
         def callback():
-            self.log.i('Forking at %s.'%self.__class__.__name__)
+            self.log.set_pre_post(pre='Master ')
+            self.log.d('Forked process')
             if self.ishell:
                 self.ishell.exit_now = True
             sys.stdin.close()
             parent_conn.close()
             child_callback(child_conn)
         
-        self.child_process = multiprocessing.Process(target=callback)
-        self.child_process.start()
+        self._subprocess = multiprocessing.Process(target=callback)
+        self._subprocess.start()
         child_conn.close()
     
     def poll(self):
-        return self._parent_conn.poll()
+        return self._subprocess_conn.poll()
     
     @property
     def test(self):
-        answer = self.send_recv('parcial_callback')
-        result, error = answer[0]
-        if error:
-            self.log.e(error)
-        return result
+        cmd = 'parcial_callback'
+        answers = self.send_recv(cmd)
+        ans = self._get_answer(answers, cmd)
+        if ans.error:
+            self.log.e(ans.error)
+        return ans
 
     def send(self, cmd, *args, **kwargs):
         if self.poll():
-            self.log.i('Remaining in buffer: %r'%self._parent_conn.recv())
-        self._parent_conn.send(self.cmd(cmd, *args, **kwargs))
+            self.log.i('Remaining in buffer: %r'%self._subprocess_conn.recv())
+        self._subprocess_conn.send(self.cmd(cmd, *args, **kwargs))
     
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self._parent_conn.recv()
+        return self._subprocess_conn.recv()
     
     @property
     def kill_child(self):
-        answer = None
-        if self._parent_conn and not self._parent_conn.closed:
-            answer = self.send_recv(self._kill_command)
-            self.log.i(answer)
-            self._parent_conn.close()
-            self._parent_conn = None
-            self.child_process.join()
-        else:
-            self.child_process.terminate()
-            self.child_process.join()
-        self.child_process = None
-        return answer
+        return self._kill_subprocess(block=True, timeout=3)
+#        if self._subprocess_conn and not self._subprocess_conn.closed:
+#            answer = self.send_recv(self._kill_command)
+#            self.log.i(answer)
+#            self._subprocess_conn.close()
+#            self._subprocess_conn = None
+#            self._subprocess.join()
+#        else:
+#            self._subprocess.terminate()
+#            self._subprocess.join()
+#        self._subprocess = None
+#        return answer
 
 
 def smoke_test_module():

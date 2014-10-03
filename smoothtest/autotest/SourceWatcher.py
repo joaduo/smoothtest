@@ -12,6 +12,7 @@ from collections import defaultdict
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 import time
+from pprint import pformat
 
 
 def realPath(path):
@@ -22,12 +23,13 @@ class FileAction(FileSystemEventHandler):
     '''
 
     '''
-    def __init__(self, path, event_type=None, time_treshold=1):
+    def __init__(self, path, event_type=None, time_treshold=1, log=None):
         self._event_type = event_type
         self._path = path
         self._event_callbacks = defaultdict(list)
         self._last_time = time.time()
         self._time_treshold = time_treshold
+        self.log = log
 
     def __call__(self, event, manager):
         '''
@@ -55,6 +57,7 @@ class FileAction(FileSystemEventHandler):
         called = set()
         for callback in self._event_callbacks[event.event_type]:
             if callback not in called: #avoid calling twice
+                self.log.d('Dispatching event for %r' % event)
                 callback(event, self, manager)
                 called.add(callback)
 
@@ -127,9 +130,9 @@ class FileAction(FileSystemEventHandler):
 
 
 class DirAction(FileAction):
-    def __init__(self, path, path_filter=None, event_type=None):
+    def __init__(self, path, path_filter=None, event_type=None, log=None):
         self.path_filter = path_filter
-        super(DirAction, self).__init__(path, event_type)
+        super(DirAction, self).__init__(path, event_type, log=log)
 
     def __call__(self, event, manager):
         #The observer notifies all actions, we need to filter by path Dooh!
@@ -153,14 +156,18 @@ class SourceWatcher(AutoTestBase):
         self._observer = None
 
     def watch_file(self, path, callback):
+        self.log.d('Watching file {path!r}'.format(path=path))
         def callback_wrapper(event, action, mnager):
-            self.log.i(event)
             callback(path)
 
-        action = self._file_actions.setdefault(path, FileAction(path))
+        action = self._file_actions.setdefault(path, 
+                                               FileAction(path, log=self.log))
         action.append(callback_wrapper, 'modified')
 
     def start_observer(self):
+        if not (self._file_actions or self._dir_actions):
+            self.log.d('No files or dirs to watch')
+            return
         self.unwatch_all(clear=False)
         observer = Observer()
         for action in self._file_actions.values():
@@ -170,11 +177,17 @@ class SourceWatcher(AutoTestBase):
         for action in self._dir_actions.values():
             observer.schedule(action, action.real_dir, recursive=True)
 
+        self.log.d('Starting observer for:\n  {files}\n  {dirs}'.
+                   format(files=pformat(self._file_actions.keys()), 
+                          dirs=pformat(self._dir_actions.keys())))
         self._observer = observer
         self._observer.start()
 
     def unwatch_all(self, clear=False):
         if self._observer:
+            self.log.d('Stopping observer for:\n  {files}\n  {dirs}'.
+                   format(files=pformat(self._file_actions.keys()), 
+                          dirs=pformat(self._dir_actions.keys())))
             self._observer.stop()
             self._observer.join()
             self._observer = None
@@ -192,12 +205,13 @@ class SourceWatcher(AutoTestBase):
             self.watch_file(path, callback)
 
     def _watch_dir(self, dir_path, callback, path_filter):
+        self.log.d('Recursive watching dir {dir_path!r}'
+                   .format(dir_path=dir_path))
         def callback_wrapper(event, action, mnager):
-            self.log.d('Notifying %r %r' % (event, dir_path))
             callback(dir_path)
 
         action = self._dir_actions.setdefault(dir_path,
-                                              DirAction(dir_path, path_filter))
+                                DirAction(dir_path, path_filter, log=self.log))
         action.append(callback_wrapper, 'modified')
 
     def dispatch(self, timeout=0.0):
@@ -230,6 +244,8 @@ def smoke_test_module():
     if os.path.exists(path):
         os.remove(path)
     time.sleep(sec)
+    sw.unwatch_all()
+    sw.start_observer()
     sw.unwatch_all()
 
 if __name__ == "__main__":

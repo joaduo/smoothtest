@@ -272,7 +272,10 @@ return eslist;
             return False
 
     def extract_xpath(self, xpath, single=True):
-        return self.select_xpath(xpath, single)
+        result = self.select_xpath(xpath, single)
+        if not isinstance(result, basestring):
+            result = result.text
+        return result
 
     def fill_input(self, xpath, value):
         e = self.select_xpath(xpath)
@@ -401,7 +404,8 @@ def smoke_test_module():
         try:
             m('bar')
         except Exception as e:
-            traceback.print_exc()
+            pass
+            #traceback.print_exc()
 
 
 if __name__ == "__main__":

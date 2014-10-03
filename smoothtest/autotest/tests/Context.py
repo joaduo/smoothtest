@@ -12,7 +12,7 @@ from ..Context import Context
 class ContextTest(unittest.TestCase):
     def test_context(self):
         ctx = Context()
-        ctx.initialize()
+        ctx.initialize({})
 
 if __name__ == "__main__":
     unittest.main()

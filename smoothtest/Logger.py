@@ -7,6 +7,8 @@ import logging
 class Logger(object):
     default_level = logging.DEBUG
     handler_level = logging.DEBUG
+    default_fmt = '%(asctime)s: %(message)s'
+    default_datefmt = '%H:%M:%S'
     def __init__(self, name, output=None, level=None):
         if not level:
             level = self.default_level
@@ -21,14 +23,22 @@ class Logger(object):
     def _config_output(self, name, level):
         hdlr = logging.StreamHandler()
         hdlr.setLevel(self.handler_level)
-        fmt = logging.Formatter(fmt='%(asctime)s - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-        hdlr.setFormatter(fmt)
         logging.root.addHandler(hdlr)
+        self.set_fmt()
         return logging.getLogger(name)
     
-#    def _redirect_to
-
+    def set_fmt(self, fmt=None, datefmt=None):
+        datefmt = datefmt or self.default_datefmt
+        fmt = fmt or self.default_fmt
+        hdlr = logging.root.handlers[0]
+        fmt = logging.Formatter(fmt=fmt,
+                        datefmt=datefmt
+                        )
+        hdlr.setFormatter(fmt)
+        
+    def set_pre_post(self, pre='', post=''):
+        self.set_fmt(fmt=pre+self.default_fmt+post)
+        
     def critical(self, msg):
         self.output.critical(str(msg))
     def error(self, msg):
@@ -77,9 +87,11 @@ def smoke_test_module():
     ''' Simple self-contained test for the module '''
     logger = Logger('a.logger')
     logger.setLevel(logging.DEBUG)
-#  logger.critical('critical')
+    logger.set_pre_post(pre='Master ')
+    #logger.set_fmt('')
+    logger.critical('critical')
     logger.debug('debug')
-#  logger.error('error')
+    logger.error('error')
     logger.info('info')
     logger.warning('warning')
     logger('Call')
