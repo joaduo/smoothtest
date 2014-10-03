@@ -11,6 +11,7 @@ from ..base import SmoothTestBase
 from collections import namedtuple
 import multiprocessing
 from types import MethodType, FunctionType
+import sys
 
 cmd_fields = 'cmd args kwargs'
 AutotestCmd = namedtuple('AutotestCmd', cmd_fields)
@@ -83,6 +84,7 @@ class ParentBase(ChildBase):
         pre = pre if not pre else pre + ' '
         def target():
             parent.close()
+            sys.stdin.close()
             self.log.set_pre_post(pre=pre)
             self.log.d('Forked process started...')
             callback(child)
