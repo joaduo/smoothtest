@@ -40,32 +40,36 @@ class ModulesAttributesIterator(SmoothTestBase):
             for _, modname, ispkg in pkgutil.walk_packages(package.__path__,
                                                            prefix):
                 if not ispkg:
-                    module = import_module(modname)
-                    if reload_:
-                        module = reload(module)
-                    yield module
+                    try:
+                        module = import_module(modname)
+                        if reload_:
+                            module = reload(module)
+                        yield module
+                    except ImportError as e:
+                        self.log.e('Ignoring %s.%s. ImportError: %r' % 
+                                   (prefix,modname,e))
 
 
 class SmokeTestDiscover(SmoothTestBase):
     '''
-    Inspect in all simplerpc modules for a smokeTestModule function.
-    Then create a test for each class and runs it.
+    Inspect in all simplerpc modules for a smoke_test_module function.
+    Then create a test for each module and run it.
     '''
     def __init__(self):
         self.inspector = ModulesAttributesIterator()
         self._func_name = 'smoke_test_module'
 
     def _gather(self, package):
-        filter_func = lambda attr, module: (isinstance(attr, FunctionType) 
-                                          and hasattr(attr, '__name__') 
-                                          and attr.__name__ == self._func_name)
+        filter_func = lambda attr, _: (isinstance(attr, FunctionType) 
+                                      and hasattr(attr, '__name__') 
+                                      and attr.__name__ == self._func_name)
         for module, funcs in self.inspector.iter_modules(package, filter_func, 
                                                          reload_=False):
             if funcs:
                 yield module, funcs[0]
 
     def get_missing(self, package):
-        filter_ = lambda attr, module: isinstance(attr, (FunctionType,TypeType))
+        filter_ = lambda attr, _: isinstance(attr, (FunctionType,TypeType))
 
         func_dict = self.inspector.iter_modules(package, filter_, reload_=False)
         for module, funcs in func_dict:
@@ -104,8 +108,8 @@ class SmokeTestDiscover(SmoothTestBase):
                 func()
         
         s = TestLoader().loadTestsFromTestCase(SmokeTest)
-        big_suite = TestSuite([s])
-        results = TextTestRunner().run(big_suite)
+        suite = TestSuite([s])
+        results = TextTestRunner().run(suite)
         raise SystemExit(len(results.errors))
 
 
@@ -160,7 +164,8 @@ class SmokeCommand(SmoothTestBase):
         if args.tests:
             self._test_modules(args.tests)
         elif args.packages:
-            total, failed = self._discover_run(args.packages, missing=not args.ignore_missing)
+            total, failed = self._discover_run(args.packages, 
+                                               missing=not args.ignore_missing)
             if failed:
                 self.log.i('TOTAL: {total} FAILED: {failed}'.
                            format(total=len(total), failed=failed))
@@ -168,6 +173,7 @@ class SmokeCommand(SmoothTestBase):
                 self.log.i('All {total} tests OK'.format(total=len(total)))
 
 
+#dummy function to avoid warnings inspecting this module
 def smoke_test_module():
     pass
 
