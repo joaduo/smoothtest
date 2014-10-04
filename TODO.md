@@ -1,5 +1,6 @@
 ## TODO
 
+1. make callbacks pickable in order to work with windows
 1. browser pool
 1. passing arguments to a initialization module
 	which will be ran on TestRunner
