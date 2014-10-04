@@ -7,7 +7,6 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
 import os
-import re
 from argparse import ArgumentParser
 from smoothtest.autotest.base import AutoTestBase
 from smoothtest.autotest.Main import Main
@@ -45,24 +44,25 @@ class Command(AutoTestBase):
         else:
             is_file = lambda x: x
             is_dir_file = lambda x: x
-        parser = ArgumentParser(description='Start a local sales vs non-sales glidepath server')
+        parser = ArgumentParser(description='Start a local sales vs'
+                                'non-sales glidepath server')
         parser.add_argument('tests', type=is_file,
-                            help='Tests to be monitored and run. Triggers partial_reloads',
-                            default=[], nargs='*')
+                            help='Tests to be monitored and run. Triggers'
+                            ' partial_reloads',default=[], nargs='*')
         parser.add_argument('-r', '--methods-regex', type=str,
                             help='Specify regex for Methods matching',
                             default='')
         parser.add_argument('-n', '--no-ipython',
                             help='Do not use ipython interactive shell',
                             default=False, action='store_true')
-        parser.add_argument('--smoke',
-                            help='Do not run tests. Simply test the whole monitoring system',
-                            default=None, action='store_true')
+        parser.add_argument('--smoke', help='Do not run tests. Simply test'
+                            ' the whole monitoring system',default=None, 
+                            action='store_true')
         parser.add_argument('-F', '--full-reloads', type=is_dir_file,
-                            help='Files or directories to be monitored and triggers of full_reloads.',
-                            default=[], nargs='+')
-        parser.add_argument('-R', '--full-regex', type=str,
-                            help='Regex to filter files in full reloads directories.',
+                            help='Files or directories to be monitored and'
+                            ' triggers of full_reloads.', default=[], nargs='+')
+        parser.add_argument('-R', '--full-regex', type=str, help='Regex to'
+                            ' filter files in full reloads directories.',
                             default='.*')
         return parser
 
@@ -79,7 +79,7 @@ class Command(AutoTestBase):
                             default=None, action='store_true')
         return parser
 
-    def partial(self, args):
+    def get_test_config(self, args):
         searcher = TestSearcher()
         test_paths = set()
         partial_reloads = set()
@@ -106,10 +106,11 @@ class Command(AutoTestBase):
         if curdir != filedir and filedir in sys.path:
             sys.path.remove(filedir)
         
-        args = self.get_parser().parse_args(argv)
+        args, argv = self.get_parser().parse_known_args(argv)
 
         main = Main(smoke=args.smoke)
-        test_config = self.partial(args)
+        test_config = self.get_test_config(args)
+        test_config.update(argv=argv)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
 
@@ -118,7 +119,7 @@ def smoke_test_module():
     c.get_parser()
     parser = c.get_extension_parser()
     args = parser.parse_args([])
-    c.partial(args)
+    c.get_test_config(args)
 
 
 def main(argv=None):

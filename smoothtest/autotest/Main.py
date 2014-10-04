@@ -35,9 +35,6 @@ class Main(ParentBase):
         elif block:
             self.log.i(self._subprocess_conn.recv())
     
-    def get_conn(self):
-        return self._subprocess_conn
-    
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
         """

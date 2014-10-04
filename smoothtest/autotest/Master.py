@@ -16,7 +16,6 @@ import threading
 import select as select_mod
 
 
-
 def lists_to_sockets(rlist, wlist, xlist):
     '''
     Convert select list arguments to sockets (used by ZMQ or Tornado)
@@ -116,10 +115,10 @@ class Master(ChildBase):
     def new_test(self, test_paths=[], partial_reloads=[], full_reloads=[],
              partial_decorator=lambda x: x, full_decorator=lambda x: x,
              full_filter=None,
-             smoke=False, force=False):
+             smoke=False, force=False, argv=[]):
         #create callback for re-testing on changes/msgs
         def test_callback():
-            self._slave.test(test_paths, smoke=smoke)
+            self._slave.test(test_paths, argv, smoke=smoke)
 
         @partial_decorator
         def partial_callback(path=None):
@@ -179,7 +178,7 @@ class Master(ChildBase):
         self._watcher.start_observer()
 
     def _build_path_filter(self, partial_reloads, path_filter):
-        path_filter = path_filter if path_filter else lambda x: True
+        path_filter = path_filter if path_filter else lambda _: True
 
         if isinstance(path_filter, basestring):
             def pfilter(path):
@@ -279,9 +278,10 @@ def smoke_test_module():
     test_paths = ['smoothtest.tests.example.Example.Example.test_example']
     partial_reloads = ['MasterAutoTest.py']
     mat = Master()
-    poll = mat.io_loop(dict(test_paths=test_paths, partial_reloads=partial_reloads, smoke=True),
-                    block=False)
-    for s in poll:
+    poll = mat.io_loop(dict(test_paths=test_paths, 
+                            partial_reloads=partial_reloads, smoke=True),
+                       block=False)
+    for _ in poll:
         pass
 
 

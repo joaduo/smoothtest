@@ -34,8 +34,8 @@ class Slave(ParentBase):
         self._first_test = True
         self.start_subprocess(post_callback)
 
-    def test(self, test_paths, smoke=False, block=False):
-        self.send(self._child_cls.test, test_paths, smoke=smoke)
+    def test(self, test_paths, argv=[], smoke=False, block=False):
+        self.send(self._child_cls.test, test_paths, argv, smoke)
         if block:
             return self.recv_answer()
 

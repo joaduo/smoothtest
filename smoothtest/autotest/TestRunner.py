@@ -28,7 +28,7 @@ class TestRunner(ChildBase):
             from ..webunittest.TestCase import TestBase
             TestBase.set_webdriver(webdriver)
 
-    def test(self, test_paths, smoke=False):
+    def test(self, test_paths, argv=[], smoke=False):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
         '''
@@ -41,7 +41,7 @@ class TestRunner(ChildBase):
             class_ = self._import_test(pusherror, tpath)
             if not class_:
                 continue
-            self._run_test(pusherror, tpath, class_)
+            self._run_test(pusherror, tpath, argv, class_)
         total = len(test_paths)
         if not errors:
             self.log.i('All %s OK' % total)
@@ -55,12 +55,14 @@ class TestRunner(ChildBase):
         while True:
             self._dispatch_cmds(conn)
 
-    def _run_test(self, pusherror, test_path, class_):
+    def _run_test(self, pusherror, test_path, argv, class_):
         try:
             _, _, methstr = self._split_path(test_path)
             suite = unittest.TestSuite()
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
+            if hasattr(class_, 'process_known_args'):
+                class_.process_known_args(argv)
             runner.run(suite)
         except Exception as e:
             pusherror(self.reprex(e))
