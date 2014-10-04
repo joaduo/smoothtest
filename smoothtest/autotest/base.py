@@ -78,23 +78,34 @@ class ChildBase(AutoTestBase):
         return AutotestCmd(cmd, args, kwargs)
 
 
+class TargetFunction(SmoothTestBase):
+    def __init__(self, callback, parent, child, pre):
+        self.callback = callback
+        self.parent = parent
+        self.child = child
+        self.pre = pre
+    
+    def __call__(self):
+        self.parent.close()
+        sys.stdin.close()
+        self.log.set_pre_post(pre=self.pre)
+        self.log.d('Forked process started...')
+        self.callback(self.child)
+
+
 class ParentBase(ChildBase):
     def start_subprocess(self, callback, pre=''):
         parent, child = multiprocessing.Pipe()
         #Add space if defined
         pre = pre if not pre else pre + ' '
-        def target():
-            parent.close()
-            sys.stdin.close()
-            self.log.set_pre_post(pre=pre)
-            self.log.d('Forked process started...')
-            callback(child)
+        #Windows needs target to be pickable
+        target = TargetFunction(callback, parent, child, pre)
         
         self._subprocess = multiprocessing.Process(target=target)
         self._subprocess.start()
         self._subprocess_conn = parent
         child.close()
-        
+
     def restart_subprocess(self, callback):
         self.kill(block=True, timeout=self._timeout)
         self.start_subprocess(callback)
