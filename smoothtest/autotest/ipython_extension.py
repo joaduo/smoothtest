@@ -25,15 +25,19 @@ class AutotestMagics(Magics):
         from .Command import Command
         command = Command()
         parser = command.get_extension_parser()
-        args = parser.parse_args(shlex.split(line))
+        args, unknown = parser.parse_known_args(shlex.split(line))
         args.tests = self.expand_files(args.tests)
         args.full_reloads = self.expand_files(args.full_reloads)
-        test_config = command.get_test_config(args)
+        test_config = command.get_test_config(args, unknown)
         test_config.update(force=args.force)
         return args, test_config
     
     def _send(self, test_config):
         self.main.send_test(**test_config)
+
+    @line_magic
+    def test(self, line):
+        return self.main.test
 
     @line_magic
     def autotest(self, line):

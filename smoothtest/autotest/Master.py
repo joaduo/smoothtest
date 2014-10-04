@@ -83,6 +83,19 @@ class Master(ChildBase):
         #select inputs
         self._select_args = {}
         self._restart_lock = threading.Lock()
+        self._io_list = [self.parent_conn, self.slave_conn, self.m_w_conn]
+        self._io_blacklist = set()
+        if not self._parent_conn:
+            self._io_blacklist.add(self.parent_conn)
+            
+    def parent_conn(self):
+        return self._parent_conn
+    
+    def slave_conn(self):
+        return self._slave.get_conn()
+    
+    def m_w_conn(self):
+        return self._m_w_conn
         
     def set_select_args(self, **select_args):
         self._select_args = select_args
@@ -205,10 +218,8 @@ class Master(ChildBase):
 
     def _build_get_event(self, poll=None, select=None):
         def local_rlist():
-            rlist = [self._slave.get_conn().fileno(), 
-                     self._m_w_conn.fileno()]
-            if self._parent_conn:
-                rlist.append(self._parent_conn.fileno())
+            rlist = set(self._io_list) - self._io_blacklist
+            rlist = [conn().fileno() for conn in rlist]
             return rlist
         
         #If not set, set the io wait method
@@ -249,19 +260,29 @@ class Master(ChildBase):
         return get_event
 
     def _dispatch(self, rlist):
-        #depending on the input, dispatch actions
+        #Build a dispatch dictionary
+        #{conn_func:dispatch_lambda} dict
+        fdict = {self.slave_conn: (lambda:self._recv_slave()),
+             self.m_w_conn:(lambda:self._dispatch_cmds(self._m_w_conn, False)),
+             self.parent_conn:(lambda:self._dispatch_cmds(self._parent_conn)),
+             }
+        #Convert to {fileno:(dispatch_lambda, conn_func)...} dict
+        fnodict = dict( (f().fileno(), (lb,f) ) for f,lb in fdict.items())
+        #dispatch events
         for f in rlist:
             try:
-                #Receive input from child process
-                if f is self._slave.get_conn().fileno():
-                    self._recv_slave()
-                if self._parent_conn and f is self._parent_conn.fileno():
-                    self._dispatch_cmds(self._parent_conn)
-                if f is self._m_w_conn.fileno():
-                    self._dispatch_cmds(self._m_w_conn, duplex=False)
+                #depending on the input, dispatch actions
+                #call lambda callback
+                fnodict[f][0]()
             except Exception as e:
-                self.log.e('Exception while dispatching {f} from {rlist}. {e!r}'
-                           .format(f=f, rlist=rlist, e=e)) 
+                self.log.e(self.reprex(e))
+                conn_func = fnodict[f][1]
+                self.log.e('Exception while dispatching to {conn!r}. {e!r}'
+                           .format(conn=conn_func.func_name, e=e))
+                self.log.e('Blacklisting {conn}. Restart Master to enable it.'
+                           .format(conn=conn_func.func_name))
+                #black list in future io
+                self._io_blacklist.add(conn_func)
 
     def _receive_kill(self, *args, **kwargs):
         self._watcher.unwatch_all()

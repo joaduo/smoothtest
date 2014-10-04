@@ -79,7 +79,7 @@ class Command(AutoTestBase):
                             default=None, action='store_true')
         return parser
 
-    def get_test_config(self, args):
+    def get_test_config(self, args, argv):
         searcher = TestSearcher()
         test_paths = set()
         partial_reloads = set()
@@ -95,6 +95,7 @@ class Command(AutoTestBase):
                            full_reloads=args.full_reloads,
                            full_filter=args.full_regex,
                            smoke=args.smoke,
+                           argv=argv,
                            )
         return test_config
 
@@ -106,11 +107,10 @@ class Command(AutoTestBase):
         if curdir != filedir and filedir in sys.path:
             sys.path.remove(filedir)
         
-        args, argv = self.get_parser().parse_known_args(argv)
+        args, unkonwn = self.get_parser().parse_known_args(argv)
 
         main = Main(smoke=args.smoke)
-        test_config = self.get_test_config(args)
-        test_config.update(argv=argv)
+        test_config = self.get_test_config(args, unkonwn)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
 
@@ -118,8 +118,8 @@ def smoke_test_module():
     c = Command()
     c.get_parser()
     parser = c.get_extension_parser()
-    args = parser.parse_args([])
-    c.get_test_config(args)
+    args, unkown = parser.parse_known_args([])
+    c.get_test_config(args, unkown)
 
 
 def main(argv=None):

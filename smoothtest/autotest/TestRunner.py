@@ -61,8 +61,8 @@ class TestRunner(ChildBase):
             suite = unittest.TestSuite()
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
-            if hasattr(class_, 'process_known_args'):
-                class_.process_known_args(argv)
+            if hasattr(class_, 'setUpProcess'):
+                class_.setUpProcess(argv)
             runner.run(suite)
         except Exception as e:
             pusherror(self.reprex(e))
