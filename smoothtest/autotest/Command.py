@@ -47,7 +47,7 @@ class Command(AutoTestBase):
             is_dir_file = lambda x: x
         parser = ArgumentParser(description='Start a local sales vs non-sales glidepath server')
         parser.add_argument('tests', type=is_file,
-                            help='Tests to be monitored and run. Triggers parcial_reloads',
+                            help='Tests to be monitored and run. Triggers partial_reloads',
                             default=[], nargs='*')
         parser.add_argument('-r', '--methods-regex', type=str,
                             help='Specify regex for Methods matching',
@@ -79,19 +79,19 @@ class Command(AutoTestBase):
                             default=None, action='store_true')
         return parser
 
-    def parcial(self, args):
+    def partial(self, args):
         searcher = TestSearcher()
         test_paths = set()
-        parcial_reloads = set()
+        partial_reloads = set()
         for tst in args.tests:
             tst = self._path_to_modstr(tst)
-            paths, parcial = searcher.solve_paths((tst, args.methods_regex))
+            paths, partial = searcher.solve_paths((tst, args.methods_regex))
             if paths:
                 test_paths.update(paths)
-                parcial_reloads.update(parcial)
+                partial_reloads.update(partial)
 
         test_config = dict(test_paths=test_paths,
-                           parcial_reloads=parcial_reloads,
+                           partial_reloads=partial_reloads,
                            full_reloads=args.full_reloads,
                            full_filter=args.full_regex,
                            smoke=args.smoke,
@@ -109,7 +109,7 @@ class Command(AutoTestBase):
         args = self.get_parser().parse_args(argv)
 
         main = Main(smoke=args.smoke)
-        test_config = self.parcial(args)
+        test_config = self.partial(args)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
 
@@ -118,7 +118,7 @@ def smoke_test_module():
     c.get_parser()
     parser = c.get_extension_parser()
     args = parser.parse_args([])
-    c.parcial(args)
+    c.partial(args)
 
 
 def main(argv=None):

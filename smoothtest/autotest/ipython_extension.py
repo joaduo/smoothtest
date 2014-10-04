@@ -28,7 +28,7 @@ class AutotestMagics(Magics):
         args = parser.parse_args(shlex.split(line))
         args.tests = self.expand_files(args.tests)
         args.full_reloads = self.expand_files(args.full_reloads)
-        test_config = command.parcial(args)
+        test_config = command.partial(args)
         test_config.update(force=args.force)
         return args, test_config
     

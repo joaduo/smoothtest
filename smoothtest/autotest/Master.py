@@ -113,16 +113,16 @@ class Master(ChildBase):
         #We need to kill the child
         self._receive_kill()
 
-    def new_test(self, test_paths=[], parcial_reloads=[], full_reloads=[],
-             parcial_decorator=lambda x: x, full_decorator=lambda x: x,
+    def new_test(self, test_paths=[], partial_reloads=[], full_reloads=[],
+             partial_decorator=lambda x: x, full_decorator=lambda x: x,
              full_filter=None,
              smoke=False, force=False):
         #create callback for re-testing on changes/msgs
         def test_callback():
             self._slave.test(test_paths, smoke=smoke)
 
-        @parcial_decorator
-        def parcial_callback(path=None):
+        @partial_decorator
+        def partial_callback(path=None):
             self.log.i('Partial reload for: %r. Triggered by %r' %
                        (list(test_paths), path))
             test_callback()
@@ -140,16 +140,16 @@ class Master(ChildBase):
                 test_callback()
 
         #save for future dispatching
-        self.parcial_callback = parcial_callback
+        self.partial_callback = partial_callback
         self.full_callback = full_callback
 
-        def parcial_msg(path):
+        def partial_msg(path):
             '''
             File _watcher thread -> master thread msg
             We use pipes to avoid race conditions on other IO mechanism
             (instead of calling the tests callbacks within the thread)
             '''
-            self._w_m_conn.send(self.cmd(self.parcial_callback, path))
+            self._w_m_conn.send(self.cmd(self.partial_callback, path))
         
         def full_msg(path):
             '''
@@ -160,10 +160,10 @@ class Master(ChildBase):
             self._w_m_conn.send(self.cmd(self.full_callback, path))
 
         self._watcher.unwatch_all(clear=True)
-        for ppath in parcial_reloads:
-            self._watcher.watch_file(ppath, parcial_msg)
+        for ppath in partial_reloads:
+            self._watcher.watch_file(ppath, partial_msg)
             
-        full_filter = self._build_path_filter(parcial_reloads, full_filter)
+        full_filter = self._build_path_filter(partial_reloads, full_filter)
         for fpath in full_reloads:
             self._watcher.watch_recursive(fpath, full_msg,
                                          path_filter=full_filter)
@@ -173,12 +173,12 @@ class Master(ChildBase):
             self.restart_subprocess()
 
         #do first time test (for master)
-        parcial_callback('First run')
+        partial_callback('First run')
 
         #Start inotify observer:
         self._watcher.start_observer()
 
-    def _build_path_filter(self, parcial_reloads, path_filter):
+    def _build_path_filter(self, partial_reloads, path_filter):
         path_filter = path_filter if path_filter else lambda x: True
 
         if isinstance(path_filter, basestring):
@@ -188,9 +188,9 @@ class Master(ChildBase):
             assert callable(path_filter)
             pfilter = path_filter
 
-        parcial_reloads = set(realPath(p) for p in parcial_reloads)
+        partial_reloads = set(realPath(p) for p in partial_reloads)
         def _path_filter(path):
-            return pfilter(path) and realPath(path) not in parcial_reloads
+            return pfilter(path) and realPath(path) not in partial_reloads
         
         return _path_filter
 
@@ -277,9 +277,9 @@ class Master(ChildBase):
 
 def smoke_test_module():
     test_paths = ['smoothtest.tests.example.Example.Example.test_example']
-    parcial_reloads = ['MasterAutoTest.py']
+    partial_reloads = ['MasterAutoTest.py']
     mat = Master()
-    poll = mat.io_loop(dict(test_paths=test_paths, parcial_reloads=parcial_reloads, smoke=True),
+    poll = mat.io_loop(dict(test_paths=test_paths, partial_reloads=partial_reloads, smoke=True),
                     block=False)
     for s in poll:
         pass

@@ -131,7 +131,7 @@ class Main(ParentBase):
     
     @property
     def test(self):
-        cmd = 'parcial_callback'
+        cmd = 'partial_callback'
         answers = self.send_recv(cmd)
         ans = self._get_answer(answers, cmd)
         if ans.error:
