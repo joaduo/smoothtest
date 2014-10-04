@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python smoothtest/smoke/SmokeTestDiscover.py -p smoothtest/
+python smoothtest/smoke/SmokeTestDiscover.py -p smoothtest
