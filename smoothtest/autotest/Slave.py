@@ -19,9 +19,10 @@ class Slave(ParentBase):
         self._subprocess_conn = None
         self._first_test = True
         
-    def start_subprocess(self, post_callback=lambda: None):
+    def start_subprocess(self, post_callback=None):
         def callback(conn):
-            post_callback()
+            if post_callback:
+                post_callback()
             child = self._child_cls(*self._child_args, **self._child_kwargs)
             #wait for io
             child.io_loop(conn, stdin=None, stdout=None, stderr=None)
