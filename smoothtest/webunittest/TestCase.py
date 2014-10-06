@@ -9,6 +9,7 @@ import logging
 import re
 import inspect
 import sys
+from selenium.webdriver.remote.webelement import WebElement
 #We want to use the new version of unittest in <= python 2.6
 if sys.version_info < (2,7):
     import unittest2 as unittest
@@ -217,42 +218,47 @@ class WebdriverUtils(object):
         return loaded
 
     def _get_xpath_script(self, xpath, ret='node', single=True):
+        common_func = '''
+function extract_elem(elem){
+    var elem = elem
+    //elem.noteType == 1 > web element
+    if(elem.nodeType == 2){
+      //attribute
+      elem = elem.value;
+    }
+    if(elem.nodeType == 3){
+      //text()
+      elem = elem.wholeText;
+    }
+    return elem;
+}
+        '''
         if single:
             script = '''
 var xpath = %(xpath)r;
-//FIRST_ORDERED_NODE_TYPE = 9
-var e = document.evaluate(xpath, document, null,
-    XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-if('wholeText' in e){
-  e = e.wholeText;
-}
-return e;
+//XPathResult.FIRST_ORDERED_NODE_TYPE = 9
+var e = document.evaluate(xpath, document, null,9, null).singleNodeValue;
+return extract_elem(e);
             '''
         else:
             script = '''
 var xpath = %(xpath)r;
-//var xpath = '//h2';
 //XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5
-var es = document.evaluate(xpath, document, null,
-    XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+var es = document.evaluate(xpath, document, null, 5, null);
 var r = es.iterateNext();
 var eslist = [];
 while(r){
-    if('wholeText' in r){
-      r = r.wholeText;
-    }
-    eslist.push(r);
+    eslist.push(extract_elem(r));
     r = es.iterateNext();
 }
 return eslist;
-//console.log(eslist);
         '''
         ret_dict = dict(
                         node='return e',
                         text='return e.textContent',
                         click='e.click()',
                         )
-        return script % locals()
+        return common_func + script % locals()
 
     def select_xpath(self, xpath, single=True):
         dr = self.get_driver()
@@ -273,8 +279,9 @@ return eslist;
 
     def extract_xpath(self, xpath, single=True):
         result = self.select_xpath(xpath, single)
-        if not isinstance(result, basestring):
+        if isinstance(result, WebElement):
             result = result.text
+        assert isinstance(result, basestring)
         return result
 
     def fill_input(self, xpath, value):
@@ -336,6 +343,24 @@ class TestBase(WebdriverUtils):
 #    return m
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
+    @staticmethod
+    def disable_method(cls, meth, log_debug=lambda msg:None):
+        if not isinstance(meth, basestring):
+            if not hasattr(meth, 'func_name'):
+                meth = meth.im_func
+            meth = meth.func_name
+        func = getattr(cls, meth)
+        func_types = [staticmethod, classmethod]
+        for ftype in func_types:
+            if isinstance(cls.__dict__[meth], ftype):
+                @ftype
+                @wraps(func)
+                def no_op(*_,  **__):
+                    log_debug('Ignoring call to {cls.__name__}.{meth}'
+                              .format(cls=cls, meth=meth))
+                setattr(cls, meth, no_op)
+                return no_op
+
     def assert_text(self, xpath, value):
         extracted = self.extract_xpath(xpath)
         msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
