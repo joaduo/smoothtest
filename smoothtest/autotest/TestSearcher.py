@@ -9,7 +9,7 @@ import rel_imp; rel_imp.init()
 from multiprocessing import Process, Pipe
 from inspect import isclass
 from .base import AutoTestBase
-from ..webunittest import unittest
+from ..import_unittest import unittest
 import re
 import importlib
 import traceback

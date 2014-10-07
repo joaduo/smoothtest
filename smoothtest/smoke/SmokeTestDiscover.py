@@ -7,8 +7,8 @@ import rel_imp; rel_imp.init()
 from types import FunctionType, TypeType, ModuleType
 from importlib import import_module
 from argparse import ArgumentParser
+from ..import_unittest import unittest
 from ..base import SmoothTestBase
-from ..webunittest import unittest
 import importlib
 import subprocess
 import shlex
