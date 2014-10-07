@@ -4,22 +4,16 @@ Simple RPC
 Copyright (c) 2013, Joaquin G. Duo
 '''
 import rel_imp; rel_imp.init()
-import sys
-#We want to use the new version of unittest in <= python 2.6
-if sys.version_info < (2,7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 from types import FunctionType, TypeType, ModuleType
 from importlib import import_module
-from ..base import SmoothTestBase
-import os
-import pkgutil
 from argparse import ArgumentParser
+from ..base import SmoothTestBase
+from ..webunittest import unittest
 import importlib
 import subprocess
 import shlex
+import os
+import pkgutil
 
 
 class ModulesAttributesIterator(SmoothTestBase):
