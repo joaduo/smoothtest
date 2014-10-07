@@ -10,3 +10,4 @@ from .TestCase import TestCase
 
 main = unittest.main
 TestCase = TestCase
+unittest = unittest

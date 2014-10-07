@@ -6,13 +6,13 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
-from .base import AutoTestBase
 from multiprocessing import Process, Pipe
+from inspect import isclass
+from .base import AutoTestBase
+from ..webunittest import unittest
 import re
 import importlib
 import traceback
-from unittest import TestCase
-from inspect import isclass
 
 
 class TestSearcher(AutoTestBase):
@@ -21,7 +21,7 @@ class TestSearcher(AutoTestBase):
             #return test paths
             #return partial reloads paths
             specific_class = kwargs.get('specific_class')
-            test_class = kwargs.get('test_class', TestCase)
+            test_class = kwargs.get('test_class', unittest.TestCase)
             tst_regex = list(test_path_regexes) + [test_path_regex]
             test_paths = set()
             partial_reloads = set()
@@ -32,16 +32,17 @@ class TestSearcher(AutoTestBase):
                         modstr, clsstr = self.split_test_path(tst_pth)
                         mod = importlib.import_module(modstr)
                         cls = getattr(mod, clsstr)
-                        self.append_methods(test_paths, partial_reloads, 
-                                            mod, cls, regex, valid, modstr, clsstr)
+                        self.append_methods(test_paths, partial_reloads, mod,
+                                            cls, regex, valid, modstr, clsstr)
                     else:
                         modstr = tst_pth
                         mod = importlib.import_module(tst_pth)
                         for _, cls in vars(mod).iteritems():
-                            if not isclass(cls) or not issubclass(cls, test_class):
+                            if (not isclass(cls) 
+                                or not issubclass(cls, test_class)):
                                 continue
                             clsstr = cls.__name__
-                            self.append_methods(test_paths, partial_reloads, 
+                            self.append_methods(test_paths, partial_reloads,
                                        mod, cls, regex, valid, modstr, clsstr)
                                 
                 except Exception:
@@ -49,7 +50,8 @@ class TestSearcher(AutoTestBase):
             conn.send([test_paths, partial_reloads])
         return solve_paths
     
-    def append_methods(self, test_paths, partial_reloads, mod, cls, regex, valid, modstr, clsstr):
+    def append_methods(self, test_paths, partial_reloads, mod, cls, regex,
+                       valid, modstr, clsstr):
         for mthstr, _ in vars(cls).iteritems():
             if (mthstr.startswith('test') 
             and (not regex or valid(regex, mthstr))):
@@ -63,11 +65,12 @@ class TestSearcher(AutoTestBase):
     def solve_paths(self, test_path_regex, *test_path_regexes, **kwargs):
         #We need to create a new process to avoid importing the modules
         #in the parent process
-        solve = self._build_solve_paths(test_path_regex, *test_path_regexes,  **kwargs)
+        solve = self._build_solve_paths(test_path_regex, *test_path_regexes,
+                                        **kwargs)
         parent_conn, child_conn = Pipe(duplex=False)
         p = Process(target=solve, args=(child_conn,))
         p.start()
-        test_paths, partial_reloads = parent_conn.recv()   # prints "[42, None, 'hello']"
+        test_paths, partial_reloads = parent_conn.recv()
         parent_conn.close()
         p.join()
         return test_paths, partial_reloads

@@ -8,18 +8,13 @@ import time
 import logging
 import re
 import inspect
-import sys
 from selenium.webdriver.remote.webelement import WebElement
-#We want to use the new version of unittest in <= python 2.6
-if sys.version_info < (2,7):
-    import unittest2 as unittest
-else:
-    import unittest
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from functools import wraps
 from types import MethodType
 from threading import Lock
+from ..webunittest import unittest
 from ..settings.solve_settings import solve_settings
 from ..Logger import Logger
 from ..base import SmoothTestBase
@@ -27,17 +22,21 @@ from ..base import SmoothTestBase
 _with_screenshot = '_with_screenshot'
 _zero_screenshot = '_zero_screenshot'
 
+
 def zero_screenshot(method):
     setattr(method, _zero_screenshot, True)
     return method
+
 
 def screenshot(method):
     setattr(method, _with_screenshot, True)
     return method
 
+
 def no_screenshot(method):
     setattr(method, _with_screenshot, False)
     return method
+
 
 class WebdriverUtils(object):
     _implicit_wait = 30
@@ -338,9 +337,6 @@ class TestBase(WebdriverUtils):
             not self._settings.webdriver_pooling):
             self._quit_webdriver()
 
-##TODO decorator
-#def branch(m):
-#    return m
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
     @staticmethod

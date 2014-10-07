@@ -4,16 +4,18 @@ Simple RPC
 Copyright (c) 2013, Joaquin G. Duo
 '''
 import rel_imp; rel_imp.init()
-from unittest.loader import TestLoader
-from unittest.case import TestCase
-from unittest.runner import TextTestRunner
-from unittest.suite import TestSuite
+import sys
+#We want to use the new version of unittest in <= python 2.6
+if sys.version_info < (2,7):
+    import unittest2 as unittest
+else:
+    import unittest
+
 from types import FunctionType, TypeType, ModuleType
 from importlib import import_module
 from ..base import SmoothTestBase
 import os
 import pkgutil
-import unittest
 from argparse import ArgumentParser
 import importlib
 import subprocess
@@ -102,14 +104,14 @@ class SmokeTestDiscover(SmoothTestBase):
         module = importlib.import_module(modstr)
         func = getattr(module, self._func_name)
         log = self.log
-        class SmokeTest(TestCase):
+        class SmokeTest(unittest.TestCase):
             def test_func(self):
                 log('Testing %s' % func.__module__)
                 func()
         
-        s = TestLoader().loadTestsFromTestCase(SmokeTest)
-        suite = TestSuite([s])
-        results = TextTestRunner().run(suite)
+        s = unittest.TestLoader().loadTestsFromTestCase(SmokeTest)
+        suite = unittest.TestSuite([s])
+        results = unittest.TextTestRunner().run(suite)
         raise SystemExit(len(results.errors))
 
 
