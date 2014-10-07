@@ -155,7 +155,7 @@ class SmokeCommand(SmoothTestBase):
                 for m in s.get_missing(pkg):
                     pth = m.__file__
                     if pth.endswith('.pyc'):
-                        pth = f[:-1]
+                        pth = pth[:-1]
                     s.log('Missing test in module %s' % m)
                     s.log(formatPathPrint(pth))
         #return results
