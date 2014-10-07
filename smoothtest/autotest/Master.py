@@ -267,7 +267,7 @@ class Master(ChildBase):
              self.parent_conn:(lambda:self._dispatch_cmds(self._parent_conn)),
              }
         #Convert to {fileno:(dispatch_lambda, conn_func)...} dict
-        fnodict = dict( (f().fileno(), (lb,f) ) for f,lb in fdict.items())
+        fnodict = dict( (f().fileno(), (lb,f) ) for f,lb in fdict.items() if f())
         #dispatch events
         for f in rlist:
             try:
