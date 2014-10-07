@@ -48,7 +48,7 @@ class ModulesAttributesIterator(SmoothTestBase):
 
 class SmokeTestDiscover(SmoothTestBase):
     '''
-    Inspect in all simplerpc modules for a smoke_test_module function.
+    Inspect in all modules for a smoke_test_module function.
     Then create a test for each module and run it.
     '''
     def __init__(self):
