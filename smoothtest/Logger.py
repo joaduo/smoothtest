@@ -4,6 +4,7 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 '''
 import logging
 
+
 class Logger(object):
     default_level = logging.DEBUG
     handler_level = logging.DEBUG
@@ -82,6 +83,7 @@ class Logger(object):
             self.w('Cannot set logging level')
     def __call__(self, msg):
         self.info(msg)
+
 
 def smoke_test_module():
     ''' Simple self-contained test for the module '''

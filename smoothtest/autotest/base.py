@@ -13,24 +13,13 @@ import multiprocessing
 from types import MethodType, FunctionType
 import sys
 
-cmd_fields = 'cmd args kwargs'
-AutotestCmd = namedtuple('AutotestCmd', cmd_fields)
+
+AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
 AutotestAnswer = namedtuple('AutotestAnswer', 'sent_cmd result error')
 
+
 class AutoTestBase(SmoothTestBase):
-    def split_test_path(self, test_path, meth=False):
-        test_path = test_path.split('.')
-        if meth:
-            offset = -2
-            module = '.'.join(test_path[:offset])
-            class_ = test_path[offset]
-            method = test_path[offset+1]
-            return module, class_, method
-        else: #only module+class
-            offset = -1
-            module = '.'.join(test_path[:offset])
-            class_ = test_path[offset]
-            return module, class_
+    pass
 
 
 class ChildBase(AutoTestBase):

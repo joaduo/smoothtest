@@ -5,7 +5,6 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
 import sys
 #We want to use the new version of unittest in <= python 2.6
 if sys.version_info < (2,7):
@@ -15,11 +14,14 @@ else:
 
 unittest = unittest
 
-#dummy function to avoid warnings inspecting this module
+
 def smoke_test_module():
+    import rel_imp; rel_imp.init()
     from .Logger import Logger
     log = Logger('smoke')
-    log.d([unittest.TestCase, unittest.TestLoader])
+    #If we are in old unittest some of this classes are missing
+    log.d([unittest.TestCase, unittest.TestLoader, unittest.TestSuite, 
+           unittest.TextTestRunner])
 
 if __name__ == "__main__":
     smoke_test_module()
