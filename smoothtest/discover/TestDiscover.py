@@ -45,11 +45,14 @@ class TestDiscoverBase(SmoothTestBase):
         for mod, attr in self._gather(package):
             if modules and mod not in modules:
                 continue
-            if self._run_test(mod, attr, argv):
-                failed.append(mod.__name__)
-            total.append(mod.__name__)
+            failed_amount = self._run_test(mod, attr, argv)
+            if failed_amount:
+                failed.append((mod.__name__, failed_amount))
+            #count total tests per TestClass
+            _, suite = self._get_test_suite(self._get_test_path(mod, attr))
+            total.append((mod.__name__, suite.countTestCases()))
         return total, failed
-    
+
     #def get_missing(self, package):
     #    msg = 'You need to implement this method in a subclass'
     #    raise NotImplementedError(msg)
@@ -58,19 +61,21 @@ class TestDiscoverBase(SmoothTestBase):
         module = importlib.import_module(self.__class__.__module__)
         return self.get_module_file(module)
 
+    def _get_test_path(self, mod, attr):
+        attr_name = self._get_attr_name(mod, attr)
+        return '%s.%s' % (mod.__name__, attr_name)        
+
     def _run_test(self, mod, attr, argv):
         #call this same script with a different argument
         #we need to test them in another process to avoid concurrency
         #between tests
-        attr_name = self._get_attr_name(mod, attr)
         prog = self._get_class_file()
-        cmd = 'python %r -t %s.%s' % (prog, mod.__name__, attr_name)
+        cmd = 'python %r -t %s' % (prog, self._get_test_path(mod, attr))
         cmd = shlex.split(cmd) + argv
         self.log.d('Running test with: %r'%(cmd,))
         return subprocess.call(cmd)
 
-    def run_test(self, test_path, argv=None):
-        self.log.d('Running %r' % test_path)
+    def _get_test_suite(self, test_path):
         modstr, attr_name = self.split_test_path(test_path)
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
@@ -88,10 +93,15 @@ class TestDiscoverBase(SmoothTestBase):
             raise TypeError('Tested object %r muset be subclass of TestCase or'
                             ' a callable.' % func_cls)
         
-        tst = unittest.TestLoader().loadTestsFromTestCase(TestClass)
+        suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
+        return TestClass, suite
+
+    def run_test(self, test_path, argv=None):
+        self.log.d('Running %r' % test_path)
+        TestClass, suite = self._get_test_suite(test_path)
         if hasattr(TestClass, 'setUpProcess'):
             TestClass.setUpProcess(argv)
-        results = unittest.TextTestRunner().run(tst)
+        results = unittest.TextTestRunner().run(suite)
         raise SystemExit(len(results.errors))
 
 
@@ -149,11 +159,14 @@ class DiscoverCommandBase(SmoothTestBase):
         elif args.packages:
             total, failed = self._discover_run(args.packages, argv=unknown,
                                missing=not getattr(args,'ignore_missing', True))
+            sum_func = lambda x,y: x + y[1]
+            t = reduce(sum_func, total, 0)
+            f = reduce(sum_func, failed, 0)
             if failed:
-                self.log.i('TOTAL: {total} FAILED: {failed}'.
-                           format(total=len(total), failed=failed))
+                self.log.i('FAILED {f} from {t}\n  Detail:{failed}'.
+                           format(f=f, t=t, failed=failed))
             else:
-                self.log.i('All {total} tests OK'.format(total=len(total)))
+                self.log.i('All {t} tests OK'.format(t=t))
 
 
 class TestRunner(TestDiscoverBase):
