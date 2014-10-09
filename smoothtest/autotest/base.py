@@ -68,18 +68,18 @@ class ChildBase(AutoTestBase):
 
 
 class TargetFunction(SmoothTestBase):
-    def __init__(self, callback, parent, child, pre):
+    def __init__(self, callback, parent_conn, child_conn, pre):
         self.callback = callback
-        self.parent = parent
-        self.child = child
+        self.parent_conn = parent_conn
+        self.conn = child_conn
         self.pre = pre
     
     def __call__(self):
-        self.parent.close()
+        self.parent_conn.close()
         sys.stdin.close()
         self.log.set_pre_post(pre=self.pre)
         self.log.d('Forked process started...')
-        self.callback(self.child)
+        self.callback(self.conn)
 
 
 class ParentBase(ChildBase):

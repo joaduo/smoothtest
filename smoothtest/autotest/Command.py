@@ -12,41 +12,47 @@ from smoothtest.autotest.base import AutoTestBase
 from smoothtest.autotest.Main import Main
 from smoothtest.autotest.TestSearcher import TestSearcher
 import sys
+import logging
+import re
 
+def get_module_regex():
+    def rpl(str_, local_vars):
+        #replace locals vars in the string
+        return str_.format(**local_vars)
+    mod = r'(?:[a-zA-Z_][a-zA-Z_0-9]*)'
+    mod_path = rpl(r'^{mod}(?:\.{mod})*$', locals())
+    return mod_path
 
-def is_valid_file(parser, path):
+def is_valid_file(path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
     '''
     abspath = os.path.abspath(path)
-    if os.path.exists(abspath) and os.path.isfile(abspath):
-        return path  # return the file path
-    else:
-        parser.error("The file %s does not exist!" % path)
+    if not (os.path.exists(abspath) 
+            and os.path.isfile(abspath)
+            or re.match(get_module_regex(), path)):
+        logging.warn('File %r does not exist.' % path)
+    return path
 
 
-def is_file_or_dir(parser, path):
+def is_file_or_dir(path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
     '''
     abspath = os.path.abspath(path)
-    if os.path.exists(abspath) and (os.path.isfile(abspath) or os.path.isdir(abspath)):
-        return path  # return the file path
-    else:
-        parser.error("The file %s does not exist!" % path)
+    if not (os.path.exists(abspath) 
+            and (os.path.isfile(abspath) or os.path.isdir(abspath))
+            or re.match(get_module_regex(), path)
+            ):
+        logging.warn('File or dir %r does not exist.' % path)
+    return path
 
 
 class Command(AutoTestBase):
-    def get_parser(self, file_checking=True):
-        if file_checking:
-            is_file = lambda x: is_valid_file(parser, x)
-            is_dir_file = lambda x: is_file_or_dir(parser, x)
-        else:
-            is_file = lambda x: x
-            is_dir_file = lambda x: x
+    def get_parser(self):
         parser = ArgumentParser(description='Start a local sales vs'
                                 'non-sales glidepath server')
-        parser.add_argument('tests', type=is_file,
+        parser.add_argument('tests', type=is_valid_file,
                             help='Tests to be monitored and run. Triggers'
                             ' partial_reloads',default=[], nargs='*')
         parser.add_argument('-r', '--methods-regex', type=str,
@@ -58,16 +64,16 @@ class Command(AutoTestBase):
         parser.add_argument('--smoke', help='Do not run tests. Simply test'
                             ' the whole monitoring system',default=None, 
                             action='store_true')
-        parser.add_argument('-F', '--full-reloads', type=is_dir_file,
+        parser.add_argument('-F', '--full-reloads', type=is_file_or_dir,
                             help='Files or directories to be monitored and'
                             ' triggers of full_reloads.', default=[], nargs='+')
         parser.add_argument('-R', '--full-regex', type=str, help='Regex to'
                             ' filter files in full reloads directories.',
-                            default='.*')
+                            default='.*\.py$')
         return parser
 
     def get_extension_parser(self):
-        parser = self.get_parser(file_checking=False)
+        parser = self.get_parser()
         parser.add_argument('-f', '--force',
                             help='force reloading tests (+ restarting webdriver)',
                             default=False, action='store_true')
@@ -120,6 +126,12 @@ def smoke_test_module():
     parser = c.get_extension_parser()
     args, unkown = parser.parse_known_args([])
     c.get_test_config(args, unkown)
+    mod_path = 'fulcrum.views.tests.home'
+    is_valid_file(mod_path)
+    is_file_or_dir(mod_path)
+    mod_file = 'fulcrum/views/tests/home.py'
+    is_valid_file(mod_file)
+    is_file_or_dir(mod_file)
 
 
 def main(argv=None):

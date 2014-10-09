@@ -11,6 +11,7 @@ import traceback
 import re
 import os
 
+
 class SmoothTestBase(object):
     log = Logger('autotest')
     

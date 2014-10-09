@@ -9,16 +9,15 @@ import rel_imp; rel_imp.init()
 from ..base import SmoothTestBase
 from .ModuleAttrIterator import ModuleAttrIterator
 from ..import_unittest import unittest
-import importlib
-import subprocess
-import shlex
 from types import FunctionType, TypeType
-import inspect
 from argparse import ArgumentParser
 import os
+import importlib
+import inspect
+from ..autotest.base import ParentBase
 
 
-class TestDiscoverBase(SmoothTestBase):
+class TestDiscoverBase(ParentBase):
     def __init__(self, filter_func):
         self.filter_func = filter_func
         self.inspector = ModuleAttrIterator()
@@ -39,18 +38,17 @@ class TestDiscoverBase(SmoothTestBase):
                 if val is attr:
                     return name
     
-    def discover_run(self, package, modules=[], argv=None):
+    def discover_run(self, package, modules=[], argv=None, one_process=False):
         total = []
         failed = []
         for mod, attr in self._gather(package):
             if modules and mod not in modules:
                 continue
-            failed_amount = self._run_test(mod, attr, argv)
-            if failed_amount:
-                failed.append((mod.__name__, failed_amount))
-            #count total tests per TestClass
-            _, suite = self._get_test_suite(self._get_test_path(mod, attr))
-            total.append((mod.__name__, suite.countTestCases()))
+            results = self._run_test(mod, attr, argv, one_process)
+            if results.errors or results.failures:
+                f = len(results.errors) + len(results.failures)
+                failed.append((mod.__name__, f))
+            total.append((mod.__name__, results.testsRun))
         return total, failed
 
     #def get_missing(self, package):
@@ -65,15 +63,20 @@ class TestDiscoverBase(SmoothTestBase):
         attr_name = self._get_attr_name(mod, attr)
         return '%s.%s' % (mod.__name__, attr_name)        
 
-    def _run_test(self, mod, attr, argv):
-        #call this same script with a different argument
-        #we need to test them in another process to avoid concurrency
-        #between tests
-        prog = self._get_class_file()
-        cmd = 'python %r -t %s' % (prog, self._get_test_path(mod, attr))
-        cmd = shlex.split(cmd) + argv
-        self.log.d('Running test with: %r'%(cmd,))
-        return subprocess.call(cmd)
+    def _run_test(self, mod, attr, argv, one_process):
+        test_path = self._get_test_path(mod, attr)
+        if one_process:
+            results = self.run_test(test_path, argv)
+        else:
+            self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
+            self.send(self.run_test, test_path, argv)
+            results = self._get_answer(self.recv(), self.run_test).result
+            self.kill(block=True, timeout=10)
+        return results
+    
+    def dispatch_cmds(self, conn):
+        while True:
+            self._dispatch_cmds(conn)
 
     def _get_test_suite(self, test_path):
         modstr, attr_name = self.split_test_path(test_path)
@@ -102,7 +105,7 @@ class TestDiscoverBase(SmoothTestBase):
         if hasattr(TestClass, 'setUpProcess'):
             TestClass.setUpProcess(argv)
         results = unittest.TextTestRunner().run(suite)
-        raise SystemExit(len(results.errors))
+        return results
 
 
 class DiscoverCommandBase(SmoothTestBase):
@@ -118,6 +121,9 @@ class DiscoverCommandBase(SmoothTestBase):
         parser.add_argument('-p', '--packages', type=str,
                     help='Specify the packages to discover smoke tests from.',
                     default=[], nargs='+')
+        parser.add_argument('-o', '--one-process',
+                    help='Run all tests inside 1 single process.',
+                    default=False, action='store_true')
         if hasattr(self.test_discover, 'get_missing'):
             parser.add_argument('-i', '--ignore-missing',
                         help='Ignore missing smoke tests.',
@@ -126,9 +132,9 @@ class DiscoverCommandBase(SmoothTestBase):
     
     def _test_modules(self, tests, argv):
         for tst in tests:
-            self.test_discover.run_test(tst, argv)
+            self.test_discover.run_test(self._path_to_modstr(tst), argv)
     
-    def _discover_run(self, packages, argv=None, missing=True):
+    def _discover_run(self, packages, argv=None, missing=True, one_process=False):
         #pydev friendly printing
         def formatPathPrint(path, line=None):
             if not line:
@@ -140,7 +146,7 @@ class DiscoverCommandBase(SmoothTestBase):
         for pkg_pth in packages:
             pkg = importlib.import_module(self._path_to_modstr(pkg_pth))
             #run and count
-            t,f = tdisc.discover_run(pkg, argv=argv)
+            t,f = tdisc.discover_run(pkg, argv=argv, one_process=one_process)
             total += t
             failed += f
             #Print missing
@@ -158,12 +164,14 @@ class DiscoverCommandBase(SmoothTestBase):
             self._test_modules(args.tests, unknown)
         elif args.packages:
             total, failed = self._discover_run(args.packages, argv=unknown,
-                               missing=not getattr(args,'ignore_missing', True))
+                               missing=not getattr(args,'ignore_missing', True),
+                               one_process=args.one_process)
             sum_func = lambda x,y: x + y[1]
             t = reduce(sum_func, total, 0)
             f = reduce(sum_func, failed, 0)
             if failed:
-                self.log.i('FAILED {f} from {t}\n  Detail:{failed}'.
+                self.log.i('FAILURES + ERRORS={f} from {t}\n    '
+                           'Problems detail:{failed}'.
                            format(f=f, t=t, failed=failed))
             else:
                 self.log.i('All {t} tests OK'.format(t=t))
@@ -178,7 +186,7 @@ class TestRunner(TestDiscoverBase):
 
 
 def smoke_test_module():
-    pass    
+    pass
 
 def main(argv=None):
     DiscoverCommandBase(TestRunner()).main(argv)

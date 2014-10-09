@@ -330,7 +330,12 @@ class TestBase(WebdriverUtils):
         base_url = self._settings.web_server_url
         browser = self._settings.webdriver_browser
         webdriver = webdriver if webdriver else TestBase._new_webdriver(self._settings)
+        self._set_webdriver_log_level(self._settings.webdriver_log_level)
         self._init_webdriver(base_url, browser, webdriver, self._settings.screenshot_level)
+
+    def _set_webdriver_log_level(self, log_level):
+        from selenium.webdriver.remote.remote_connection import LOGGER
+        LOGGER.setLevel(log_level)
 
     def _shutdown_webserver_webdriver(self):
         if (not self._settings.webdriver_keep_open and
@@ -363,8 +368,6 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
                format(**locals()))
         self.assertEqual(extracted, value, msg)
         self.screenshot('assert_text', xpath, value)
-
-
 
 
 def smoke_test_module():
