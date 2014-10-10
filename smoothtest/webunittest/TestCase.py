@@ -343,7 +343,7 @@ class TestBase(WebdriverUtils):
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
     @staticmethod
-    def disable_method(cls, meth, log_debug=lambda msg:None):
+    def disable_method(cls, meth, log_func=lambda msg:None):
         if not isinstance(meth, basestring):
             if not hasattr(meth, 'func_name'):
                 meth = meth.im_func
@@ -355,7 +355,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
                 @ftype
                 @wraps(func)
                 def no_op(*_,  **__):
-                    log_debug('Ignoring call to {cls.__name__}.{meth}'
+                    log_func('Ignoring call to {cls.__name__}.{meth}'
                               .format(cls=cls, meth=meth))
                 setattr(cls, meth, no_op)
                 return no_op
