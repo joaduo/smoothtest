@@ -67,9 +67,9 @@ class Command(AutoTestBase):
         parser.add_argument('-F', '--full-reloads', type=is_file_or_dir,
                             help='Files or directories to be monitored and'
                             ' triggers of full_reloads.', default=[], nargs='+')
-        parser.add_argument('-R', '--full-regex', type=str, help='Regex to'
-                            ' filter files in full reloads directories.',
-                            default='.*\.py$')
+        parser.add_argument('-m', '--fnmatch', type=str, help='Fnmatch '
+                        'pattern to filter files in full reloads directories.',
+                        default='*.py')
         return parser
 
     def get_extension_parser(self):
@@ -99,7 +99,7 @@ class Command(AutoTestBase):
         test_config = dict(test_paths=test_paths,
                            partial_reloads=partial_reloads,
                            full_reloads=args.full_reloads,
-                           full_filter=args.full_regex,
+                           full_filter=args.fnmatch,
                            smoke=args.smoke,
                            argv=argv,
                            )

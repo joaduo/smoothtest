@@ -12,14 +12,23 @@ from collections import namedtuple
 import multiprocessing
 from types import MethodType, FunctionType
 import sys
+import traceback
 
 
 AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
 AutotestAnswer = namedtuple('AutotestAnswer', 'sent_cmd result error')
 
 
+TestResult = namedtuple('TestResult', 'testsRun errors failures')
+TestException = namedtuple('TestException', 'msg repr traceback')
+
+
 class AutoTestBase(SmoothTestBase):
-    pass
+    def reprex(self, e, print_=True):
+        #TODO: shuoldn't format last exception,but passed one
+        if print_:
+            traceback.print_exc()
+        return TestException(str(e), repr(e), traceback.format_exc())
 
 
 class ChildBase(AutoTestBase):
@@ -47,7 +56,12 @@ class ChildBase(AutoTestBase):
         self.log.d('Answering {answers}'.format(answers=answers))
         send(answers)
         return answers
-    
+
+    def to_pickable_result(self, result):
+        errors = [repr(e) for e in result.errors]
+        failures = [repr(f) for f in result.failures]
+        return TestResult(result.testsRun, errors, failures)
+
     def _receive_kill(self, *args, **kwargs):
         pass
 
@@ -68,27 +82,30 @@ class ChildBase(AutoTestBase):
 
 
 class TargetFunction(SmoothTestBase):
-    def __init__(self, callback, parent_conn, child_conn, pre):
+    def __init__(self, callback, parent_conn, child_conn, pre, close_stdin=False):
         self.callback = callback
         self.parent_conn = parent_conn
         self.conn = child_conn
         self.pre = pre
+        self.close_stdin = close_stdin
     
     def __call__(self):
         self.parent_conn.close()
-        sys.stdin.close()
+        if self.close_stdin:
+            self.log.d('Closing stdin')
+            sys.stdin.close()
         self.log.set_pre_post(pre=self.pre)
         self.log.d('Forked process started...')
         self.callback(self.conn)
 
 
 class ParentBase(ChildBase):
-    def start_subprocess(self, callback, pre=''):
+    def start_subprocess(self, callback, pre='', close_stdin=True):
         parent, child = multiprocessing.Pipe()
         #Add space if defined
         pre = pre if not pre else pre + ' '
         #Windows needs target to be pickable
-        target = TargetFunction(callback, parent, child, pre)
+        target = TargetFunction(callback, parent, child, pre, close_stdin)
         
         self._subprocess = multiprocessing.Process(target=target)
         self._subprocess.start()
@@ -118,8 +135,8 @@ class ParentBase(ChildBase):
         return output
     
     def _fmt_answer(self, answer):
-        return 'cmd:%s result: %r, errors: %s' % (answer.sent_cmd.cmd, 
-                                                 answer.result, answer.error)
+        return 'cmd:%s result:%r error:%r' % (answer.sent_cmd.cmd, 
+                                              answer.result, answer.error)
 
     def _get_answer(self, answers, cmd):
         cmd = self._get_cmd_str(cmd)

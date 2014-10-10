@@ -188,7 +188,7 @@ class WebdriverUtils(object):
 
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
-    def wait_condition(self, condition=None):
+    def wait_condition(self, condition=None, max_wait=None, print_msg=True):
         '''
         Active wait (polling) function, for a specific condition inside a page.
         '''
@@ -202,7 +202,8 @@ class WebdriverUtils(object):
             condtn = condition
         #first start waiting a tenth of the max time
         parts = 10
-        top = int(parts*self._max_wait)
+        max_wait = max_wait or self._max_wait
+        top = int(parts * max_wait)
         for i in range(1, top+1):
             loaded = condtn(self.get_driver())
             if loaded:
@@ -210,12 +211,12 @@ class WebdriverUtils(object):
                 break
             self.log.d('Waiting condition "%s" to be True.' % condition)
             time.sleep(float(i)/parts)
-        if not loaded:
+        if not loaded and print_msg:
             msg = ('Page took too long to load. Increase max_wait (secs) class'
                    ' attr. Or override _wait_script method.')
             self.log.d(msg)
         return loaded
-
+    
     def _get_xpath_script(self, xpath, ret='node', single=True):
         common_func = '''
 function extract_elem(elem){

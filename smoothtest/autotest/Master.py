@@ -10,10 +10,10 @@ from .base import ChildBase
 from .Slave import Slave
 from .TestRunner import TestRunner
 from .SourceWatcher import SourceWatcher, realPath
-import re
 import multiprocessing
 import threading
 import select as select_mod
+from fnmatch import fnmatch
 
 
 def lists_to_sockets(rlist, wlist, xlist):
@@ -195,7 +195,7 @@ class Master(ChildBase):
 
         if isinstance(path_filter, basestring):
             def pfilter(path):
-                return re.match(path_filter, path)
+                return fnmatch(path, path_filter)
         else:
             assert callable(path_filter)
             pfilter = path_filter

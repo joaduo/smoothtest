@@ -44,11 +44,11 @@ class TestDiscoverBase(ParentBase):
         for mod, attr in self._gather(package):
             if modules and mod not in modules:
                 continue
-            results = self._run_test(mod, attr, argv, one_process)
-            if results.errors or results.failures:
-                f = len(results.errors) + len(results.failures)
+            result = self._run_test(mod, attr, argv, one_process)
+            if result.errors or result.failures:
+                f = len(result.errors) + len(result.failures)
                 failed.append((mod.__name__, f))
-            total.append((mod.__name__, results.testsRun))
+            total.append((mod.__name__, result.testsRun))
         return total, failed
 
     #def get_missing(self, package):
@@ -66,13 +66,13 @@ class TestDiscoverBase(ParentBase):
     def _run_test(self, mod, attr, argv, one_process):
         test_path = self._get_test_path(mod, attr)
         if one_process:
-            results = self.run_test(test_path, argv)
+            result = self.run_test(test_path, argv, one_process)
         else:
             self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-            self.send(self.run_test, test_path, argv)
-            results = self._get_answer(self.recv(), self.run_test).result
+            self.send(self.run_test, test_path, argv, one_process)
+            result = self._get_answer(self.recv(), self.run_test).result
             self.kill(block=True, timeout=10)
-        return results
+        return result
     
     def dispatch_cmds(self, conn):
         while True:
@@ -99,13 +99,15 @@ class TestDiscoverBase(ParentBase):
         suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
         return TestClass, suite
 
-    def run_test(self, test_path, argv=None):
+    def run_test(self, test_path, argv=None, one_process=False):
         self.log.d('Running %r' % test_path)
         TestClass, suite = self._get_test_suite(test_path)
         if hasattr(TestClass, 'setUpProcess'):
             TestClass.setUpProcess(argv)
-        results = unittest.TextTestRunner().run(suite)
-        return results
+        result = unittest.TextTestRunner().run(suite)
+        if not one_process:
+            result = self.to_pickable_result(result)
+        return result
 
 
 class DiscoverCommandBase(SmoothTestBase):

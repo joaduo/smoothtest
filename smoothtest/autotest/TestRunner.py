@@ -9,7 +9,7 @@ import importlib
 import unittest
 import rel_imp; rel_imp.init()
 from .base import ChildBase
-from pprint import pformat
+from smoothtest.autotest.base import TestResult, TestException
 
 
 class TestRunner(ChildBase):
@@ -22,6 +22,7 @@ class TestRunner(ChildBase):
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
         self._set_webdriver(webdriver)
+        self._already_setup = set()
 
     def _set_webdriver(self, webdriver):
         if webdriver:
@@ -32,54 +33,50 @@ class TestRunner(ChildBase):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
         '''
-        errors = []
+        results = []
         if smoke or not test_paths:
             self.log.i('Ignoring %r \n  (smoke mode or no tests found)'%list(test_paths))
-            return errors
+            return results
         for tpath in test_paths:
-            pusherror = lambda err: err and errors.append((tpath, err))
-            class_ = self._import_test(pusherror, tpath)
-            if not class_:
-                continue
-            self._run_test(pusherror, tpath, argv, class_)
-        total = len(test_paths)
-        if not errors:
-            self.log.i('All %s OK' % total)
-        else:
-            failed = pformat([t for t,_ in errors])
-            self.log.i('Total %s Failed (%s):\n  %s' % 
-                       (total, len(errors), failed))
-        return errors
+            class_ = self._import_test(tpath)
+            if isinstance(class_, TestException):
+                results.append((tpath, class_))
+            else:
+                result = self._run_test(tpath, argv, class_)
+                results.append((tpath, result))
+        return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
         while True:
             self._dispatch_cmds(conn)
 
-    def _run_test(self, pusherror, test_path, argv, class_):
+    def _run_test(self, test_path, argv, class_):
         try:
             _, _, methstr = self._split_path(test_path)
             suite = unittest.TestSuite()
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
-            if hasattr(class_, 'setUpProcess'):
+            if (hasattr(class_, 'setUpProcess') 
+            and test_path not in self._already_setup):
                 class_.setUpProcess(argv)
-            runner.run(suite)
+                self._already_setup.add(test_path)
+            result = runner.run(suite)
+            return self.to_pickable_result(result)
         except Exception as e:
-            pusherror(self.reprex(e))
+            return self.reprex(e)
 
     def _split_path(self, test_path):
         return self.split_test_path(test_path, meth=True)
 
-    def _import_test(self, pusherror, test_path):
+    def _import_test(self, test_path):
         modstr, clsstr, _ = self._split_path(test_path)
         try:
             module = importlib.import_module(modstr)
             module = reload(module)
-            class_ = getattr(module, clsstr) 
+            class_ = getattr(module, clsstr)
+            return class_ 
         except Exception as e:
-            pusherror(self.reprex(e))
-            return None
-        return class_
+            return self.reprex(e)
 
 
 def smoke_test_module():

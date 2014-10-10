@@ -10,7 +10,7 @@ import unittest
 
 class ErroringExample(unittest.TestCase):
     def __init__(self, methodName=''):
-        methodName='example'
+        methodName='"non_existing_test"'
         unittest.TestCase.__init__(self, methodName=methodName)
     
     def test_example(self):

@@ -7,6 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
 from .base import ParentBase
+from smoothtest.autotest.base import TestException
 
 
 class Slave(ParentBase):
@@ -39,15 +40,40 @@ class Slave(ParentBase):
         if block:
             return self.recv_answer()
 
+    def _collect_stats(self, ans):
+        exceptions = errored = failed = total = 0
+        exlist = []
+        errlist = []
+        faillist = []
+        for tst_pth, result in ans.result:
+            if isinstance(result, TestException):
+                #exception running test
+                exceptions += 1
+                exlist.append(tst_pth)
+                continue
+            #TestResult with failures or errors
+            result.errors and errlist.append(tst_pth)
+            result.failures and faillist.append(tst_pth)
+            errored += len(result.errors)
+            failed += len(result.failures)
+            total += result.testsRun
+        if not (failed and errored and exceptions):
+            msg = 'All %s OK' % total
+        else:
+            msg = ('EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
+                   ' TOTAL:{total}'.format(**locals()))
+        for typ, lst in [('exceptions', exlist), ('erros', errlist), 
+                    ('failures', faillist)]:
+            msg += '\n  with %s: %s' % (typ, lst)
+        return msg
+
     def _fmt_answer(self, ans):
-        result = ans.result
-        error = ans.error
-        if ans.sent_cmd.cmd == 'test':
-            if not ans.error and ans.result:
-                error = '\n'
-                error += ''.join('\n%s\n%s'% (m,e) for m,e in ans.result)
-                result = 'Exceptions'
-        return 'result: %r, errors: %s' % (result, error)
+        if ans.sent_cmd.cmd == self._get_cmd_str(self._child_cls.test):
+            if ans.error:
+                return 'Exception importing initializing test: %r' % ans.error
+            return self._collect_stats(ans)
+        else:
+            return super(Slave, self)._fmt_answer(ans)
 
     def recv_answer(self):
         answers = self.recv()
@@ -63,11 +89,17 @@ class Slave(ParentBase):
 
 def smoke_test_module():
     from .TestRunner import TestRunner
-    test_paths = ['smoothtest.tests.example.Example.Example.test_example']
+    pre = 'smoothtest.tests.example.Example.'
+    test_paths = [pre+'Example.test_example',
+                  pre+'Example.test_error',
+                  pre+'Example.test_failure',
+                  pre+'NonExistingExample.test',
+      'smoothtest.tests.example.ErroringExample.ErroringExample.test_example',
+                  ]
     sat = Slave(TestRunner, [], {})
     sat.start_subprocess()
-    sat.log.i(sat.test(test_paths, block=True))
-    sat.log.i(sat.test(test_paths, block=True))
+    for i in range(1,len(test_paths)+1):
+        sat.log.i(sat.test(test_paths[:i], block=True))
     sat.kill(block=True)
 
 if __name__ == "__main__":
