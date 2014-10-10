@@ -6,11 +6,12 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import unittest
+import logging
 
 
 class Example(unittest.TestCase):
     def test_example(self):
-        print 'Running test at %s!' % __file__
+        logging.debug('Running test at %s!' % __file__)
 
     def test_error(self):
         raise LookupError('Unexpected error!')

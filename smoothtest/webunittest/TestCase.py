@@ -45,9 +45,9 @@ class WebdriverUtils(object):
     _shot_sizes = [(400,300), (800,600), (1024, 768)]
     _driver = None
     
-    def __init__(self, base_url, **kwargs):
+    def __init__(self, base_url, logger, **kwargs):
         self._init_webdriver(base_url, **kwargs)
-        self.log = Logger(self.__class__.__name__)
+        self.log = logger or Logger(self.__class__.__name__)
 
     def _init_webdriver(self, base_url, browser='PhantomJS', webdriver=None, 
                         screenshot_level=logging.WARN):
@@ -182,9 +182,6 @@ class WebdriverUtils(object):
             self.log.d('Fetching {url!r} and we got {driver.current_url!r}.'
                        .format(**locals()))
         return driver
-
-    def log_debug(self, msg):
-        print msg
 
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'

@@ -291,7 +291,7 @@ class Master(ChildBase):
     def _recv_slave(self):
         first = self._slave._first_test
         answer = self._slave.recv_answer()
-        if answer.error or answer.result and not first:
+        if answer.error and not first:
             self.full_callback('Error on non-first run')        
 
 

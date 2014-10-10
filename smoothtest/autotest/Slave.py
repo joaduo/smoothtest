@@ -49,6 +49,7 @@ class Slave(ParentBase):
             if isinstance(result, TestException):
                 #exception running test
                 exceptions += 1
+                total += 1
                 exlist.append(tst_pth)
                 continue
             #TestResult with failures or errors
@@ -57,14 +58,15 @@ class Slave(ParentBase):
             errored += len(result.errors)
             failed += len(result.failures)
             total += result.testsRun
-        if not (failed and errored and exceptions):
-            msg = 'All %s OK' % total
+        if not (failed or errored or exceptions):
+            msg = '\n  All %s OK' % total
         else:
-            msg = ('EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
+            msg = ('\n  EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
                    ' TOTAL:{total}'.format(**locals()))
         for typ, lst in [('exceptions', exlist), ('erros', errlist), 
-                    ('failures', faillist)]:
-            msg += '\n  with %s: %s' % (typ, lst)
+                         ('failures', faillist)]:
+            if lst:
+                msg += '\n    with %s: %s' % (typ, lst)
         return msg
 
     def _fmt_answer(self, ans):

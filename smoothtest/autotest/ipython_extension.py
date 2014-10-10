@@ -51,6 +51,7 @@ class AutotestMagics(Magics):
                 test_config['smoke'] = True
             if args.nosmoke is not None:
                 test_config['smoke'] = False
+            test_config.update(force=args.force)
         self._send(test_config)
         return test_config
             
