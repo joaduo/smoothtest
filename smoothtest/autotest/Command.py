@@ -50,39 +50,35 @@ def is_file_or_dir(path):
 
 class Command(AutoTestBase):
     def get_parser(self):
-        parser = ArgumentParser(description='Start a local sales vs'
-                                'non-sales glidepath server')
+        parser = ArgumentParser(description='Automatically runs (unit) '
+                                'tests upon code changes.')
         parser.add_argument('tests', type=is_valid_file,
-                            help='Tests to be monitored and run. Triggers'
-                            ' partial_reloads',default=[], nargs='*')
+            help='Tests\' files or modules path to  to be monitored.'
+            ' Changes on these files trigger a reload of those same modules '
+            'and rerunning the tests they contain.',default=[], nargs='*')
         parser.add_argument('-r', '--methods-regex', type=str,
-                            help='Specify regex for Methods matching',
-                            default='')
-        parser.add_argument('-n', '--no-ipython',
-                            help='Do not use ipython interactive shell',
-                            default=False, action='store_true')
+            help='Specify regex for Methods matching', default='')
+        parser.add_argument('-n', '--no-ipython', help='Do not embed ipython'
+            ' interactive shell as UI.', default=False, action='store_true')
         parser.add_argument('--smoke', help='Do not run tests. Simply test'
-                            ' the whole monitoring system',default=None, 
-                            action='store_true')
+            ' the whole monitoring system',default=None, action='store_true')
         parser.add_argument('-F', '--full-reloads', type=is_file_or_dir,
-                            help='Files or directories to be monitored and'
-                            ' triggers of full_reloads.', default=[], nargs='+')
+            help='Files or directories to be monitored. They will trigger '
+            'reloading all files involved and rerunning tests.', default=[], 
+            nargs='+')
         parser.add_argument('-m', '--fnmatch', type=str, help='Fnmatch '
-                        'pattern to filter files in full reloads directories.',
-                        default='*.py')
+            'pattern to filter files in full reloads directories.'
+            ' (default=*.py)',  default='*.py')
         return parser
 
     def get_extension_parser(self):
         parser = self.get_parser()
-        parser.add_argument('-f', '--force',
-                            help='force reloading tests (+ restarting webdriver)',
-                            default=False, action='store_true')
-        parser.add_argument('-u', '--update',
-                            help='update test config',
-                            default=False, action='store_true')
-        parser.add_argument('--nosmoke',
-                            help='force no-smoke for updating',
-                            default=None, action='store_true')
+        parser.add_argument('-f', '--force', help='force reloading tests '
+            '(also restarting webdriver)', default=False, action='store_true')
+        parser.add_argument('-u', '--update', help='update test config',
+            default=False, action='store_true')
+        parser.add_argument('--nosmoke', help='force non-smoke mode for'
+            ' updating', default=None, action='store_true')
         return parser
 
     def get_test_config(self, args, argv):
