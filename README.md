@@ -58,4 +58,4 @@ pip uninstall smoothtest
 
 ## Windows and Mac OSX
 
-Smoothtest was designed to be multiplatform, although I still haven't fully tested it, more to come soon.
+I tested Smoothtest under Linux, although it was designed to be multiplatform, although I still haven't fully tested outside Linux.
