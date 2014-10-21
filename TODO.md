@@ -1,11 +1,30 @@
 ## TODO
 
-1. re-enable screenshots on exceptions
+1. create serious tests?
+	have a project
+		touch a file
+	copy a file to a tested module
+	tested with 
+		except
+		error
+		failure
+		ok -> writes result to file
+	test smoke
+	test browsers?
+		open them and check UA?
 1. phantomjs wait condition to be True does not work
+1. passing arguments to a initialization module
+	which will be ran on TestRunner (before or after forking (DO API))
+	1. make testrunner with webdriver optional (pass testrunner module optionally ?)
+		or perhaps optionally create your own command?
+1. enable remote post-mortem debugging
+1. better logging messages
+	1. set log level per process
+
+1. re-enable screenshots on exceptions
+
 1. make callbacks pickable in order to work with windows
 1. browser pool
-1. passing arguments to a initialization module
-	which will be ran on TestRunner
 	
 	
 1. handle KeyboardInterrupt
