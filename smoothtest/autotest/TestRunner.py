@@ -9,7 +9,7 @@ import importlib
 import unittest
 import rel_imp; rel_imp.init()
 from .base import ChildBase
-from smoothtest.autotest.base import TestResult, TestException
+from smoothtest.autotest.base import TestException
 
 
 class TestRunner(ChildBase):
