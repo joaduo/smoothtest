@@ -11,6 +11,10 @@ class DefaultSettings(object):
 
     web_server_url = ''
     
+    virtual_display_enable = False
+    virtual_display_display = False
+    virtual_display_size = (800,600)
+
     webdriver_browser = 'PhantomJS'
     webdriver_pooling = False
     webdriver_pool_size = 1

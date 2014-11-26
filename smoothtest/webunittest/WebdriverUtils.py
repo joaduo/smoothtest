@@ -18,6 +18,7 @@ from functools import wraps
 from types import MethodType
 from threading import Lock
 from ..Logger import Logger
+from .WebdriverManager import WebdriverManager
 
 
 _with_screenshot = '_with_screenshot'
@@ -25,24 +26,40 @@ _zero_screenshot = '_zero_screenshot'
 
 
 def zero_screenshot(method):
+    '''
+    Decorated method won't have any exception screenshot until we leave the method
+    (means no screenshot on other methods called too)
+
+    :param method: decorated method
+    '''
     setattr(method, _zero_screenshot, True)
     return method
 
 
 def screenshot(method):
+    '''
+    If the method raises an exception, take a screenshot.
+
+    :param method: decorated method
+    '''
     setattr(method, _with_screenshot, True)
     return method
 
 
 def no_screenshot(method):
+    '''
+    No screenshot for exceptions at this decorated method.
+    But any other method is free to take screenshots for any exception.
+
+    :param method: decorated method
+    '''
     setattr(method, _with_screenshot, False)
     return method
 
 
-def new_driver(browser, *args, **kwargs):
-    if browser == 'PhantomJS':
-        kwargs.update(service_args=['--ignore-ssl-errors=true'])
-    return getattr(webdriver, browser)(*args, **kwargs)
+def new_driver(browser=None, *args, **kwargs):
+    #TODO: remove usage
+    return WebdriverManager().new_webdriver(browser, *args, **kwargs)
 
 
 class WebdriverUtils(object):
@@ -315,7 +332,7 @@ def smoke_test_module():
         def get_driver(self, *args, **kwargs):
             class Driver(object):
                 def save_screenshot(self, path):
-                    print('Saves to: %r' % path)
+                    print('Would save to: %r' % path)
             return Driver()
 
         @zero_screenshot

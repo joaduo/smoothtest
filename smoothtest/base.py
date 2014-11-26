@@ -9,11 +9,16 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 from smoothtest.Logger import Logger
 import re
 import os
+from smoothtest.settings.solve_settings import solve_settings
 
 
 class SmoothTestBase(object):
     log = Logger('autotest')
     
+    @property
+    def global_settings(self):
+        return solve_settings()
+
     def _path_to_modstr(self, tst):
         tst = tst.replace(os.path.sep, '.')
         tst = re.sub(r'\.(pyc)|(py)$', '', tst).strip('.')
@@ -39,6 +44,8 @@ class SmoothTestBase(object):
             pth = pth[:-1]
         return pth
 
+class CommandBase(SmoothTestBase):
+    pass
 
 def smoke_test_module():
     s = SmoothTestBase()

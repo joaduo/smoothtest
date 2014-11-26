@@ -7,7 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
 from .base import ParentBase
-from smoothtest.autotest.base import TestException
+from .base import TestException
 
 
 class Slave(ParentBase):

@@ -185,7 +185,7 @@ class Master(ChildBase):
             self.restart_subprocess()
 
         #do first time test (for master)
-        partial_callback('First run')
+        partial_callback('First test after setup')
 
         #Start inotify observer:
         self._watcher.start_observer()

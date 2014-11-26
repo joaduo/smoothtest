@@ -118,10 +118,10 @@ class DiscoverCommandBase(SmoothTestBase):
     def get_parser(self):
         parser = ArgumentParser(description=self.description)
         parser.add_argument('-t', '--tests', type=str,
-                    help='Specify the modules to run smoke tests from.',
+                    help='Specify the modules to run tests from.',
                     default=[], nargs='+')
         parser.add_argument('-p', '--packages', type=str,
-                    help='Specify the packages to discover smoke tests from.',
+                    help='Specify the packages to discover tests from.',
                     default=[], nargs='+')
         parser.add_argument('-o', '--one-process',
                     help='Run all tests inside 1 single process.',

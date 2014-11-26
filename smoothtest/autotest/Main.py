@@ -9,10 +9,10 @@ import rel_imp; rel_imp.init()
 import sys
 from .base import ParentBase
 from .Master import Master
-from ..settings.solve_settings import solve_settings
+from smoothtest.settings.solve_settings import solve_settings
 from .Slave import Slave
 from .TestRunner import TestRunner
-from selenium import webdriver
+from smoothtest.webunittest.WebdriverManager import WebdriverManager
 
 
 class Main(ParentBase):
@@ -107,7 +107,7 @@ class Main(ParentBase):
             browser = browser or settings.webdriver_browser
             child_kwargs = {}
             if settings.webdriver_inmortal_pooling and not self.smoke:
-                wd = getattr(webdriver, browser)()
+                wd = WebdriverManager().new_webdriver(browser)
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave

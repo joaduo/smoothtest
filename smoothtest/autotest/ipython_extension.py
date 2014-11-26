@@ -9,6 +9,7 @@ import rel_imp; rel_imp.init()
 from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
 import glob
+from argparse import ArgumentParser
 
 
 @magics_class
@@ -35,9 +36,24 @@ class AutotestMagics(Magics):
     def _send(self, test_config):
         self.main.send_test(**test_config)
 
+    def _test_magic_cmd_parser(self):
+        parser = ArgumentParser(description='Manually trigger a test.')
+        parser.add_argument('-f', '--force', help='Trigger full reload.', 
+                            default=False, action='store_true')
+        return parser
+
     @line_magic
     def test(self, line):
-        return self.main.test
+        parser = self._test_magic_cmd_parser()
+        args = parser.parse_args(shlex.split(line))
+        if args.force:
+            #Force full reload
+            test_config = self.main.test_config.copy()
+            test_config.update(force=True)
+            self._send(test_config)
+        else:
+            #Simply invoque .test TODO
+            self.main.test
 
     @line_magic
     def autotest(self, line):
