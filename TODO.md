@@ -1,5 +1,18 @@
+## High priority
+
+1. Multiplatform
+1. TestRunner addon -> Selenium Setup -> Virtual screen Setup
+1. Take screenshots
+
 ## TODO
 
+1. Rename smoke to dry-run
+1. add extensions
+	i. has initializations on the three levels
+	i. adds ipython extensions
+
+1. replace stdout stderr for StringIO and read it from outside
+1. split Interactive Main from non interactive Main (MainBase and Main)
 1. create serious tests?
 	have a project
 		touch a file
