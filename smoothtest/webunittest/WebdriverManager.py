@@ -26,7 +26,7 @@ class WebdriverManager(SmoothTestBase):
         Create virtual display if set by configuration
         '''
         def get(name, default=None):
-            return self.global_settings.get('virtual_display' + name, default)
+            return self.global_settings.get('virtual_display_' + name, default)
         if not get('enable'):
             if WebdriverManager.default_display:
                 logging.warn('There is a display enabled although config says'
@@ -36,7 +36,7 @@ class WebdriverManager(SmoothTestBase):
             # There is a display configured
             return
         # We need to setup a new virtual display
-        d = Display(size=get('size',(800,600)), display=get('display'))
+        d = Display(size=get('size',(800,600)), visible=get('visible'))
         d.start()
         WebdriverManager.default_display = d
         

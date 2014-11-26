@@ -33,11 +33,9 @@ class TestBase(WebdriverUtils):
     def _init_webserver_webdriver(self, settings=None, webdriver=None):
         settings = self._settings = settings if settings else solve_settings()
         base_url = settings.get('web_server_url')
-        browser = settings.get('webdriver_browser')
         webdriver = webdriver if webdriver else TestBase._new_webdriver(settings)
         self._set_webdriver_log_level(settings.get('webdriver_log_level'))
-        self._init_webdriver(base_url, browser=browser, webdriver=webdriver,
-                             screenshot_level=self._settings.screenshot_level)
+        self._init_webdriver(base_url, webdriver, settings)
 
     def _set_webdriver_log_level(self, log_level):
         from selenium.webdriver.remote.remote_connection import LOGGER

@@ -69,21 +69,28 @@ class WebdriverUtils(object):
     _shot_sizes = [(400,300), (800,600), (1024, 768)]
     _driver = None
     
-    def __init__(self, base_url, logger, **kwargs):
-        self._init_webdriver(base_url, **kwargs)
+    def __init__(self, base_url, logger, settings):
+        self._init_webdriver(base_url, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
 
-    def _init_webdriver(self, base_url, browser='PhantomJS', webdriver=None, 
-                        screenshot_level=logging.WARN):
+    def _init_webdriver(self, base_url, webdriver=None, settings={}):
         if webdriver:
             self._driver = webdriver
         else:
-            self._init_driver(browser)
-        #self.get_driver().implicitly_wait(self._implicit_wait)
-        #self.get_driver().set_window_size(*self._window_size)
+            self._init_driver(settings.get('webdriver_browser','PhantomJS'))
+        # Setup webdriver
+        driver = self.get_driver()
+        if settings.get('webdriver_implicit_wait'):
+            driver.implicitly_wait(settings.get('webdriver_implicit_wait'))
+        if (settings.get('webdriver_window_size')
+            and driver.get_window_size() != settings.get('webdriver_window_size')):
+            driver.set_window_size(*settings.get('webdriver_window_size'))
+        # Initialize values
         self._base_url = base_url
         self._wait_timeout = 2
-        if screenshot_level <= logging.ERROR:
+        # Decorate methods for taking screenshots upon exceptions
+        if (settings.get('screenshot_level')
+            and settings.get('screenshot_level') <= logging.ERROR):
             self._decorate_exc_sshot()
         
     def _decorate_exc_sshot(self, meth_filter=None):

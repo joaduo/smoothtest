@@ -104,9 +104,8 @@ class Main(ParentBase):
     def _build_slave(self, force=False, browser=None):
         if (not self._slave or force):
             settings = solve_settings()
-            browser = browser or settings.webdriver_browser
             child_kwargs = {}
-            if settings.webdriver_inmortal_pooling and not self.smoke:
+            if settings.get('webdriver_inmortal_pooling') and not self.smoke:
                 wd = WebdriverManager().new_webdriver(browser)
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
