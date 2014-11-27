@@ -6,7 +6,15 @@ Code Licensed under MIT License. See LICENSE file.
 from smoothtest.base import SmoothTestBase
 from selenium import webdriver
 from pyvirtualdisplay import Display
-import logging
+
+
+def new_webdriver(browser=None, *args, **kwargs):
+    return WebdriverManager().new_webdriver(browser, *args, **kwargs)
+
+
+def stop_display():
+    return WebdriverManager().stop_display()
+
 
 class WebdriverManager(SmoothTestBase):
     # class' variable to share the display object
@@ -29,8 +37,8 @@ class WebdriverManager(SmoothTestBase):
             return self.global_settings.get('virtual_display_' + name, default)
         if not get('enable'):
             if WebdriverManager.default_display:
-                logging.warn('There is a display enabled although config says'
-                             ' different')
+                self.log.w('There is a display enabled although config says'
+                           ' different')
             return
         elif WebdriverManager.default_display:
             # There is a display configured
@@ -44,9 +52,14 @@ class WebdriverManager(SmoothTestBase):
         '''
         Convenient function to stop the virtual display
         '''
-        d = WebdriverManager.default_display
-        d.stop()
-        WebdriverManager.default_display = None
+        # Nice alias
+        display = WebdriverManager.default_display
+        if ((not self.global_settings.get('virtual_display_keep_open')
+             or not self.global_settings.get('virtual_display_visible'))
+            and display):
+            self.log.d('Stopping virtual display %r' % display)
+            display.stop()
+            WebdriverManager.default_display = None
 
     def _get_full_name(self, browser=None):
         # Solve name based on first character (easier to specify by the user) 

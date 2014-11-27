@@ -34,6 +34,7 @@ class Main(ParentBase):
             raise SystemExit(0)
         elif block:
             self.log.i(self._subprocess_conn.recv())
+        WebdriverManager().stop_display()
     
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.

@@ -5,7 +5,6 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
 import urlparse
 import time
 import logging
@@ -17,8 +16,7 @@ from selenium.common.exceptions import WebDriverException
 from functools import wraps
 from types import MethodType
 from threading import Lock
-from ..Logger import Logger
-from .WebdriverManager import WebdriverManager
+from smoothtest.Logger import Logger
 
 
 _with_screenshot = '_with_screenshot'
@@ -57,37 +55,26 @@ def no_screenshot(method):
     return method
 
 
-def new_driver(browser=None, *args, **kwargs):
-    #TODO: remove usage
-    return WebdriverManager().new_webdriver(browser, *args, **kwargs)
-
-
 class WebdriverUtils(object):
-    _implicit_wait = 30
-    #Height, Width tuple
-    _window_size = (800, 600)
-    _shot_sizes = [(400,300), (800,600), (1024, 768)]
-    _driver = None
+    '''
+    Utilities for making Webdriver more xpath-friendly.
+    This class is designed to be framework independent, to be reused by other
+    testing frameworks.
     
-    def __init__(self, base_url, logger, settings):
-        self._init_webdriver(base_url, settings=settings)
+    #TODO:
+        * finish screenshot logging
+    '''
+    def __init__(self, base_url, webdriver, logger, settings):
+        self._init_webdriver(base_url, webdriver, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
 
-    def _init_webdriver(self, base_url, webdriver=None, settings={}):
-        if webdriver:
-            self._driver = webdriver
-        else:
-            self._init_driver(settings.get('webdriver_browser','PhantomJS'))
-        # Setup webdriver
-        driver = self.get_driver()
-        if settings.get('webdriver_implicit_wait'):
-            driver.implicitly_wait(settings.get('webdriver_implicit_wait'))
-        if (settings.get('webdriver_window_size')
-            and driver.get_window_size() != settings.get('webdriver_window_size')):
-            driver.set_window_size(*settings.get('webdriver_window_size'))
+    def _init_webdriver(self, base_url, webdriver, settings={}):
+        assert webdriver, 'You must provide a webdriver'
+        self._driver = webdriver
+        self.settings = settings
         # Initialize values
         self._base_url = base_url
-        self._wait_timeout = 2
+        self._wait_timeout = self.settings.get('wait_timeout', 2)
         # Decorate methods for taking screenshots upon exceptions
         if (settings.get('screenshot_level')
             and settings.get('screenshot_level') <= logging.ERROR):
@@ -138,11 +125,6 @@ class WebdriverUtils(object):
     def _quit_webdriver(self):
         self._driver.quit()
         self._driver = None
-
-    def _init_driver(self, browser):
-        if not self._driver:
-            #Firefox, Chrome, PhantomJS
-            self._driver = new_driver(browser)
 
     def get_driver(self):
         assert self._driver, 'driver was not initialized'
@@ -375,7 +357,7 @@ def smoke_test_module():
              #browser='Chrome'
              )
     #wdu.get_page('/')
-    import traceback
+    #import traceback
     for m in [
             wdu.select_xpath, #select_xpath
             wdu.extract_xpath, 

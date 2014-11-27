@@ -14,6 +14,7 @@ class DefaultSettings(object):
     virtual_display_enable = False
     virtual_display_visible = False
     virtual_display_size = (800,600)
+    virtual_display_keep_open = False
 
     webdriver_browser = 'PhantomJS'
     webdriver_pooling = False

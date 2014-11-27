@@ -22,7 +22,7 @@ class TestRunner(ChildBase):
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
         self._set_webdriver(webdriver)
-        self._already_setup = set()
+        self._already_setup = {}
 
     def _set_webdriver(self, webdriver):
         if webdriver:
@@ -56,14 +56,23 @@ class TestRunner(ChildBase):
             suite = unittest.TestSuite()
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
-            if (hasattr(class_, 'setUpProcess') 
-            and test_path not in self._already_setup):
-                class_.setUpProcess(argv)
-                self._already_setup.add(test_path)
+            self._setup_process(class_, test_path, argv)
             result = runner.run(suite)
             return self.to_pickable_result(result)
         except Exception as e:
             return self.reprex(e)
+
+    def _setup_process(self, class_, test_path, argv):
+        if (hasattr(class_, 'setUpProcess')
+        and test_path not in self._already_setup):
+            class_.setUpProcess(argv)
+            self._already_setup[test_path] = (class_, argv)
+
+    def _tear_down_process(self):
+        for class_, argv in self._already_setup.values():
+            if hasattr(class_, 'tearDownProcess'):
+                self.log.d('Tearing down process for %r' % class_)
+                class_.tearDownProcess(argv)
 
     def _split_path(self, test_path):
         return self.split_test_path(test_path, meth=True)

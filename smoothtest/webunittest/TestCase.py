@@ -8,10 +8,15 @@ from functools import wraps
 from ..webunittest import unittest
 from smoothtest.settings.solve_settings import solve_settings
 from smoothtest.base import SmoothTestBase
-from .WebdriverUtils import WebdriverUtils, new_driver
+from .WebdriverUtils import WebdriverUtils
+from .WebdriverManager import new_webdriver, stop_display
 
 
 class TestBase(WebdriverUtils):
+    '''
+    TODO:
+        * make Unittest method decoration for screenshots work
+    '''
     _global_webdriver = None
     @staticmethod
     def set_webdriver(webdriver):
@@ -24,27 +29,37 @@ class TestBase(WebdriverUtils):
         browser = settings.get('webdriver_browser')
         if settings.get('webdriver_pooling'):
             if not TestBase._global_webdriver:
-                TestBase._global_webdriver = new_driver(browser)
+                TestBase._global_webdriver = new_webdriver(browser)
             driver = TestBase._global_webdriver
         else:
-            driver = new_driver(browser)
+            driver = new_webdriver(browser)
         return driver
 
-    def _init_webserver_webdriver(self, settings=None, webdriver=None):
+    def init_webdriver(self, settings=None, webdriver=None):
         settings = self._settings = settings if settings else solve_settings()
         base_url = settings.get('web_server_url')
         webdriver = webdriver if webdriver else TestBase._new_webdriver(settings)
-        self._set_webdriver_log_level(settings.get('webdriver_log_level'))
+        self._setup_webdriver(webdriver, settings)
         self._init_webdriver(base_url, webdriver, settings)
 
-    def _set_webdriver_log_level(self, log_level):
-        from selenium.webdriver.remote.remote_connection import LOGGER
-        LOGGER.setLevel(log_level)
+    def _setup_webdriver(self, webdriver, settings):
+        if settings.get('webdriver_implicit_wait'):
+            webdriver.implicitly_wait(settings.get('webdriver_implicit_wait'))
+        if (settings.get('webdriver_window_size')
+            and webdriver.get_window_size() != settings.get('webdriver_window_size')):
+            webdriver.set_window_size(*settings.get('webdriver_window_size'))
+        self._set_webdriver_log_level(settings.get('webdriver_log_level'))
 
-    def _shutdown_webserver_webdriver(self):
+    def _set_webdriver_log_level(self, log_level):
+        if log_level:
+            from selenium.webdriver.remote.remote_connection import LOGGER
+            LOGGER.setLevel(log_level)
+
+    def shutdown_webdriver(self):
         if (not self._settings.get('webdriver_keep_open') and
             not self._settings.get('webdriver_pooling')):
             self._quit_webdriver()
+            stop_display()
 
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):

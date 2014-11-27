@@ -15,6 +15,7 @@ import importlib
 import inspect
 from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file
+from smoothtest.webunittest.WebdriverManager import stop_display
 
 
 class TestDiscoverBase(ParentBase):
@@ -194,6 +195,7 @@ class DiscoverCommandBase(CommandBase):
                            format(f=f, t=t, failed=failed))
             else:
                 self.log.i('All {t} tests OK'.format(t=t))
+        stop_display()
 
 
 def unittest_filter_func(attr, mod):
