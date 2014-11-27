@@ -14,6 +14,7 @@ from smoothtest.autotest.TestSearcher import TestSearcher
 import sys
 import logging
 import re
+from smoothtest.settings.solve_settings import register_settings
 
 def get_module_regex():
     def rpl(str_, local_vars):
@@ -69,6 +70,9 @@ class Command(AutoTestBase):
         parser.add_argument('-m', '--fnmatch', type=str, help='Fnmatch '
             'pattern to filter files in full reloads directories.'
             ' (default=*.py)',  default='*.py')
+        parser.add_argument('--smoothtest-settings', type=is_valid_file,
+            help='Smoothtest settings module specific path '
+            '(if not found in PYTHONPATH).', default=None, nargs=1)
         return parser
 
     def get_extension_parser(self):
@@ -111,6 +115,11 @@ class Command(AutoTestBase):
         
         args, unkonwn = self.get_parser().parse_known_args(argv)
 
+        # Specific settings
+        if args.smoothtest_settings:
+            register_settings(args.smoothtest_settings.pop())
+
+        # Run autotest Main loop (ipython UI + subprocesses)
         main = Main(smoke=args.smoke)
         test_config = self.get_test_config(args, unkonwn)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
