@@ -14,8 +14,8 @@ class SmokeTestDiscover(TestDiscoverBase):
     Inspect in all modules for a smoke_test_module function.
     Then create a test for each module and run it.
     '''
-    def __init__(self):
-        self._func_name = 'smoke_test_module'
+    def __init__(self, func_name='smoke_test_module'):
+        self._func_name = func_name
         filter_func = lambda attr, _: (isinstance(attr, FunctionType) 
                                       and hasattr(attr, '__name__') 
                                       and attr.__name__ == self._func_name)

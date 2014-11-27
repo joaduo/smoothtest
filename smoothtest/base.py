@@ -9,7 +9,8 @@ Copyright (c) 2011-2013, Joaquin G. Duo
 from smoothtest.Logger import Logger
 import re
 import os
-from smoothtest.settings.solve_settings import solve_settings
+from smoothtest.settings.solve_settings import solve_settings, register_settings
+import logging
 
 
 class SmoothTestBase(object):
@@ -44,8 +45,55 @@ class SmoothTestBase(object):
             pth = pth[:-1]
         return pth
 
+
+def get_module_regex():
+    def rpl(str_, local_vars):
+        #replace locals vars in the string
+        return str_.format(**local_vars)
+    mod = r'(?:[a-zA-Z_][a-zA-Z_0-9]*)'
+    mod_path = rpl(r'^{mod}(?:\.{mod})*$', locals())
+    return mod_path
+
+
+def is_valid_file(path):
+    '''
+    Validate if a passed argument is a existing file (used by argsparse)
+    or its a python module namespace path (example.foo.bar.baz)
+    '''
+    #TODO: should it always validate module string?
+    abspath = os.path.abspath(path)
+    if not (os.path.exists(abspath)
+            and os.path.isfile(abspath)
+            or re.match(get_module_regex(), path)):
+        logging.warn('File %r does not exist.' % path)
+    return path
+
+
+def is_file_or_dir(path):
+    '''
+    Validate if a passed argument is a existing file (used by argsparse)
+    '''
+    #TODO: should it always validate module string?
+    abspath = os.path.abspath(path)
+    if not (os.path.exists(abspath)
+            and (os.path.isfile(abspath) or os.path.isdir(abspath))
+            or re.match(get_module_regex(), path)
+            ):
+        logging.warn('File or dir %r does not exist.' % path)
+    return path
+
+
 class CommandBase(SmoothTestBase):
-    pass
+    def _add_smoothtest_common_args(self, parser):
+        parser.add_argument('--smoothtest-settings', type=is_valid_file,
+            help='Smoothtest settings module specific path '
+            '(if not found in PYTHONPATH).', default=None, nargs=1)
+        
+    def _process_common_args(self, args):
+        # Specific settings
+        if args.smoothtest_settings:
+            register_settings(args.smoothtest_settings.pop())
+
 
 def smoke_test_module():
     s = SmoothTestBase()

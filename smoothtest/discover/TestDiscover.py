@@ -6,15 +6,15 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
-from ..base import SmoothTestBase
 from .ModuleAttrIterator import ModuleAttrIterator
-from ..import_unittest import unittest
+from smoothtest.import_unittest import unittest
 from types import FunctionType, TypeType
 from argparse import ArgumentParser
 import os
 import importlib
 import inspect
-from ..autotest.base import ParentBase
+from smoothtest.autotest.base import ParentBase
+from smoothtest.base import CommandBase, is_valid_file
 
 
 class TestDiscoverBase(ParentBase):
@@ -78,7 +78,7 @@ class TestDiscoverBase(ParentBase):
         while True:
             self._dispatch_cmds(conn)
 
-    def _get_test_suite(self, test_path):
+    def _get_test_class(self, test_path):
         modstr, attr_name = self.split_test_path(test_path)
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
@@ -93,15 +93,14 @@ class TestDiscoverBase(ParentBase):
                     log('Testing %s at %s' % (func_cls, modstr))
                     func_cls()
         else:
-            raise TypeError('Tested object %r muset be subclass of TestCase or'
+            raise TypeError('Tested object %r must be subclass of TestCase or'
                             ' a callable.' % func_cls)
-        
-        suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
-        return TestClass, suite
+        return TestClass
 
     def run_test(self, test_path, argv=None, one_process=False):
         self.log.d('Running %r' % test_path)
-        TestClass, suite = self._get_test_suite(test_path)
+        TestClass = self._get_test_class(test_path)
+        suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
         if hasattr(TestClass, 'setUpProcess'):
             TestClass.setUpProcess(argv)
         result = unittest.TextTestRunner().run(suite)
@@ -110,14 +109,15 @@ class TestDiscoverBase(ParentBase):
         return result
 
 
-class DiscoverCommandBase(SmoothTestBase):
+class DiscoverCommandBase(CommandBase):
+    #TODO:add same arguments as unittest
     def __init__(self, test_discover, description='Test discovery tool'):
         self.test_discover = test_discover
         self.description = description
 
     def get_parser(self):
         parser = ArgumentParser(description=self.description)
-        parser.add_argument('-t', '--tests', type=str,
+        parser.add_argument('tests', type=is_valid_file,
                     help='Specify the modules to run tests from.',
                     default=[], nargs='+')
         parser.add_argument('-p', '--packages', type=str,
@@ -130,6 +130,7 @@ class DiscoverCommandBase(SmoothTestBase):
             parser.add_argument('-i', '--ignore-missing',
                         help='Ignore missing smoke tests.',
                         default=False, action='store_true')
+        self._add_smoothtest_common_args(parser)
         return parser
     
     def _test_modules(self, tests, argv):
@@ -142,8 +143,9 @@ class DiscoverCommandBase(SmoothTestBase):
             if not line:
                 line = 1
             path = os.path.realpath(path)
-            return '  File "%tdisc", line %d\n' % (path, line)
+            return '  File "%r", line %d\n' % (path, line)
         total, failed = [], []
+        # Nicer alias
         tdisc = self.test_discover
         for pkg_pth in packages:
             pkg = importlib.import_module(self._path_to_modstr(pkg_pth))
@@ -162,6 +164,7 @@ class DiscoverCommandBase(SmoothTestBase):
 
     def main(self, argv=None):
         args, unknown = self.get_parser().parse_known_args(argv)
+        self._process_common_args(args)
         if args.tests:
             self._test_modules(args.tests, unknown)
         elif args.packages:

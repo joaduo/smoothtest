@@ -8,48 +8,14 @@ Code Licensed under MIT License. See LICENSE file.
 import rel_imp; rel_imp.init()
 import os
 from argparse import ArgumentParser
-from smoothtest.autotest.base import AutoTestBase
-from smoothtest.autotest.Main import Main
-from smoothtest.autotest.TestSearcher import TestSearcher
+from .base import AutoTestBase
+from .Main import Main
+from .TestSearcher import TestSearcher
 import sys
-import logging
-import re
-from smoothtest.settings.solve_settings import register_settings
-
-def get_module_regex():
-    def rpl(str_, local_vars):
-        #replace locals vars in the string
-        return str_.format(**local_vars)
-    mod = r'(?:[a-zA-Z_][a-zA-Z_0-9]*)'
-    mod_path = rpl(r'^{mod}(?:\.{mod})*$', locals())
-    return mod_path
-
-def is_valid_file(path):
-    '''
-    Validate if a passed argument is a existing file (used by argsparse)
-    '''
-    abspath = os.path.abspath(path)
-    if not (os.path.exists(abspath) 
-            and os.path.isfile(abspath)
-            or re.match(get_module_regex(), path)):
-        logging.warn('File %r does not exist.' % path)
-    return path
+from smoothtest.base import CommandBase, is_valid_file, is_file_or_dir
 
 
-def is_file_or_dir(path):
-    '''
-    Validate if a passed argument is a existing file (used by argsparse)
-    '''
-    abspath = os.path.abspath(path)
-    if not (os.path.exists(abspath) 
-            and (os.path.isfile(abspath) or os.path.isdir(abspath))
-            or re.match(get_module_regex(), path)
-            ):
-        logging.warn('File or dir %r does not exist.' % path)
-    return path
-
-
-class Command(AutoTestBase):
+class Command(AutoTestBase, CommandBase):
     def get_parser(self):
         parser = ArgumentParser(description='Automatically runs (unit) '
                                 'tests upon code changes.')
@@ -70,9 +36,7 @@ class Command(AutoTestBase):
         parser.add_argument('-m', '--fnmatch', type=str, help='Fnmatch '
             'pattern to filter files in full reloads directories.'
             ' (default=*.py)',  default='*.py')
-        parser.add_argument('--smoothtest-settings', type=is_valid_file,
-            help='Smoothtest settings module specific path '
-            '(if not found in PYTHONPATH).', default=None, nargs=1)
+        self._add_smoothtest_common_args(parser)
         return parser
 
     def get_extension_parser(self):
@@ -114,10 +78,7 @@ class Command(AutoTestBase):
             sys.path.remove(filedir)
         
         args, unkonwn = self.get_parser().parse_known_args(argv)
-
-        # Specific settings
-        if args.smoothtest_settings:
-            register_settings(args.smoothtest_settings.pop())
+        self._process_common_args(args)
 
         # Run autotest Main loop (ipython UI + subprocesses)
         main = Main(smoke=args.smoke)
