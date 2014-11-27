@@ -23,10 +23,10 @@ class TestDiscoverBase(ParentBase):
         self.inspector = ModuleAttrIterator()
 
     def _gather(self, package):
-        iter_mod = self.inspector.iter_modules
+        iter_mod = self.inspector.iter_modules2
         for module, attrs in iter_mod(package, self.filter_func, reload_=False):
-            for attr in attrs:
-                yield module, attr
+            for name, attr in attrs:
+                yield module, name, attr
 
     def _get_attr_name(self, mod, attr):
         if isinstance(attr, FunctionType):
@@ -41,10 +41,10 @@ class TestDiscoverBase(ParentBase):
     def discover_run(self, package, modules=[], argv=None, one_process=False):
         total = []
         failed = []
-        for mod, attr in self._gather(package):
+        for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
-            result = self._run_test(mod, attr, argv, one_process)
+            result = self._run_test(mod, attr_name, argv, one_process)
             if result.errors or result.failures:
                 f = len(result.errors) + len(result.failures)
                 failed.append((mod.__name__, f))
@@ -59,12 +59,11 @@ class TestDiscoverBase(ParentBase):
         module = importlib.import_module(self.__class__.__module__)
         return self.get_module_file(module)
 
-    def _get_test_path(self, mod, attr):
-        attr_name = self._get_attr_name(mod, attr)
-        return '%s.%s' % (mod.__name__, attr_name)        
+    def _get_test_path(self, mod, attr_name):
+        return '%s.%s' % (mod.__name__, attr_name)
 
-    def _run_test(self, mod, attr, argv, one_process):
-        test_path = self._get_test_path(mod, attr)
+    def _run_test(self, mod, attr_name, argv, one_process):
+        test_path = self._get_test_path(mod, attr_name)
         if one_process:
             result = self.run_test(test_path, argv, one_process)
         else:
@@ -135,8 +134,23 @@ class DiscoverCommandBase(CommandBase):
     
     def _test_modules(self, tests, argv):
         for tst in tests:
-            self.test_discover.run_test(self._path_to_modstr(tst), argv)
-    
+            if os.path.exists(tst):
+                tst = self._path_to_test_path(tst)
+            self.test_discover.run_test(tst, argv)
+
+    def _path_to_test_path(self, path):
+        mod = self._import(path)
+        test_path = None
+        for name, attr in inspect.getmembers(mod):
+            if unittest_filter_func(attr, mod):
+                test_path = self.test_discover._get_test_path(mod, name)
+                break
+        assert test_path, 'Could not find any test under %r' % path
+        return test_path
+
+    def _import(self, path):
+        return importlib.import_module(self._path_to_modstr(path))
+
     def _discover_run(self, packages, argv=None, missing=True, one_process=False):
         #pydev friendly printing
         def formatPathPrint(path, line=None):
@@ -148,7 +162,7 @@ class DiscoverCommandBase(CommandBase):
         # Nicer alias
         tdisc = self.test_discover
         for pkg_pth in packages:
-            pkg = importlib.import_module(self._path_to_modstr(pkg_pth))
+            pkg = self._import(pkg_pth)
             #run and count
             t,f = tdisc.discover_run(pkg, argv=argv, one_process=one_process)
             total += t
@@ -182,12 +196,15 @@ class DiscoverCommandBase(CommandBase):
                 self.log.i('All {t} tests OK'.format(t=t))
 
 
+def unittest_filter_func(attr, mod):
+    return (isinstance(attr, TypeType)
+            and issubclass(attr, unittest.TestCase)
+            and mod.__name__ != 'base')
+
+
 class TestRunner(TestDiscoverBase):
     def __init__(self):
-        filter_func = lambda attr, mod: (isinstance(attr, TypeType)
-                                         and issubclass(attr, unittest.TestCase)
-                                         and mod.__name__ != 'base')
-        super(TestRunner, self).__init__(filter_func)
+        super(TestRunner, self).__init__(filter_func=unittest_filter_func)
 
 
 def smoke_test_module():

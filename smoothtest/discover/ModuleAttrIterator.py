@@ -13,15 +13,40 @@ import pkgutil
 
 
 class ModuleAttrIterator(SmoothTestBase):
+    def iter_modules2(self, package, filter_func, reload_=False):
+        '''
+        Yield tuples like: (module, [(attr_name, attr), ...])
+        Were attributes list those accepted by filter_func present in the
+        returned module
+
+        :param package: package to inspect in depth
+        :param filter_func: filter function to accept/reject module's attributes
+        :param reload_: force reloading modules before inspecting
+        '''
+        for module in self._gatherModules(package, reload_):
+            yield module, list(self._filterModule(module, filter_func, name=True))
+
     def iter_modules(self, package, filter_func, reload_=False):
+        '''
+        Yield tuples like: (module,  [attr, ...])
+        Were attributes list those accepted by filter_func present in the
+        returned module
+
+        :param package: package to inspect in depth
+        :param filter_func: filter function to accept/reject module's attributes
+        :param reload_: force reloading modules before inspecting
+        '''
         for module in self._gatherModules(package, reload_):
             yield module, list(self._filterModule(module, filter_func))
 
-    def _filterModule(self, module, filter_func):
-        for attr in module.__dict__.values():
+    def _filterModule(self, module, filter_func, name=False):
+        for name, attr in module.iteritems():
             if (getattr(attr, '__module__', None) == module.__name__
             and filter_func(attr, module)):
-                yield attr
+                if name:
+                    yield name, attr
+                else:
+                    yield attr
 
     def _gatherModules(self, package, reload_):
         if (isinstance(package, ModuleType) 
