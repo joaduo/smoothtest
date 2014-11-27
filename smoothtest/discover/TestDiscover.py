@@ -180,6 +180,7 @@ class DiscoverCommandBase(CommandBase):
     def main(self, argv=None):
         args, unknown = self.get_parser().parse_known_args(argv)
         self._process_common_args(args)
+        last_msg = None
         if args.tests:
             self._test_modules(args.tests, unknown)
         elif args.packages:
@@ -190,12 +191,14 @@ class DiscoverCommandBase(CommandBase):
             t = reduce(sum_func, total, 0)
             f = reduce(sum_func, failed, 0)
             if failed:
-                self.log.i('FAILURES + ERRORS={f} from {t}\n    '
+                last_msg = ('FAILURES + ERRORS={f} from {t}\n    '
                            'Problems detail:{failed}'.
                            format(f=f, t=t, failed=failed))
             else:
-                self.log.i('All {t} tests OK'.format(t=t))
+                last_msg = 'All {t} tests OK'.format(t=t)
         stop_display()
+        if last_msg:
+            self.log.i(last_msg)
 
 
 def unittest_filter_func(attr, mod):
