@@ -18,6 +18,20 @@ from smoothtest.base import CommandBase, is_valid_file
 from smoothtest.webunittest.WebdriverManager import stop_display
 
 
+class TestResults(object):
+    def __init__(self):
+        self.total = []
+        self.failures = []
+        self.errors = []
+
+    def append_unittest(self, mod_name, result):
+        if result.errors:
+            self.errors.append((mod_name, len(result.errors)))
+        if result.failures:
+            self.failures.append((mod_name, len(result.failures)))
+        self.total.append((mod_name, result.testsRun))
+
+
 class TestDiscoverBase(ParentBase):
     def __init__(self, filter_func):
         self.filter_func = filter_func
@@ -40,21 +54,38 @@ class TestDiscoverBase(ParentBase):
                     return name
     
     def discover_run(self, package, modules=[], argv=None, one_process=False):
-        total = []
-        failed = []
+        results = TestResults()
         for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
             result = self._run_test(mod, attr_name, argv, one_process)
-            if result.errors or result.failures:
-                f = len(result.errors) + len(result.failures)
-                failed.append((mod.__name__, f))
-            total.append((mod.__name__, result.testsRun))
-        return total, failed
+            results.append_unittest(mod.__name__, result)
+        return results
 
-    #def get_missing(self, package):
-    #    msg = 'You need to implement this method in a subclass'
-    #    raise NotImplementedError(msg)
+    def test_modules(self, tests, argv):
+        results = TestResults()
+        for tst in tests:
+            if os.path.exists(tst):
+                tst = self._path_to_test_path(tst)
+            res = self.run_test(tst, argv)
+            results.append_unittest(tst, res)
+        return results
+
+    def _path_to_test_path(self, path):
+        mod = self._import(path)
+        test_path = None
+        for name, attr in inspect.getmembers(mod):
+            if unittest_filter_func(attr, mod):
+                test_path = self._get_test_path(mod, name)
+                break
+        assert test_path, 'Could not find any test under %r' % path
+        return test_path
+
+    def _import(self, path):
+        return importlib.import_module(self._path_to_modstr(path))
+
+    #Implement if you want to print missing attrs in modules
+    get_missing = None
 
     def _get_class_file(self):
         module = importlib.import_module(self.__class__.__module__)
@@ -133,24 +164,8 @@ class DiscoverCommandBase(CommandBase):
         self._add_smoothtest_common_args(parser)
         return parser
     
-    def _test_modules(self, tests, argv):
-        for tst in tests:
-            if os.path.exists(tst):
-                tst = self._path_to_test_path(tst)
-            self.test_discover.run_test(tst, argv)
-
-    def _path_to_test_path(self, path):
-        mod = self._import(path)
-        test_path = None
-        for name, attr in inspect.getmembers(mod):
-            if unittest_filter_func(attr, mod):
-                test_path = self.test_discover._get_test_path(mod, name)
-                break
-        assert test_path, 'Could not find any test under %r' % path
-        return test_path
-
     def _import(self, path):
-        return importlib.import_module(self._path_to_modstr(path))
+        self.test_discover._import(path)
 
     def _discover_run(self, packages, argv=None, missing=True, one_process=False):
         #pydev friendly printing
@@ -169,7 +184,7 @@ class DiscoverCommandBase(CommandBase):
             total += t
             failed += f
             #Print missing
-            if missing:
+            if missing and tdisc.get_missing:
                 for m in tdisc.get_missing(pkg):
                     pth = self.get_module_file(m)
                     tdisc.log('Missing test in module %s' % m)
@@ -180,24 +195,28 @@ class DiscoverCommandBase(CommandBase):
     def main(self, argv=None):
         args, unknown = self.get_parser().parse_known_args(argv)
         self._process_common_args(args)
-        last_msg = None
+        results = None
         if args.tests:
-            self._test_modules(args.tests, unknown)
+            results = self.test_discover.test_modules(args.tests, unknown)
         elif args.packages:
-            total, failed = self._discover_run(args.packages, argv=unknown,
+            results = self._discover_run(args.packages, argv=unknown,
                                missing=not getattr(args,'ignore_missing', True),
                                one_process=args.one_process)
+        # Stop display in case we have a virtual display
+        stop_display()
+        # Report status
+        if results:
             sum_func = lambda x,y: x + y[1]
-            t = reduce(sum_func, total, 0)
-            f = reduce(sum_func, failed, 0)
-            if failed:
-                last_msg = ('FAILURES + ERRORS={f} from {t}\n    '
-                           'Problems detail:{failed}'.
-                           format(f=f, t=t, failed=failed))
+            t = reduce(sum_func, results.total, 0)
+            f = reduce(sum_func, results.failures, 0)
+            e = reduce(sum_func, results.errors, 0)
+            if f or e:
+                last_msg = ('FAILURES={f} ERRORS={e} from a TOTAL={t}\n'
+                           'Details:\n  Failed:{failed}\n  Erred:{erred}'.
+                           format(f=f, e=e, t=t, failed=results.failures,
+                                  erred=results.errors))
             else:
                 last_msg = 'All {t} tests OK'.format(t=t)
-        stop_display()
-        if last_msg:
             self.log.i(last_msg)
 
 
