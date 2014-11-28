@@ -19,7 +19,7 @@ class Command(AutoTestBase, CommandBase):
     def get_parser(self):
         parser = ArgumentParser(description='Automatically runs (unit) '
                                 'tests upon code changes.')
-        parser.add_argument('tests', type=is_valid_file,
+        parser.add_argument('-t', '--tests', type=is_valid_file,
             help='Tests\' files or modules path to  to be monitored.'
             ' Changes on these files trigger a reload of those same modules '
             'and rerunning the tests they contain.',default=[], nargs='*')
