@@ -16,6 +16,7 @@ import inspect
 from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file
 from smoothtest.webunittest.WebdriverManager import stop_display
+from fnmatch import fnmatch
 
 
 class TestResults(object):
@@ -75,7 +76,7 @@ class TestDiscoverBase(ParentBase):
         mod = self._import(path)
         test_path = None
         for name, attr in inspect.getmembers(mod):
-            if unittest_filter_func(attr, mod):
+            if self.filter_func(attr, mod):
                 test_path = self._get_test_path(mod, name)
                 break
         assert test_path, 'Could not find any test under %r' % path
@@ -141,18 +142,23 @@ class TestDiscoverBase(ParentBase):
 
 
 class DiscoverCommandBase(CommandBase):
-    #TODO:add same arguments as unittest
-    def __init__(self, test_discover, description='Test discovery tool'):
-        self.test_discover = test_discover
-        self.description = description
+    #TODO:add similar arguments as unittest
+    def __init__(self, desc='Test discovery tool'):
+        self.description = desc
+        self.test_discover = None
 
     def get_parser(self):
         parser = ArgumentParser(description=self.description)
         parser.add_argument('tests', type=is_valid_file,
-                    help='Specify the modules to run tests from.',
+                    help='Specify the modules to run tests from (path or python'
+                    ' namespace). If specified, no discovery is done.',
                     default=[], nargs='+')
-        parser.add_argument('-p', '--packages', type=str,
-                    help='Specify the packages to discover tests from.',
+        parser.add_argument('-p', '--pattern', type=str,
+                    help='Pattern to match test module names -not files- '
+                    '(\'test*\' default)',
+                    default='test*', nargs=1)
+        parser.add_argument('-P', '--packages', type=str,
+                    help='Specify the packages to discover tests from. (path or python namespace)',
                     default=[], nargs='+')
         parser.add_argument('-o', '--one-process',
                     help='Run all tests inside 1 single process.',
@@ -192,9 +198,14 @@ class DiscoverCommandBase(CommandBase):
         #return results
         return total, failed
 
+    def _set_test_discover(self, args):
+        raise NotImplementedError('Implement this method in concrete class.')
+
     def main(self, argv=None):
         args, unknown = self.get_parser().parse_known_args(argv)
         self._process_common_args(args)
+        self._set_test_discover(args)
+        assert self.test_discover, 'Value self.test_discover not set.'
         results = None
         if args.tests:
             results = self.test_discover.test_modules(args.tests, unknown)
@@ -220,22 +231,26 @@ class DiscoverCommandBase(CommandBase):
             self.log.i(last_msg)
 
 
-def unittest_filter_func(attr, mod):
-    return (isinstance(attr, TypeType)
-            and issubclass(attr, unittest.TestCase)
-            and mod.__name__ != 'base')
-
-
-class TestRunner(TestDiscoverBase):
-    def __init__(self):
-        super(TestRunner, self).__init__(filter_func=unittest_filter_func)
+class DiscoverCommand(DiscoverCommandBase):
+    '''
+    Unittest discovering concrete class
+    '''
+    def _set_test_discover(self, args):
+        # Unpack just in case args changes later
+        pattern = args.pattern
+        def unittest_filter_func(attr, mod):
+            name = mod.__name__.split('.')[-1]
+            return (isinstance(attr, TypeType)
+                    and issubclass(attr, unittest.TestCase)
+                    and fnmatch(name, pattern))
+        self.test_discover = TestDiscoverBase(filter_func=unittest_filter_func)
 
 
 def smoke_test_module():
     pass
 
 def main(argv=None):
-    DiscoverCommandBase(TestRunner()).main(argv)
+    DiscoverCommand().main(argv)
 
 if __name__ == "__main__":
     main()

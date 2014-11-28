@@ -36,7 +36,7 @@ class SmokeTestDiscover(TestDiscoverBase):
 
 class SmokeCommand(DiscoverCommandBase):
     def __init__(self):
-        super(SmokeCommand, self).__init__(SmokeTestDiscover())
+        super(SmokeCommand, self).__init__(desc='Smoke test discovery tool')
 
 
 #dummy function to avoid warnings inspecting this module
