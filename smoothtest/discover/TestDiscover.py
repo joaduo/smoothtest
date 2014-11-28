@@ -32,6 +32,10 @@ class TestResults(object):
             self.failures.append((mod_name, len(result.failures)))
         self.total.append((mod_name, result.testsRun))
 
+    def append_results(self, results):
+        for name in 'total failures errors'.split():
+            setattr(self, name, getattr(self, name) + getattr(results, name))
+
 
 class TestDiscoverBase(ParentBase):
     def __init__(self, filter_func):
@@ -104,8 +108,15 @@ class TestDiscoverBase(ParentBase):
             self.send(self.run_test, test_path, argv, one_process)
             result = self._get_answer(self.recv(), self.run_test).result
             self.kill(block=True, timeout=10)
+            self.stop_display()
         return result
     
+    def stop_display(self):
+        '''
+        Stop display if there is a virtual screen running
+        '''
+        stop_display()
+
     def dispatch_cmds(self, conn):
         while True:
             self._dispatch_cmds(conn)
@@ -142,6 +153,10 @@ class TestDiscoverBase(ParentBase):
 
 
 class DiscoverCommandBase(CommandBase):
+    '''
+    Common class to build test discovery tools. Base classes can filter
+    modules arbitrarily for specific classes or functions.
+    '''
     #TODO:add similar arguments as unittest
     def __init__(self, desc='Test discovery tool'):
         self.description = desc
@@ -171,7 +186,7 @@ class DiscoverCommandBase(CommandBase):
         return parser
     
     def _import(self, path):
-        self.test_discover._import(path)
+        return self.test_discover._import(path)
 
     def _discover_run(self, packages, argv=None, missing=True, one_process=False):
         #pydev friendly printing
@@ -180,15 +195,15 @@ class DiscoverCommandBase(CommandBase):
                 line = 1
             path = os.path.realpath(path)
             return '  File "%r", line %d\n' % (path, line)
-        total, failed = [], []
+        #total, failed = [], []
+        results = TestResults()
         # Nicer alias
         tdisc = self.test_discover
         for pkg_pth in packages:
             pkg = self._import(pkg_pth)
             #run and count
-            t,f = tdisc.discover_run(pkg, argv=argv, one_process=one_process)
-            total += t
-            failed += f
+            res = tdisc.discover_run(pkg, argv=argv, one_process=one_process)
+            results.append_results(res)
             #Print missing
             if missing and tdisc.get_missing:
                 for m in tdisc.get_missing(pkg):
@@ -196,7 +211,7 @@ class DiscoverCommandBase(CommandBase):
                     tdisc.log('Missing test in module %s' % m)
                     tdisc.log(formatPathPrint(pth))
         #return results
-        return total, failed
+        return results
 
     def _set_test_discover(self, args):
         raise NotImplementedError('Implement this method in concrete class.')
@@ -214,7 +229,7 @@ class DiscoverCommandBase(CommandBase):
                                missing=not getattr(args,'ignore_missing', True),
                                one_process=args.one_process)
         # Stop display in case we have a virtual display
-        stop_display()
+        self.test_discover.stop_display()
         # Report status
         if results:
             sum_func = lambda x,y: x + y[1]

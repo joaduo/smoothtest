@@ -40,7 +40,7 @@ class ModuleAttrIterator(SmoothTestBase):
             yield module, list(self._filterModule(module, filter_func))
 
     def _filterModule(self, module, filter_func, name=False):
-        for name, attr in module.iteritems():
+        for name, attr in module.__dict__.iteritems():
             if (getattr(attr, '__module__', None) == module.__name__
             and filter_func(attr, module)):
                 if name:
