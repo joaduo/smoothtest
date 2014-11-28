@@ -149,7 +149,7 @@ class DiscoverCommandBase(CommandBase):
 
     def get_parser(self):
         parser = ArgumentParser(description=self.description)
-        parser.add_argument('tests', type=is_valid_file,
+        parser.add_argument('-t', '--tests', type=is_valid_file,
                     help='Specify the modules to run tests from (path or python'
                     ' namespace). If specified, no discovery is done.',
                     default=[], nargs='+')
