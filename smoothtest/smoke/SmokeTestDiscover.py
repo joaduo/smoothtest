@@ -38,6 +38,9 @@ class SmokeCommand(DiscoverCommandBase):
     def __init__(self):
         super(SmokeCommand, self).__init__(desc='Smoke test discovery tool')
 
+    def _set_test_discover(self, args):
+        self.test_discover = SmokeTestDiscover()
+
 
 #dummy function to avoid warnings inspecting this module
 def smoke_test_module():
