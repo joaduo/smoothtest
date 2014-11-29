@@ -97,7 +97,14 @@ class TestResults(object):
 
 def smoke_test_module():
     import pickle
-    pickle.dumps(TestResults())
+    results = TestResults()
+    pickle.dumps(results)
+    str(results)
+    results.append_exception('test_path', 'exn')
+    results.failures = [('bla',2)]
+    results.errors = [('bla',2)]
+    results.total = [('bla',2)]
+    print(str(results))
 
 
 if __name__ == "__main__":
