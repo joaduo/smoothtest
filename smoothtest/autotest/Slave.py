@@ -41,33 +41,7 @@ class Slave(ParentBase):
             return self.recv_answer()
 
     def _collect_stats(self, ans):
-        exceptions = errored = failed = total = 0
-        exlist = []
-        errlist = []
-        faillist = []
-        for tst_pth, result in ans.result:
-            if isinstance(result, TestException):
-                #exception running test
-                exceptions += 1
-                total += 1
-                exlist.append(tst_pth)
-                continue
-            #TestResult with failures or errors
-            result.errors and errlist.append(tst_pth)
-            result.failures and faillist.append(tst_pth)
-            errored += len(result.errors)
-            failed += len(result.failures)
-            total += result.testsRun
-        if not (failed or errored or exceptions):
-            msg = '\n  All %s OK' % total
-        else:
-            msg = ('\n  EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
-                   ' TOTAL:{total}'.format(**locals()))
-        for typ, lst in [('exceptions', exlist), ('errors', errlist),
-                         ('failures', faillist)]:
-            if lst:
-                msg += '\n    with %s: %s' % (typ, lst)
-        return msg
+        return str(ans.result)
 
     def _fmt_answer(self, ans):
         if ans.sent_cmd.cmd == self._get_cmd_str(self._child_cls.test):

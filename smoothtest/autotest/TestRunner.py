@@ -10,6 +10,7 @@ import unittest
 import rel_imp; rel_imp.init()
 from .base import ChildBase
 from .base import TestException
+from smoothtest.TestResults import TestResults
 
 
 class TestRunner(ChildBase):
@@ -33,17 +34,17 @@ class TestRunner(ChildBase):
         '''
         :param test_paths: iterable like ['package.module.test_class.test_method', ...]
         '''
-        results = []
+        results = TestResults()
         if smoke or not test_paths:
             self.log.i('Ignoring %r \n  (smoke mode or no tests found)'%list(test_paths))
             return results
         for tpath in test_paths:
             class_ = self._import_test(tpath)
             if isinstance(class_, TestException):
-                results.append((tpath, class_))
+                results.append_exception(tpath, class_)
             else:
                 result = self._run_test(tpath, argv, class_)
-                results.append((tpath, result))
+                results.append_unittest(tpath, result)
         return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
@@ -57,8 +58,9 @@ class TestRunner(ChildBase):
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
             self._setup_process(class_, test_path, argv)
-            result = runner.run(suite)
-            return self.to_pickable_result(result)
+            #result = runner.run(suite)
+            #return self.to_pickable_result(result)
+            return runner.run(suite)
         except Exception as e:
             return self.reprex(e)
 

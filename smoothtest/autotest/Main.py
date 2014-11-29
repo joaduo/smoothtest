@@ -139,10 +139,6 @@ class Main(ParentBase):
         while self.poll():
             self.log.i('Remaining in buffer: %r'%self.recv())
         return super(Main, self).send(cmd, *args, **kwargs)
-
-    def send_recv(self, cmd, *args, **kwargs):
-        self.send(cmd, *args, **kwargs)
-        return self.recv()
     
     @property
     def kill_child(self):

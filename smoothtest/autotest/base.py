@@ -125,6 +125,13 @@ class ParentBase(ChildBase):
     def recv(self):
         return self._subprocess_conn.recv()
 
+    def send_recv(self, cmd, *args, **kwargs):
+        self.send(cmd, *args, **kwargs)
+        return self._get_answer(self.recv(), cmd)
+
+    def call_remote(self, cmd, *args, **kwargs):
+        return self.send_recv(cmd, *args, **kwargs).result
+
     def poll(self):
         return self._subprocess_conn.poll()
     
@@ -140,7 +147,8 @@ class ParentBase(ChildBase):
 
     def _get_answer(self, answers, cmd):
         cmd = self._get_cmd_str(cmd)
-        for ans in answers:
+        # Get the latest cmd matching
+        for ans in reversed(answers):
             if ans.sent_cmd.cmd == cmd:
                 return ans
     

@@ -17,39 +17,8 @@ from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
+from smoothtest.TestResults import TestResults
 
-
-class TestResults(object):
-    def __init__(self):
-        self.total = []
-        self.failures = []
-        self.errors = []
-
-    def append_unittest(self, mod_name, result):
-        if result.errors:
-            self.errors.append((mod_name, len(result.errors)))
-        if result.failures:
-            self.failures.append((mod_name, len(result.failures)))
-        self.total.append((mod_name, result.testsRun))
-
-    def append_results(self, results):
-        for name in 'total failures errors'.split():
-            both = getattr(self, name) + getattr(results, name)
-            setattr(self, name, both)
-
-    def __str__(self):
-        sum_func = lambda x,y: x + y[1]
-        t = reduce(sum_func, self.total, 0)
-        f = reduce(sum_func, self.failures, 0)
-        e = reduce(sum_func, self.errors, 0)
-        if f or e:
-            results_str = ('FAILURES={f} ERRORS={e} from a TOTAL={t}\n'
-                       'Details:\n  Failed:{failed}\n  Erred:{erred}'.
-                       format(f=f, e=e, t=t, failed=self.failures,
-                              erred=self.errors))
-        else:
-            results_str = 'All {t} tests OK'.format(t=t)
-        return results_str
 
 class TestDiscoverBase(ParentBase):
     def __init__(self, filter_func):
@@ -119,8 +88,7 @@ class TestDiscoverBase(ParentBase):
             result = self.run_test(test_path, argv, one_process)
         else:
             self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-            self.send(self.run_test, test_path, argv, one_process)
-            result = self._get_answer(self.recv(), self.run_test).result
+            result = self.call_remote(self.run_test, test_path, argv, one_process)
             self.kill(block=True, timeout=10)
             self.stop_display()
         return result
