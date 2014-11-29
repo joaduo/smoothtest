@@ -127,10 +127,11 @@ class ParentBase(ChildBase):
 
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self._get_answer(self.recv(), cmd)
+        return self.recv()
 
     def call_remote(self, cmd, *args, **kwargs):
-        return self.send_recv(cmd, *args, **kwargs).result
+        ans = self.send_recv(cmd, *args, **kwargs)
+        return self._get_answer(ans, cmd).result
 
     def poll(self):
         return self._subprocess_conn.poll()
