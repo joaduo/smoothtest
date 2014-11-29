@@ -34,8 +34,22 @@ class TestResults(object):
 
     def append_results(self, results):
         for name in 'total failures errors'.split():
-            setattr(self, name, getattr(self, name) + getattr(results, name))
+            both = getattr(self, name) + getattr(results, name)
+            setattr(self, name, both)
 
+    def __str__(self):
+        sum_func = lambda x,y: x + y[1]
+        t = reduce(sum_func, self.total, 0)
+        f = reduce(sum_func, self.failures, 0)
+        e = reduce(sum_func, self.errors, 0)
+        if f or e:
+            results_str = ('FAILURES={f} ERRORS={e} from a TOTAL={t}\n'
+                       'Details:\n  Failed:{failed}\n  Erred:{erred}'.
+                       format(f=f, e=e, t=t, failed=self.failures,
+                              erred=self.errors))
+        else:
+            results_str = 'All {t} tests OK'.format(t=t)
+        return results_str
 
 class TestDiscoverBase(ParentBase):
     def __init__(self, filter_func):
@@ -58,7 +72,7 @@ class TestDiscoverBase(ParentBase):
                 if val is attr:
                     return name
     
-    def discover_run(self, package, modules=[], argv=None, one_process=False):
+    def test_package(self, package, modules=[], argv=None, one_process=False):
         results = TestResults()
         for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
@@ -67,13 +81,13 @@ class TestDiscoverBase(ParentBase):
             results.append_unittest(mod.__name__, result)
         return results
 
-    def test_modules(self, tests, argv):
+    def test_modules(self, mod_paths, argv):
         results = TestResults()
-        for tst in tests:
-            if os.path.exists(tst):
-                tst = self._path_to_test_path(tst)
-            res = self.run_test(tst, argv)
-            results.append_unittest(tst, res)
+        for path in mod_paths:
+            if os.path.exists(path):
+                path = self._path_to_test_path(path)
+            res = self.run_test(path, argv)
+            results.append_unittest(path, res)
         return results
 
     def _path_to_test_path(self, path):
@@ -202,7 +216,7 @@ class DiscoverCommandBase(CommandBase):
         for pkg_pth in packages:
             pkg = self._import(pkg_pth)
             #run and count
-            res = tdisc.discover_run(pkg, argv=argv, one_process=one_process)
+            res = tdisc.test_package(pkg, argv=argv, one_process=one_process)
             results.append_results(res)
             #Print missing
             if missing and tdisc.get_missing:
@@ -232,18 +246,7 @@ class DiscoverCommandBase(CommandBase):
         self.test_discover.stop_display()
         # Report status
         if results:
-            sum_func = lambda x,y: x + y[1]
-            t = reduce(sum_func, results.total, 0)
-            f = reduce(sum_func, results.failures, 0)
-            e = reduce(sum_func, results.errors, 0)
-            if f or e:
-                last_msg = ('FAILURES={f} ERRORS={e} from a TOTAL={t}\n'
-                           'Details:\n  Failed:{failed}\n  Erred:{erred}'.
-                           format(f=f, e=e, t=t, failed=results.failures,
-                                  erred=results.errors))
-            else:
-                last_msg = 'All {t} tests OK'.format(t=t)
-            self.log.i(last_msg)
+            self.log.i(str(results))
 
 
 class DiscoverCommand(DiscoverCommandBase):

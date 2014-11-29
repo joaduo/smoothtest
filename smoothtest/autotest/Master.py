@@ -121,7 +121,7 @@ class Master(ChildBase):
             self._dispatch(rlist)
             if do_yield:
                 yield yield_obj
-            self.wait_input = self.wait_input & block
+            self.wait_input = self.wait_input and block
         #We need to kill the child
         self._receive_kill()
 

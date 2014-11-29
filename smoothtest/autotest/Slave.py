@@ -63,7 +63,7 @@ class Slave(ParentBase):
         else:
             msg = ('\n  EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
                    ' TOTAL:{total}'.format(**locals()))
-        for typ, lst in [('exceptions', exlist), ('erros', errlist), 
+        for typ, lst in [('exceptions', exlist), ('errors', errlist),
                          ('failures', faillist)]:
             if lst:
                 msg += '\n    with %s: %s' % (typ, lst)
