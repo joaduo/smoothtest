@@ -14,12 +14,13 @@ import re
 import importlib
 import traceback
 
-
+#TODO: optionally use TestLoader.loadTestsFromNames from unittest
+#inheriting and replacing TestLoader.suiteClass = suite.TestSuite to extract
+#the found classes 
 class TestSearcher(AutoTestBase):
+    #TODO: rename test_path_regex to test_path
     def _build_solve_paths(self, test_path_regex, *test_path_regexes, **kwargs):
         def solve_paths(conn):
-            #return test paths
-            #return partial reloads paths
             specific_class = kwargs.get('specific_class')
             test_class = kwargs.get('test_class', unittest.TestCase)
             tst_regex = list(test_path_regexes) + [test_path_regex]
@@ -29,14 +30,16 @@ class TestSearcher(AutoTestBase):
             for tst_pth, regex in tst_regex:
                 try:
                     if specific_class:
+                        # We are looking for a specific class
                         modstr, clsstr = self.split_test_path(tst_pth)
                         mod = importlib.import_module(modstr)
                         cls = getattr(mod, clsstr)
                         self.append_methods(test_paths, partial_reloads, mod,
                                             cls, regex, valid, modstr, clsstr)
                     else:
+                        # Nicer alias
                         modstr = tst_pth
-                        mod = importlib.import_module(tst_pth)
+                        mod = importlib.import_module(modstr)
                         for _, cls in vars(mod).iteritems():
                             if (not isclass(cls) 
                                 or not issubclass(cls, test_class)):

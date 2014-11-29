@@ -14,10 +14,10 @@ class Example(unittest.TestCase):
         logging.debug('Running test at %s!' % __file__)
 
     def test_error(self):
-        raise LookupError('Unexpected error!')
+        raise LookupError('Purposely uncaught raised error!')
     
     def test_failure(self):
-        self.assertTrue(False, 'On purpose!')
+        self.assertTrue(False, 'Forced failed Assert!')
 
 
 if __name__ == "__main__":

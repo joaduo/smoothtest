@@ -101,19 +101,19 @@ class TestRunnerBase(object):
         if not hasattr(self, '_already_setup'):
             self._already_setup = {}
 
-    def _setup_process(self, class_, test_path, argv):
+    def _setup_process(self, test, test_path, argv):
         self.__init_values()
-        if (hasattr(class_, 'setUpProcess')
+        if (hasattr(test, 'setUpProcess')
         and test_path not in self._already_setup):
-            class_.setUpProcess(argv)
-            self._already_setup[test_path] = (class_, argv)
+            test.setUpProcess(argv)
+            self._already_setup[test_path] = (test, argv)
 
     def _tear_down_process(self):
         self.__init_values()
-        for class_, argv in self._already_setup.values():
-            if hasattr(class_, 'tearDownProcess'):
-                self.log.d('Tearing down process for %r' % class_)
-                class_.tearDownProcess(argv)
+        for test, argv in self._already_setup.values():
+            if hasattr(test, 'tearDownProcess'):
+                self.log.d('Tearing down process for %r' % test)
+                test.tearDownProcess(argv)
 
 
 def smoke_test_module():

@@ -20,6 +20,18 @@ from fnmatch import fnmatch
 from smoothtest.TestResults import TestResults
 
 
+class TestFunction(unittest.TestCase):
+    def __init__(self, function, modstr, log, methodName='runTest'):
+        self.function = function
+        self.modstr = modstr
+        self.log = log
+        unittest.TestCase.__init__(self, methodName=methodName)
+
+    def runTest(self):
+        self.log('Testing %s at %s' % (self.function, self.modstr))
+        self.function()
+
+
 class TestDiscoverBase(ParentBase, TestRunnerBase):
     def __init__(self, filter_func):
         self.filter_func = filter_func
@@ -46,17 +58,18 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
-            result = self._run_test(mod, attr_name, argv, one_process)
+            test_path = self._get_test_path(mod, attr_name)
+            result = self._run_test(test_path, argv, one_process)
             results.append_unittest(mod.__name__, result)
         return results
 
-    def test_modules(self, mod_paths, argv):
+    def test_modules(self, mod_paths, argv=None, one_process=False):
         results = TestResults()
-        for path in mod_paths:
-            if os.path.exists(path):
-                path = self._path_to_test_path(path)
-            res = self.run_test(path, argv)
-            results.append_unittest(path, res)
+        for test_path in mod_paths:
+            if os.path.exists(test_path):
+                test_path = self._path_to_test_path(test_path)
+            res = self._run_test(test_path, argv, one_process)
+            results.append_unittest(test_path, res)
         return results
 
     def _path_to_test_path(self, path):
@@ -82,8 +95,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _get_test_path(self, mod, attr_name):
         return '%s.%s' % (mod.__name__, attr_name)
 
-    def _run_test(self, mod, attr_name, argv, one_process):
-        test_path = self._get_test_path(mod, attr_name)
+    def _run_test(self, test_path, argv, one_process):
         if one_process:
             result = self.run_test(test_path, argv, one_process)
         else:
@@ -103,34 +115,32 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         while True:
             self._dispatch_cmds(conn)
 
-    def _get_test_class(self, test_path):
+    def _get_test_class(self, test_path, argv):
         modstr, attr_name = self.split_test_path(test_path)
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
         log = self.log
         if (isinstance(func_cls, TypeType) 
         and issubclass(func_cls, unittest.TestCase)):
-            #Its already a test class
-            TestClass = func_cls
+            # Its already a test class, lets instance it
+            self._setup_process(func_cls, test_path, argv)
+            suite = unittest.TestLoader().loadTestsFromTestCase(func_cls)
         elif callable(func_cls):
-            class TestClass(unittest.TestCase):
-                def test_func(self):
-                    log('Testing %s at %s' % (func_cls, modstr))
-                    func_cls()
+            # Its a callable, we wrap it around a test
+            test = TestFunction(func_cls, modstr, log)
+            suite = unittest.TestSuite([test])
         else:
             raise TypeError('Tested object %r must be subclass of TestCase or'
                             ' a callable.' % func_cls)
-        return TestClass
+        return suite
 
     def run_test(self, test_path, argv=None, one_process=False):
         self.log.d('Running %r' % test_path)
-        TestClass = self._get_test_class(test_path)
-        suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
-        self._setup_process(TestClass, test_path, argv)
+        suite = self._get_test_class(test_path, argv)
         result = unittest.TextTestRunner().run(suite)
         self._tear_down_process()
-        if not one_process:
-            result = self.to_pickable_result(result)
+#        if not one_process:
+#            result = self.to_pickable_result(result)
         return result
 
 class DiscoverCommandBase(CommandBase):
@@ -208,7 +218,9 @@ class DiscoverCommandBase(CommandBase):
         assert self.test_discover, 'Value self.test_discover not set.'
         results = None
         if args.tests:
-            results = self.test_discover.test_modules(args.tests, unknown)
+            results = self.test_discover.test_modules(args.tests,
+                                                  argv=unknown,
+                                                  one_process=args.one_process)
         elif args.packages:
             results = self._discover_run(args.packages, argv=unknown,
                                missing=not getattr(args,'ignore_missing', True),
