@@ -7,6 +7,8 @@ import rel_imp; rel_imp.init()
 from types import FunctionType, TypeType
 from ..import_unittest import unittest
 from ..discover.TestDiscover import TestDiscoverBase, DiscoverCommandBase
+from fnmatch import fnmatch
+import re
 
 
 class SmokeTestDiscover(TestDiscoverBase):
@@ -14,13 +16,6 @@ class SmokeTestDiscover(TestDiscoverBase):
     Inspect in all modules for a smoke_test_module function.
     Then create a test for each module and run it.
     '''
-    def __init__(self, func_name='smoke_test_module'):
-        self._func_name = func_name
-        filter_func = lambda attr, _: (isinstance(attr, FunctionType) 
-                                      and hasattr(attr, '__name__') 
-                                      and attr.__name__ == self._func_name)
-        super(SmokeTestDiscover, self).__init__(filter_func)
-
     def get_missing(self, package):
         filter_ = lambda attr, _: isinstance(attr, (FunctionType, TypeType))
 
@@ -38,8 +33,28 @@ class SmokeCommand(DiscoverCommandBase):
     def __init__(self):
         super(SmokeCommand, self).__init__(desc='Smoke test discovery tool')
 
+    def get_parser(self):
+        parser = super(SmokeCommand, self).get_parser()
+        parser.add_argument('--function-regex', type=str,
+                    help='Regex pattern to match smoke function name',
+                    default='^smoke_test_module$', nargs=1)
+        return parser
+
+    def _get_args_defaults(self):
+        defaults = super(SmokeCommand, self)._get_args_defaults()
+        defaults.update(pattern='*')
+        return defaults
+
     def _set_test_discover(self, args):
-        self.test_discover = SmokeTestDiscover()
+        func_regex = re.compile(args.function_regex)
+        pattern = args.pattern
+        def filter_func(attr, mod):
+            name = mod.__name__.split('.')[-1]
+            return  (isinstance(attr, FunctionType)
+                     and hasattr(attr, '__name__')
+                     and func_regex.match(attr.__name__)
+                     and fnmatch(name, pattern))
+        self.test_discover = SmokeTestDiscover(filter_func)
 
 
 #dummy function to avoid warnings inspecting this module

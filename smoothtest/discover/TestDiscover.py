@@ -144,26 +144,31 @@ class DiscoverCommandBase(CommandBase):
         self.description = desc
         self.test_discover = None
 
+    def _get_args_defaults(self):
+        return {}
+
     def get_parser(self):
+        defaults = self._get_args_defaults()
         parser = ArgumentParser(description=self.description)
         parser.add_argument('-t', '--tests', type=is_valid_file,
                     help='Specify the modules to run tests from (path or python'
                     ' namespace). If specified, no discovery is done.',
-                    default=[], nargs='+')
+                    default=defaults.get('tests',[]), nargs='+')
+        patdef = defaults.get('pattern','test*')
         parser.add_argument('-p', '--pattern', type=str,
                     help='Pattern to match test module names -not files- '
-                    '(\'test*\' default)',
-                    default='test*', nargs=1)
+                    '(default=%r)' % patdef,
+                    default=patdef, nargs=1)
         parser.add_argument('-P', '--packages', type=str,
                     help='Specify the packages to discover tests from. (path or python namespace)',
-                    default=[], nargs='+')
+                    default=defaults.get('packages',[]), nargs='+')
         parser.add_argument('-o', '--one-process',
                     help='Run all tests inside 1 single process.',
-                    default=False, action='store_true')
+                    default=defaults.get('one_process', False), action='store_true')
         if hasattr(self.test_discover, 'get_missing'):
             parser.add_argument('-i', '--ignore-missing',
                         help='Ignore missing smoke tests.',
-                        default=False, action='store_true')
+                        default=defaults.get('ignore_missing', False), action='store_true')
         self._add_smoothtest_common_args(parser)
         return parser
     
