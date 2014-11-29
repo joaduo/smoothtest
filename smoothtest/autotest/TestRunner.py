@@ -11,9 +11,10 @@ import rel_imp; rel_imp.init()
 from .base import ChildBase
 from .base import TestException
 from smoothtest.TestResults import TestResults
+from smoothtest.base import TestRunnerBase
 
 
-class TestRunner(ChildBase):
+class TestRunner(ChildBase, TestRunnerBase):
     '''
     Responsabilities
         - Import the Test Class
@@ -23,7 +24,6 @@ class TestRunner(ChildBase):
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
         self._set_webdriver(webdriver)
-        self._already_setup = {}
 
     def _set_webdriver(self, webdriver):
         if webdriver:
@@ -53,6 +53,9 @@ class TestRunner(ChildBase):
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
         while True:
             self._dispatch_cmds(conn)
+            
+    def _receive_kill(self, *args, **kwargs):
+        self._tear_down_process()
 
     def _run_test(self, test_path, argv, class_):
         try:
@@ -61,23 +64,9 @@ class TestRunner(ChildBase):
             suite.addTest(class_(methstr))
             runner = unittest.TextTestRunner()
             self._setup_process(class_, test_path, argv)
-            #result = runner.run(suite)
-            #return self.to_pickable_result(result)
             return runner.run(suite)
         except Exception as e:
             return self.reprex(e)
-
-    def _setup_process(self, class_, test_path, argv):
-        if (hasattr(class_, 'setUpProcess')
-        and test_path not in self._already_setup):
-            class_.setUpProcess(argv)
-            self._already_setup[test_path] = (class_, argv)
-
-    def _tear_down_process(self):
-        for class_, argv in self._already_setup.values():
-            if hasattr(class_, 'tearDownProcess'):
-                self.log.d('Tearing down process for %r' % class_)
-                class_.tearDownProcess(argv)
 
     def _split_path(self, test_path):
         return self.split_test_path(test_path, meth=True)
@@ -95,7 +84,7 @@ class TestRunner(ChildBase):
 
 def smoke_test_module():
     from .base import AutotestCmd
-    test_paths = ['smoothtest.tests.example.Example']
+    test_paths = ['smoothtest.tests.example.test_Example']
     tr = TestRunner()
     class DummyIpc(object):
         def recv(self):

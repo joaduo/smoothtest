@@ -97,6 +97,8 @@ class TestResults(object):
 
 def smoke_test_module():
     import pickle
+    from smoothtest.Logger import Logger
+    log = Logger(__name__)
     results = TestResults()
     pickle.dumps(results)
     str(results)
@@ -104,7 +106,7 @@ def smoke_test_module():
     results.failures = [('bla',2)]
     results.errors = [('bla',2)]
     results.total = [('bla',2)]
-    print(str(results))
+    log.i(str(results))
 
 
 if __name__ == "__main__":

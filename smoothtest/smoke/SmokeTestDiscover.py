@@ -36,7 +36,7 @@ class SmokeCommand(DiscoverCommandBase):
     def get_parser(self):
         parser = super(SmokeCommand, self).get_parser()
         parser.add_argument('--function-regex', type=str,
-                    help='Regex pattern to match smoke function name',
+                    help='Regex pattern to match smoke function name.',
                     default='^smoke_test_module$', nargs=1)
         return parser
 

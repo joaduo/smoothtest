@@ -9,18 +9,18 @@ import rel_imp; rel_imp.init()
 from .ModuleAttrIterator import ModuleAttrIterator
 from smoothtest.import_unittest import unittest
 from types import FunctionType, TypeType
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 import importlib
 import inspect
 from smoothtest.autotest.base import ParentBase
-from smoothtest.base import CommandBase, is_valid_file
+from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
 from smoothtest.TestResults import TestResults
 
 
-class TestDiscoverBase(ParentBase):
+class TestDiscoverBase(ParentBase, TestRunnerBase):
     def __init__(self, filter_func):
         self.filter_func = filter_func
         self.inspector = ModuleAttrIterator()
@@ -126,13 +126,12 @@ class TestDiscoverBase(ParentBase):
         self.log.d('Running %r' % test_path)
         TestClass = self._get_test_class(test_path)
         suite = unittest.TestLoader().loadTestsFromTestCase(TestClass)
-        if hasattr(TestClass, 'setUpProcess'):
-            TestClass.setUpProcess(argv)
+        self._setup_process(TestClass, test_path, argv)
         result = unittest.TextTestRunner().run(suite)
+        self._tear_down_process()
         if not one_process:
             result = self.to_pickable_result(result)
         return result
-
 
 class DiscoverCommandBase(CommandBase):
     '''
@@ -149,16 +148,15 @@ class DiscoverCommandBase(CommandBase):
 
     def get_parser(self):
         defaults = self._get_args_defaults()
-        parser = ArgumentParser(description=self.description)
+        parser = ArgumentParser(description=self.description,
+                                formatter_class=ArgumentDefaultsHelpFormatter)
         parser.add_argument('-t', '--tests', type=is_valid_file,
                     help='Specify the modules to run tests from (path or python'
                     ' namespace). If specified, no discovery is done.',
                     default=defaults.get('tests',[]), nargs='+')
-        patdef = defaults.get('pattern','test*')
         parser.add_argument('-p', '--pattern', type=str,
-                    help='Pattern to match test module names -not files- '
-                    '(default=%r)' % patdef,
-                    default=patdef, nargs=1)
+                    help='Fnmatch pattern to match test module names, not files.',
+                    default=defaults.get('pattern','test*'), nargs=1)
         parser.add_argument('-P', '--packages', type=str,
                     help='Specify the packages to discover tests from. (path or python namespace)',
                     default=defaults.get('packages',[]), nargs='+')

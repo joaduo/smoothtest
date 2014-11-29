@@ -204,7 +204,7 @@ def smoke_test_module():
     base.log.d(base.cmd(TR.test))
     base.log.d('Debug')
     base.log.i('Info')
-    test_path = 'smoothtest.tests.example.Example.Example.test_example'
+    test_path = 'smoothtest.tests.example.test_Example.Example.test_example'
     base.log.i(base.split_test_path(test_path))
     base.log.i(base.split_test_path(test_path, meth=True))
     class PBTest(ParentBase):

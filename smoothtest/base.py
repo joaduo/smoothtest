@@ -86,8 +86,9 @@ def is_file_or_dir(path):
 class CommandBase(SmoothTestBase):
     def _add_smoothtest_common_args(self, parser):
         parser.add_argument('--smoothtest-settings', type=is_valid_file,
-            help='Smoothtest settings module specific path '
-            '(if not found in PYTHONPATH).', default=None, nargs=1)
+            help='Specific smoothtest_settings module path '
+            '(useful if smoothtest_settings module is not in PYTHONPATH).', 
+            default=None, nargs=1)
         
     def _process_common_args(self, args):
         # Specific settings
@@ -95,9 +96,32 @@ class CommandBase(SmoothTestBase):
             register_settings(args.smoothtest_settings.pop())
 
 
+class TestRunnerBase(object):
+    def __init_values(self):
+        if not hasattr(self, '_already_setup'):
+            self._already_setup = {}
+
+    def _setup_process(self, class_, test_path, argv):
+        self.__init_values()
+        if (hasattr(class_, 'setUpProcess')
+        and test_path not in self._already_setup):
+            class_.setUpProcess(argv)
+            self._already_setup[test_path] = (class_, argv)
+
+    def _tear_down_process(self):
+        self.__init_values()
+        for class_, argv in self._already_setup.values():
+            if hasattr(class_, 'tearDownProcess'):
+                self.log.d('Tearing down process for %r' % class_)
+                class_.tearDownProcess(argv)
+
+
 def smoke_test_module():
     s = SmoothTestBase()
     s.log.i(__file__)
+    trb = TestRunnerBase()
+    trb._setup_process(None, 'path.to.test', [])
+    trb._tear_down_process()
 
 
 if __name__ == "__main__":

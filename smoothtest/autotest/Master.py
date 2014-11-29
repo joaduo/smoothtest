@@ -296,7 +296,7 @@ class Master(ChildBase):
 
 
 def smoke_test_module():
-    test_paths = ['smoothtest.tests.example.Example.Example.test_example']
+    test_paths = ['smoothtest.tests.example.test_Example.Example.test_example']
     partial_reloads = ['MasterAutoTest.py']
     mat = Master()
     poll = mat.io_loop(dict(test_paths=test_paths, 
