@@ -46,6 +46,7 @@ class Slave(ParentBase):
     def _fmt_answer(self, ans):
         if ans.sent_cmd.cmd == self._get_cmd_str(self._child_cls.test):
             if ans.error:
+                import ipdb; ipdb.set_trace()
                 return 'Exception importing initializing test: %r' % ans.error
             return self._collect_stats(ans)
         else:

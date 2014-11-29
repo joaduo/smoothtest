@@ -44,7 +44,10 @@ class TestRunner(ChildBase):
                 results.append_exception(tpath, class_)
             else:
                 result = self._run_test(tpath, argv, class_)
-                results.append_unittest(tpath, result)
+                if isinstance(result, TestException):
+                    results.append_exception(tpath, result)
+                else:
+                    results.append_unittest(tpath, result)
         return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):

@@ -44,7 +44,7 @@ class TestResults(object):
                                 ('Failures', self.failures),
                                 ('Total', self.total)]:
                 if list_:
-                    if name != 'exceptions':
+                    if name != 'Exceptions':
                         count = reduce(sum_func, list_, 0)
                     else:
                         count = len(list_)
