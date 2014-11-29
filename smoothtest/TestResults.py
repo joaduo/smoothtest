@@ -59,41 +59,6 @@ class TestResults(object):
             results_str = 'All {t} tests OK'.format(t=t)
         return results_str
 
-#    def _collect_stats(self, ans):
-#        exceptions = errored = failed = total = 0
-#        exlist = []
-#        errlist = []
-#        faillist = []
-#        for tst_pth, result in ans.result:
-#            if isinstance(result, TestException):
-#                #exception running test
-#                exceptions += 1
-#                total += 1
-#                exlist.append(tst_pth)
-#                continue
-#            #TestResult with failures or errors
-#            result.errors and errlist.append(tst_pth)
-#            result.failures and faillist.append(tst_pth)
-#            errored += len(result.errors)
-#            failed += len(result.failures)
-#            total += result.testsRun
-#        if not (failed or errored or exceptions):
-#            msg = '\n  All %s OK' % total
-#        else:
-#            msg = ('\n  EXCEPT:{exceptions} FAILED:{failed} ERROR:{errored}'
-#                   ' TOTAL:{total}'.format(**locals()))
-#        for typ, lst in [('exceptions', exlist), ('errors', errlist),
-#                         ('failures', faillist)]:
-#            if lst:
-#                msg += '\n    with %s: %s' % (typ, lst)
-#        return msg
-
-    def pickle(self):
-        pass
-#        errors = [repr(e) for e in result.errors]
-#        failures = [repr(f) for f in result.failures]
-#        return TestResult(result.testsRun, errors, failures)
-
 
 def smoke_test_module():
     import pickle
