@@ -13,6 +13,7 @@ import multiprocessing
 from types import MethodType, FunctionType
 import sys
 import traceback
+import pickle
 
 
 AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
@@ -57,7 +58,15 @@ class ChildBase(AutoTestBase):
         send(answers)
         return answers
 
+    def _is_pickable(self, result):
+        try:
+            pickle.dumps(result)
+            return True
+        except:
+            return False
+
     def to_pickable_result(self, result):
+        self.log.d('Converting %r to pickable TestResult' % result)
         errors = [repr(e) for e in result.errors]
         failures = [repr(f) for f in result.failures]
         return TestResult(result.testsRun, errors, failures)

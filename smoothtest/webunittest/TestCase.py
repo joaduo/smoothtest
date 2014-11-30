@@ -64,13 +64,6 @@ class TestBase(WebdriverUtils):
 
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
-    def __getstate__(self):
-        # We need test cases to be pickable, but since they are realoaded each
-        # time this make them complex
-        # TODO: move picking to test result, so we don't have to reload
-        # the test's module
-        return repr(self)
-
     @staticmethod
     def disable_method(cls, meth, log_func=lambda msg:None):
         if not isinstance(meth, basestring):

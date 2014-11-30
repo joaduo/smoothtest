@@ -139,9 +139,10 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         suite = self._get_test_class(test_path, argv)
         result = unittest.TextTestRunner().run(suite)
         self._tear_down_process()
-#        if not one_process:
-#            result = self.to_pickable_result(result)
+        if not one_process and not self._is_pickable(result):
+            result = self.to_pickable_result(result)
         return result
+
 
 class DiscoverCommandBase(CommandBase):
     '''
@@ -248,7 +249,7 @@ class DiscoverCommand(DiscoverCommandBase):
 
 
 def smoke_test_module():
-    pass
+    main(['-t','smoothtest.tests.example.test_Example.Example'])
 
 def main(argv=None):
     DiscoverCommand().main(argv)

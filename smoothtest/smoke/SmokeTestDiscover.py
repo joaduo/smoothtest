@@ -59,7 +59,7 @@ class SmokeCommand(DiscoverCommandBase):
 
 #dummy function to avoid warnings inspecting this module
 def smoke_test_module():
-    pass
+    main(['-t','smoothtest.tests.example.smoke_test_example.smoke_test_module'])
 
 
 def main(argv=None):
