@@ -1,16 +1,19 @@
 ## High priority
 
-1. Multiplatform
-1. TestRunner addon -> Selenium Setup -> Virtual screen Setup
+1. Multiplatform -> pickable fork callbacks
 1. Take screenshots
 
 ## TODO
 
+1. add support for .cfg configs
+	1. passing config by command line?
 1. Rename smoke to dry-run
 1. add extensions
-	i. has initializations on the three levels
+	i. has init/shutdown on the three levels (ui, main, test runner)
+		i. an example extension would be webdriver (init and shutdown)
+		i. virtualdisplay is another example
 	i. adds ipython extensions
-
+	i. enable extensions by configuration
 1. replace stdout stderr for StringIO and read it from outside
 1. split Interactive Main from non interactive Main (MainBase and Main)
 1. create serious tests?
@@ -33,19 +36,15 @@
 1. enable remote post-mortem debugging
 1. better logging messages
 	1. set log level per process
-
-1. re-enable screenshots on exceptions
+1. re-enable screenshots on exceptions (only on test methods)
 
 1. make callbacks pickable in order to work with windows
 1. browser pool
-	
-	
 1. handle KeyboardInterrupt
 1. Better test case module resolution
 1. create smoothtest command
 	i. autotest passing parameters or .cfg or .py
 	i. create settings
-1. Rename parcial to partial
 1. Use ipdb to to step by step testing
 	i. Use step back feature, s.step -1 
 1. Detect CTRL+C and other...
@@ -54,10 +53,7 @@
 1. Restart closed webdriver?
 1. Use specific profile for webdriver?
 1. Detect "unable to connect" pages before selecting xpath?
-1. Create full_callback support and project watching support
-1. Create autotest.py command `path/to/test.py [methods regex] -f [path to projects or files] [-F|-C|-P][--firefox|...]`
 2. Create better command line in ipython (selecting tests, exposing options, selecting browser, sending code)
-3. Improve configuration framework
 4. Reset sessions, cache and cookies from running selenium instances
 5. Having a pool of webdrivers
 6. Having an eternal pool of webdrivers (in main process) to speed up testing
@@ -67,6 +63,12 @@
 	engine = pyttsx.init()
 	engine.say('3 Failed, 4 Passed.')
 	engine.runAndWait()
-	
-8. Enable remote messages (to enable shortcuts via CLI)
+8. Enable remote messages (to enable shortcuts or commands via CLI)
 
+## DONE
+
+3. Improve configuration framework
+1. TestRunner addon -> Selenium Setup -> Virtual screen Setup
+1. Rename parcial to partial
+1. Create full_callback support and project watching support
+1. Create autotest.py command `path/to/test.py [methods regex] -f [path to projects or files] [-F|-C|-P][--firefox|...]`
