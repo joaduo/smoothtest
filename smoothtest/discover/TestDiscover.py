@@ -17,7 +17,8 @@ from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
-from smoothtest.TestResults import TestResults
+from smoothtest.TestResults import TestResults, to_pickable_result
+from smoothtest.utils import is_pickable
 
 
 class TestFunction(unittest.TestCase):
@@ -115,7 +116,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         while True:
             self._dispatch_cmds(conn)
 
-    def _get_test_class(self, test_path, argv):
+    def _get_test_suite(self, test_path, argv):
         modstr, attr_name = self.split_test_path(test_path)
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
@@ -136,11 +137,11 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
 
     def run_test(self, test_path, argv=None, one_process=False):
         self.log.d('Running %r' % test_path)
-        suite = self._get_test_class(test_path, argv)
+        suite = self._get_test_suite(test_path, argv)
         result = unittest.TextTestRunner().run(suite)
         self._tear_down_process()
-        if not one_process and not self._is_pickable(result):
-            result = self.to_pickable_result(result)
+        if not one_process and not is_pickable(result):
+            result = to_pickable_result(result)
         return result
 
 

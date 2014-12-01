@@ -73,11 +73,11 @@ def smoke_test_module():
                   pre+'NonExistingExample.test',
       'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
                   ]
-    sat = Slave(TestRunner, [], {})
-    sat.start_subprocess()
+    slave = Slave(TestRunner, [], {})
+    slave.start_subprocess()
     for i in range(1,len(test_paths)+1):
-        sat.log.i(sat.test(test_paths[:i], block=True))
-    sat.kill(block=True)
+        slave.log.i(slave.test(test_paths[:i], block=True))
+    slave.kill(block=True)
 
 if __name__ == "__main__":
     smoke_test_module()

@@ -13,15 +13,11 @@ import multiprocessing
 from types import MethodType, FunctionType
 import sys
 import traceback
-import pickle
+from smoothtest.TestResults import TestException
 
 
 AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
 AutotestAnswer = namedtuple('AutotestAnswer', 'sent_cmd result error')
-
-
-TestResult = namedtuple('TestResult', 'testsRun errors failures')
-TestException = namedtuple('TestException', 'msg repr traceback')
 
 
 class AutoTestBase(SmoothTestBase):
@@ -57,19 +53,6 @@ class ChildBase(AutoTestBase):
         self.log.d('Answering {answers}'.format(answers=answers))
         send(answers)
         return answers
-
-    def _is_pickable(self, result):
-        try:
-            pickle.dumps(result)
-            return True
-        except:
-            return False
-
-    def to_pickable_result(self, result):
-        self.log.d('Converting %r to pickable TestResult' % result)
-        errors = [repr(e) for e in result.errors]
-        failures = [repr(f) for f in result.failures]
-        return TestResult(result.testsRun, errors, failures)
 
     def _receive_kill(self, *args, **kwargs):
         pass
