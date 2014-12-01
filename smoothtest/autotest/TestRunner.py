@@ -41,13 +41,10 @@ class TestRunner(ChildBase, TestRunnerBase):
         for tpath in test_paths:
             class_ = self._import_test(tpath)
             if isinstance(class_, TestException):
-                results.append_exception(tpath, class_)
+                results.append_result(tpath, class_)
             else:
-                result = self._prepare_process(tpath, argv, class_)
-                if isinstance(result, TestException):
-                    results.append_exception(tpath, result)
-                else:
-                    results.append_unittest(tpath, result)
+                result = self._run_test(tpath, argv, class_)
+                results.append_result(tpath, result)
         return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
@@ -57,7 +54,7 @@ class TestRunner(ChildBase, TestRunnerBase):
     def _receive_kill(self, *args, **kwargs):
         self._tear_down_process()
 
-    def _prepare_process(self, test_path, argv, class_):
+    def _run_test(self, test_path, argv, class_):
         try:
             _, _, methstr = self._split_path(test_path)
             suite = unittest.TestSuite()

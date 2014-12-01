@@ -62,8 +62,8 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             if modules and mod not in modules:
                 continue
             test_path = self._get_test_path(mod, attr_name)
-            result = self._prepare_process(test_path, argv, one_process)
-            results.append_unittest(mod.__name__, result)
+            result = self._prepare_and_run(test_path, argv, one_process)
+            results.append_result(mod.__name__, result)
         return results
 
     def test_modules(self, mod_paths, argv=None, one_process=False):
@@ -77,8 +77,8 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         for test_path in mod_paths:
             if os.path.exists(test_path):
                 test_path = self._path_to_test_path(test_path)
-            res = self._prepare_process(test_path, argv, one_process)
-            results.append_unittest(test_path, res)
+            result = self._prepare_and_run(test_path, argv, one_process)
+            results.append_result(test_path, result)
         return results
 
     def _path_to_test_path(self, path):
@@ -104,14 +104,18 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _get_test_path(self, mod, attr_name):
         return '%s.%s' % (mod.__name__, attr_name)
 
-    def _prepare_process(self, test_path, argv, one_process):
-        if one_process:
-            result = self._run_test(test_path, argv)
-        else:
-            self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-            result = self.call_remote(self._run_test, test_path, argv)
-            self.kill(block=True, timeout=10)
-            self.stop_display()
+    def _prepare_and_run(self, test_path, argv, one_process):
+        try:
+            if one_process:
+                result = self._run_test(test_path, argv)
+            else:
+                self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
+                answer = self.send_recv(self._run_test, test_path, argv)
+                result = answer.result if answer.result else answer.error
+                self.kill(block=True, timeout=10)
+                self.stop_display()
+        except Exception as e:
+            return self.reprex(e)
         return result
     
     def stop_display(self):

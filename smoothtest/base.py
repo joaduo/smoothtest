@@ -11,6 +11,8 @@ import re
 import os
 from smoothtest.settings.solve_settings import solve_settings, register_settings
 import logging
+import traceback
+from smoothtest.TestResults import TestException
 
 
 class SmoothTestBase(object):
@@ -44,6 +46,12 @@ class SmoothTestBase(object):
         if pth.endswith('.pyc'):
             pth = pth[:-1]
         return pth
+
+    def reprex(self, e, print_=True):
+        #TODO: shuoldn't format last exception,but passed one
+        if print_:
+            traceback.print_exc()
+        return TestException(str(e), repr(e), traceback.format_exc())
 
 
 def get_module_regex():

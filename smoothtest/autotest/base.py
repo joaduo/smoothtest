@@ -12,8 +12,6 @@ from collections import namedtuple
 import multiprocessing
 from types import MethodType, FunctionType
 import sys
-import traceback
-from smoothtest.TestResults import TestException
 
 
 AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
@@ -21,11 +19,7 @@ AutotestAnswer = namedtuple('AutotestAnswer', 'sent_cmd result error')
 
 
 class AutoTestBase(SmoothTestBase):
-    def reprex(self, e, print_=True):
-        #TODO: shuoldn't format last exception,but passed one
-        if print_:
-            traceback.print_exc()
-        return TestException(str(e), repr(e), traceback.format_exc())
+    pass
 
 
 class ChildBase(AutoTestBase):
@@ -119,11 +113,10 @@ class ParentBase(ChildBase):
 
     def send_recv(self, cmd, *args, **kwargs):
         self.send(cmd, *args, **kwargs)
-        return self.recv()
+        return self._get_answer(self.recv(), cmd)
 
     def call_remote(self, cmd, *args, **kwargs):
-        ans = self.send_recv(cmd, *args, **kwargs)
-        return self._get_answer(ans, cmd).result
+        return self.send_recv(cmd, *args, **kwargs).result
 
     def poll(self):
         return self._subprocess_conn.poll()

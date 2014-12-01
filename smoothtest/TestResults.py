@@ -5,7 +5,6 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-from pprint import pformat
 from collections import namedtuple
 from smoothtest.utils import is_pickable
 
@@ -89,17 +88,58 @@ class TestResults(object):
     def __init__(self):
         self._results = []
 
-    def append_exception(self, test_path, exn):
+    def _append_exception(self, test_path, exn):
         self._results.append(('exception', test_path, exn))
 
-    def append_unittest(self, test_path, result):
+    def _append_unittest(self, test_path, result):
         self._results.append(('unittest_result', test_path, result))
+
+    def append_result(self, test_path, result):
+        if isinstance(result, TestException):
+            self._append_exception(test_path, result)
+        else:
+            self._append_unittest(test_path, result)
 
     def append_results(self, results):
         self._results += results._results
 
+    def filter_results(self, result_type='unittest_result'):
+        for rtype, test_path, result in self._results:
+            if rtype == result_type:
+                yield test_path, result
+
+    def get_details(self, detail_type='errors'):
+        for _, result in self.filter_results('unittest_result'):
+            for method_path, _ in getattr(result, detail_type):
+                yield method_path
+
+    def get_total(self):
+        results = self.filter_results('unittest_result')
+        return sum(result.testsRun for _, result in results)
+
+    def _get_counters(self, exceptions, failures, errors):
+        total = self.get_total() + len(exceptions)
+        counters = ('EXCEPTIONS={exceptions} FAILURES={failures} '
+                    'ERRORS={errors} from TOTAL={total}'
+                    .format(exceptions=len(exceptions),
+                            failures=len(failures),
+                            errors=len(errors),
+                            total=total))
+        return counters
+
     def __str__(self):
-        return pformat(self._results)
+        detail_dict = dict(
+            exceptions = list(tpath for tpath,_ in self.filter_results('exception')),
+            failures = list(self.get_details('failures')),
+            errors = list(self.get_details('errors')),
+            )
+        detail_str = ''
+        if any(val for val in detail_dict.values()):
+            detail_str = 'Details:'
+            for name, val in detail_dict.iteritems():
+                name = name[0].upper() + name[1:]
+                detail_str += '\n  {name}={val}'.format(name=name, val=val)
+        return self._get_counters(**detail_dict) + '\n' + detail_str
 
 
 def smoke_test_module():
@@ -109,7 +149,7 @@ def smoke_test_module():
     results = TestResults()
     pickle.dumps(results)
     str(results)
-    results.append_exception('test_path', 'exn')
+    results._append_exception('test_path', 'exn')
     results.failures = [('bla',2)]
     results.errors = [('bla',2)]
     results.total = [('bla',2)]
