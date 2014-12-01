@@ -6,7 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 from collections import namedtuple
-from smoothtest.utils import is_pickable
+from .utils import is_pickable
 
 
 TestException = namedtuple('TestException', 'msg repr traceback')
@@ -92,6 +92,8 @@ class TestResults(object):
         self._results.append(('exception', test_path, exn))
 
     def _append_unittest(self, test_path, result):
+        if not isinstance(result, SmoothTestResult):
+            result = SmoothTestResult(result)
         self._results.append(('unittest_result', test_path, result))
 
     def append_result(self, test_path, result):

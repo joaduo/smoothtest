@@ -16,14 +16,18 @@ class SmokeTestDiscover(TestDiscoverBase):
     Inspect in all modules for a smoke_test_module function.
     Then create a test for each module and run it.
     '''
+    def __init__(self, func_regex, func_filter):
+        self._func_regex = func_regex
+        super(SmokeTestDiscover, self).__init__(func_filter)
+
     def get_missing(self, package):
         filter_ = lambda attr, _: isinstance(attr, (FunctionType, TypeType))
 
         func_dict = self.inspector.iter_modules(package, filter_, reload_=False)
         for module, funcs in func_dict:
-            has_test = filter(lambda x: x.__name__ == self._func_name, funcs)
-            unit_test = filter(lambda x: isinstance(x, TypeType) 
-                               and issubclass(x, unittest.TestCase), funcs)
+            has_test = filter(lambda x: self._func_regex.match(x[1].__name__), funcs)
+            unit_test = filter(lambda x: isinstance(x[1], TypeType) 
+                               and issubclass(x[1], unittest.TestCase), funcs)
             #smokeTest exists, or is not this module
             if not (has_test or unit_test):
                 yield module
@@ -31,7 +35,8 @@ class SmokeTestDiscover(TestDiscoverBase):
 
 class SmokeCommand(DiscoverCommandBase):
     def __init__(self):
-        super(SmokeCommand, self).__init__(desc='Smoke test discovery tool')
+        super(SmokeCommand, self).__init__(desc='Smoke test discovery tool', 
+                                           print_missing=True)
 
     def get_parser(self):
         parser = super(SmokeCommand, self).get_parser()
@@ -54,7 +59,7 @@ class SmokeCommand(DiscoverCommandBase):
                      and hasattr(attr, '__name__')
                      and func_regex.match(attr.__name__)
                      and fnmatch(name, pattern))
-        self.test_discover = SmokeTestDiscover(filter_func)
+        self.test_discover = SmokeTestDiscover(func_regex, filter_func)
 
 
 #dummy function to avoid warnings inspecting this module

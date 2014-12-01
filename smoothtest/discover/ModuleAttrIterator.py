@@ -63,6 +63,8 @@ class ModuleAttrIterator(SmoothTestBase):
                             module = reload(module)
                         yield module
                     except Exception as e:
+                        import traceback
+                        traceback.print_exc()
                         self.log.e('Ignoring %s.%s. Exception: %r' % 
                                    (prefix,modname,e))
                     except SystemExit as e:

@@ -9,8 +9,7 @@ import importlib
 import unittest
 import rel_imp; rel_imp.init()
 from .base import ChildBase
-from .base import TestException
-from smoothtest.TestResults import TestResults
+from smoothtest.TestResults import TestResults, TestException
 from smoothtest.base import TestRunnerBase
 
 

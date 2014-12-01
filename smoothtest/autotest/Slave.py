@@ -7,7 +7,6 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
 from .base import ParentBase
-from .base import TestException
 
 
 class Slave(ParentBase):

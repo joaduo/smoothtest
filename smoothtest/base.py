@@ -6,13 +6,14 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-from smoothtest.Logger import Logger
+import rel_imp; rel_imp.init()
 import re
 import os
-from smoothtest.settings.solve_settings import solve_settings, register_settings
 import logging
 import traceback
-from smoothtest.TestResults import TestException
+from .Logger import Logger
+from .settings.solve_settings import solve_settings, register_settings
+from .TestResults import TestException
 
 
 class SmoothTestBase(object):

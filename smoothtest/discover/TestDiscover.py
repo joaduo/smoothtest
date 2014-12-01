@@ -174,9 +174,10 @@ class DiscoverCommandBase(CommandBase):
     modules arbitrarily for specific classes or functions.
     '''
     #TODO:add similar arguments as unittest
-    def __init__(self, desc='Test discovery tool'):
+    def __init__(self, desc='Test discovery tool', print_missing=False):
         self.description = desc
         self.test_discover = None
+        self.print_missing = print_missing
 
     def _get_args_defaults(self):
         return {}
@@ -198,7 +199,7 @@ class DiscoverCommandBase(CommandBase):
         parser.add_argument('-o', '--one-process',
                     help='Run all tests inside 1 single process.',
                     default=defaults.get('one_process', False), action='store_true')
-        if hasattr(self.test_discover, 'get_missing'):
+        if self.print_missing:
             parser.add_argument('-i', '--ignore-missing',
                         help='Ignore missing smoke tests.',
                         default=defaults.get('ignore_missing', False), action='store_true')

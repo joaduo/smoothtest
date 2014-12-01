@@ -75,3 +75,13 @@ class WebdriverManager(SmoothTestBase):
         assert char in char_browser, 'Could not find browser %r' % browser
         return char_browser.get(char)
 
+
+def smoke_test_module():
+    mngr = WebdriverManager()
+    ffox = mngr.new_webdriver('Firefox')
+    ffox.quit()
+    mngr.stop_display()
+
+
+if __name__ == "__main__":
+    smoke_test_module()
