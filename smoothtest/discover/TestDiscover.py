@@ -8,7 +8,7 @@ Code Licensed under MIT License. See LICENSE file.
 import rel_imp; rel_imp.init()
 from .ModuleAttrIterator import ModuleAttrIterator
 from smoothtest.import_unittest import unittest
-from types import FunctionType, TypeType
+from types import TypeType
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 import importlib
@@ -17,12 +17,12 @@ from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
-from smoothtest.TestResults import TestResults, to_pickable_result
-from smoothtest.utils import is_pickable
+from smoothtest.TestResults import TestResults, SmoothTestResult
 
 
 class TestFunction(unittest.TestCase):
-    def __init__(self, function, modstr, log, methodName='runTest'):
+    def __init__(self, test_path, function, modstr, log, methodName='runTest'):
+        self.test_path = test_path
         self.function = function
         self.modstr = modstr
         self.log = log
@@ -43,33 +43,41 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         for module, attrs in iter_mod(package, self.filter_func, reload_=False):
             for name, attr in attrs:
                 yield module, name, attr
-
-    def _get_attr_name(self, mod, attr):
-        if isinstance(attr, FunctionType):
-            return attr.func_name
-        elif issubclass(attr, object):
-            return attr.__name__
-        else:
-            for name, val in inspect.getmembers(mod):
-                if val is attr:
-                    return name
     
     def test_package(self, package, modules=[], argv=None, one_process=False):
+        '''
+        Inspect a package searching for tests inside their modules. Then run 
+        those tests found.
+        
+        Right now modules are imported in order to be inspected. 
+        #TODO: This is not always desirable. 
+        
+        :param package: package to be inspected
+        :param modules: optional modules names list to filter in (reject others)
+        :param argv: optional command line arguments to be passed to tests
+        :param one_process: run all tests inside 1 process
+        '''
         results = TestResults()
         for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
             test_path = self._get_test_path(mod, attr_name)
-            result = self._run_test(test_path, argv, one_process)
+            result = self._prepare_process(test_path, argv, one_process)
             results.append_unittest(mod.__name__, result)
         return results
 
     def test_modules(self, mod_paths, argv=None, one_process=False):
+        '''
+        Run test inside modules specified in the mod_paths.
+        :param mod_paths: list of dot namespace or file paths to tests
+        :param argv: optional command line arguments to be passed to tests
+        :param one_process: run all tests inside 1 process
+        '''
         results = TestResults()
         for test_path in mod_paths:
             if os.path.exists(test_path):
                 test_path = self._path_to_test_path(test_path)
-            res = self._run_test(test_path, argv, one_process)
+            res = self._prepare_process(test_path, argv, one_process)
             results.append_unittest(test_path, res)
         return results
 
@@ -96,12 +104,12 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _get_test_path(self, mod, attr_name):
         return '%s.%s' % (mod.__name__, attr_name)
 
-    def _run_test(self, test_path, argv, one_process):
+    def _prepare_process(self, test_path, argv, one_process):
         if one_process:
-            result = self.run_test(test_path, argv, one_process)
+            result = self._run_test(test_path, argv)
         else:
             self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-            result = self.call_remote(self.run_test, test_path, argv, one_process)
+            result = self.call_remote(self._run_test, test_path, argv)
             self.kill(block=True, timeout=10)
             self.stop_display()
         return result
@@ -113,10 +121,21 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         stop_display()
 
     def dispatch_cmds(self, conn):
+        '''
+        Wait for incomming commands and dispatch them.
+        :param conn:
+        '''
         while True:
             self._dispatch_cmds(conn)
 
     def _get_test_suite(self, test_path, argv):
+        '''
+        Build the test suit from the test_path (dot namespace).
+        If the test_path points to a function, it will create a TestCase
+        that runs the function as a test.
+        :param test_path: Dot namespace (foo.bar.TestName) to the test case or function
+        :param argv: Extra arguments to be processed by setupProcess class' function
+        '''
         modstr, attr_name = self.split_test_path(test_path)
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
@@ -128,20 +147,20 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             suite = unittest.TestLoader().loadTestsFromTestCase(func_cls)
         elif callable(func_cls):
             # Its a callable, we wrap it around a test
-            test = TestFunction(func_cls, modstr, log)
+            test = TestFunction(test_path, func_cls, modstr, log)
             suite = unittest.TestSuite([test])
         else:
             raise TypeError('Tested object %r must be subclass of TestCase or'
                             ' a callable.' % func_cls)
         return suite
 
-    def run_test(self, test_path, argv=None, one_process=False):
+    def _run_test(self, test_path, argv=None):
         self.log.d('Running %r' % test_path)
         suite = self._get_test_suite(test_path, argv)
         result = unittest.TextTestRunner().run(suite)
         self._tear_down_process()
-        if not one_process and not is_pickable(result):
-            result = to_pickable_result(result)
+        # We convert to pickable test result
+        result = SmoothTestResult(result)
         return result
 
 
