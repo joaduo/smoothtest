@@ -5,59 +5,88 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
+from pprint import pformat
+from collections import namedtuple
+from smoothtest.utils import is_pickable
+
+
+TestException = namedtuple('TestException', 'msg repr traceback')
+
+
+def to_pickable_list(lst):
+    try:
+        return [(to_pickable_test(test), msg) for test, msg in lst]
+    except:
+        return repr(lst)
+
+
+def to_pickable_result(result):
+    # Dictionary with example data
+    accepted_attrs = {
+            '_mirrorOutput': 'False',
+            '_moduleSetUpFailed': 'False',
+            #'_original_stderr': "<open file '<stderr>', mode 'w' at 0x7fe301fd61e0>",
+            #'_original_stdout': "<open file '<stdout>', mode 'w' at 0x7fe301fd6150>",
+            #'_previousTestClass': "<class '__main__.Example'>",
+            #'_stderr_buffer': 'None',
+            #'_stdout_buffer': 'None',
+            '_testRunEntered': 'False',
+            'buffer': 'False',
+            'descriptions': 'True',
+            'dots': 'True',
+            'errors': [('__main__.Example.test_error',
+                        'Traceback (most recent call last):\n  File "/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/testing_results.py", line 19, in test_error\n    raise LookupError(\'Purposely uncaught raised error!\')\nLookupError: Purposely uncaught raised error!\n')],
+            'expectedFailures': [],
+            'failfast': 'False',
+            'failures': [('__main__.Example.test_failure',
+                          'Traceback (most recent call last):\n  File "/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/testing_results.py", line 22, in test_failure\n    self.assertTrue(False, \'Forced failed Assert!\')\nAssertionError: Forced failed Assert!\n')],
+            'shouldStop': 'False',
+            'showAll': 'False',
+            'skipped': [],
+            #'stream': '<unittest.runner._WritelnDecorator object at 0x7fe301e5a550>',
+            'testsRun': '3',
+            'unexpectedSuccesses': [],
+            }
+    new_res = {}
+    for name, val in result.__dict__.iteritems():
+        if name not in accepted_attrs:
+            continue
+        if not is_pickable(val):
+            if isinstance(val, list):
+                val = to_pickable_list(val)
+            else:
+                val = repr(val)
+        new_res[name] = val
+    return new_res
+
+
+def to_pickable_test(test_case):
+    if is_pickable(test_case):
+        return test_case
+    # By now we will simply replace the test case by its test_path
+    mod_ = test_case.__class__.__module__
+    class_ = test_case.__class__.__name__
+    meth = test_case._testMethodName
+    return '%s.%s.%s' % (mod_, class_, meth)
 
 
 class TestResults(object):
     def __init__(self):
-        self.total = []
-        self.failures = []
-        self.errors = []
-        self.exceptions = []
+        self._results = []
 
     def append_exception(self, test_path, exn):
-        self.exceptions.append((test_path, exn))
+        self._results.append(('exception', test_path, exn))
 
     def append_unittest(self, test_path, result):
-        if result.errors:
-            self.errors.append((test_path, len(result.errors)))
-        if result.failures:
-            self.failures.append((test_path, len(result.failures)))
-        self.total.append((test_path, result.testsRun))
+        if not is_pickable(result):
+            result = to_pickable_result(result)
+        self._results.append(('unittest_result', test_path, result))
 
     def append_results(self, results):
-        for name in 'total failures errors'.split():
-            both = getattr(self, name) + getattr(results, name)
-            setattr(self, name, both)
+        self._results += results._results
 
     def __str__(self):
-        sum_func = lambda x,y: x + y[1]
-        if self.failures or self.errors or self.exceptions:
-            def str_detail(name, count, list_):
-                cap = name.upper()
-                str_ = '{cap}={count} '.format(**locals()) if count else ''
-                detail = '\n  {name}:{list_}'.format(**locals()) if count else ''
-                return str_, detail
-            summary = ''
-            details = ''
-            for name, list_ in [('Errors', self.errors),
-                                ('Exceptions', self.exceptions),
-                                ('Failures', self.failures),
-                                ('Total', self.total)]:
-                if list_:
-                    if name != 'Exceptions':
-                        count = reduce(sum_func, list_, 0)
-                    else:
-                        count = len(list_)
-                    str_, detail = str_detail(name, count, list_)
-                    summary += str_
-                    if name != 'Total':
-                        details += detail
-            details = '\nDetails:' + details if details else ''
-            results_str = summary + details
-        else:
-            t = reduce(sum_func, self.total, 0)
-            results_str = 'All {t} tests OK'.format(t=t)
-        return results_str
+        return pformat(self._results)
 
 
 def smoke_test_module():
