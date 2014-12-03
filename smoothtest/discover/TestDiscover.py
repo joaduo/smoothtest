@@ -18,7 +18,9 @@ from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
 from smoothtest.TestResults import TestResults, SmoothTestResult, TestException
-from smoothtest.HTMLTestRunner import HTMLTestRunner
+from smoothtest.HTMLTestRunner import HTMLTestRunner, _TestResult
+import datetime
+from smoothtest.utils import is_pickable
 
 
 class TestFunction(unittest.TestCase):
@@ -32,6 +34,20 @@ class TestFunction(unittest.TestCase):
     def runTest(self):
         self.log('Testing %s at %s' % (self.function, self.modstr))
         self.function()
+
+
+class TestsContainer(object):
+    def __init__(self, tests, result, get_test=None):
+        self.tests = tests
+        self.result = result
+        self.get_test = get_test
+
+    def run(self, get_test=None):
+        if isinstance(self.tests, basestring):
+            get_test(self.tests).run(self.result)
+        else:
+            self.tests.run(self.result)
+        return self.result
 
 
 class TestDiscoverBase(ParentBase, TestRunnerBase):
@@ -79,8 +95,10 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             test_paths.append(tpath)
         return self._run_tests(test_paths, argv, one_process)
 
-    def _get_runner(self):
-        return HTMLTestRunner(stream=open('output.html','w'))
+    def _make_report(self, test, result, path='output.html'):
+        report = HTMLTestRunner(stream=open(path,'w'))
+        report.stopTime = datetime.datetime.now()
+        report.generateReport(test, result)
 
     def _run_tests(self, test_paths, argv=None, one_process=False):
         results = TestResults()
@@ -90,14 +108,23 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
                 tests[tpath] = self._get_test_suite(tpath, argv)
             except Exception as e:
                 results.append_result(tpath, self.reprex(e))
+        result = _TestResult() #unittest.TestResult()
+        suite = unittest.TestSuite(tests.values())
         if one_process:
-            suite = unittest.TestSuite(tests.values())
-            result = self._prepare_and_run(suite, one_process)
+            self._prepare_and_run(TestsContainer(suite, result), one_process)
         else:
             for tpath, tst in tests.iteritems():
-                result = self._prepare_and_run(tst, one_process)
-                results.append_result(tpath, result)
+                tst = TestsContainer(tpath, result)
+                if not is_pickable(tst):
+                    self.log.e(tst)
+                    continue
+                r = self._prepare_and_run(tst, one_process)
+                if isinstance(r, TestException):
+                    results.append_result('all', r)
+                elif isinstance(r, unittest.TestResult):
+                    result = r
         results.append_result('all', result)
+#        self._make_report(suite, result)
         return results
 
     def _path_to_test_path(self, path):
@@ -126,10 +153,10 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _prepare_and_run(self, tests, one_process):
         try:
             if one_process:
-                result = self._run_test(tests, one_process)
+                result = self._run_test(tests)
             else:
                 self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-                answer = self.send_recv(self._run_test, tests, one_process)
+                answer = self.send_recv(self._run_test, tests)
                 result = answer.result if answer.result else answer.error
                 self.kill(block=True, timeout=10)
                 self.stop_display()
@@ -177,12 +204,13 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
                             ' a callable.' % func_cls)
         return suite
 
-    def _run_test(self, tests, one_process=False):
+    def _run_test(self, tests):
         self.log.d('Running %r' % tests)
-        result = self._get_runner().run(tests)
+        result = tests.run(get_test=self._get_test_suite)
         self._tear_down_process()
-        if not one_process:
-            result = SmoothTestResult(result)
+        if not is_pickable(result):
+            #result = SmoothTestResult(result)
+            result = repr(result)
         return result
 
 
