@@ -17,7 +17,7 @@ from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
-from smoothtest.TestResults import TestResults, SmoothTestResult
+from smoothtest.TestResults import TestResults, SmoothTestResult, TestException
 
 
 class TestFunction(unittest.TestCase):
@@ -57,14 +57,12 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         :param argv: optional command line arguments to be passed to tests
         :param one_process: run all tests inside 1 process
         '''
-        results = TestResults()
+        test_paths = []
         for mod, attr_name, _ in self._gather(package):
             if modules and mod not in modules:
                 continue
-            test_path = self._get_test_path(mod, attr_name)
-            result = self._prepare_and_run(test_path, argv, one_process)
-            results.append_result(mod.__name__, result)
-        return results
+            test_paths.append(self._get_test_path(mod, attr_name))
+        return self._run_tests(test_paths, argv, one_process)
 
     def test_modules(self, mod_paths, argv=None, one_process=False):
         '''
@@ -73,12 +71,22 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         :param argv: optional command line arguments to be passed to tests
         :param one_process: run all tests inside 1 process
         '''
+        test_paths = []
+        for tpath in mod_paths:
+            if os.path.exists(tpath):
+                tpath = self._path_to_test_path(tpath)
+            test_paths.append(tpath)
+        return self._run_tests(test_paths, argv, one_process)
+
+    def _run_tests(self, test_paths, argv=None, one_process=False):
         results = TestResults()
-        for test_path in mod_paths:
-            if os.path.exists(test_path):
-                test_path = self._path_to_test_path(test_path)
-            result = self._prepare_and_run(test_path, argv, one_process)
-            results.append_result(test_path, result)
+        unittest_result = unittest.TestResult()
+        for tpath in test_paths:
+            result = self._prepare_and_run(unittest_result, tpath, argv, one_process)
+            if not one_process or isinstance(result, TestException):
+                results.append_result(tpath, result)
+        if one_process:
+            results.append_result (tpath, result)
         return results
 
     def _path_to_test_path(self, path):
@@ -104,13 +112,13 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _get_test_path(self, mod, attr_name):
         return '%s.%s' % (mod.__name__, attr_name)
 
-    def _prepare_and_run(self, test_path, argv, one_process):
+    def _prepare_and_run(self, result, test_path, argv, one_process):
         try:
             if one_process:
-                result = self._run_test(test_path, argv)
+                result = self._run_test(result, test_path, argv, one_process)
             else:
                 self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
-                answer = self.send_recv(self._run_test, test_path, argv)
+                answer = self.send_recv(self._run_test, None, test_path, argv, one_process)
                 result = answer.result if answer.result else answer.error
                 self.kill(block=True, timeout=10)
                 self.stop_display()
@@ -158,13 +166,16 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
                             ' a callable.' % func_cls)
         return suite
 
-    def _run_test(self, test_path, argv=None):
+    def _run_test(self, result, test_path, argv=None, one_process=False):
+        result = result if result else unittest.TestResult()
         self.log.d('Running %r' % test_path)
         suite = self._get_test_suite(test_path, argv)
-        result = unittest.TextTestRunner().run(suite)
+        suite.run(result)
+        #result = unittest.TextTestRunner().run(suite)
         self._tear_down_process()
         # We convert to pickable test result
-        result = SmoothTestResult(result)
+        if not one_process:
+            result = SmoothTestResult(result)
         return result
 
 
