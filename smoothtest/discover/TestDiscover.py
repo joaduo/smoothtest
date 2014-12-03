@@ -17,8 +17,8 @@ from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
-from smoothtest.TestResults import TestResults, SmoothTestResult, TestException
-from smoothtest.HTMLTestRunner import HTMLTestRunner, _TestResult
+from smoothtest.TestResults import TestResults, SmoothTestResult
+from smoothtest.HTMLTestRunner import HTMLTestRunner
 import datetime
 from smoothtest.utils import is_pickable
 
@@ -37,14 +37,17 @@ class TestFunction(unittest.TestCase):
 
 
 class TestsContainer(object):
-    def __init__(self, tests, result, get_test=None):
+    def __init__(self, tests, result=None, get_test=None, argv=None):
         self.tests = tests
         self.result = result
         self.get_test = get_test
+        self.argv = argv
 
     def run(self, get_test=None):
+        if not self.result:
+            self.result = unittest.TestResult()
         if isinstance(self.tests, basestring):
-            get_test(self.tests).run(self.result)
+            get_test(self.tests, self.argv).run(self.result)
         else:
             self.tests.run(self.result)
         return self.result
@@ -95,11 +98,6 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             test_paths.append(tpath)
         return self._run_tests(test_paths, argv, one_process)
 
-    def _make_report(self, test, result, path='output.html'):
-        report = HTMLTestRunner(stream=open(path,'w'))
-        report.stopTime = datetime.datetime.now()
-        report.generateReport(test, result)
-
     def _run_tests(self, test_paths, argv=None, one_process=False):
         results = TestResults()
         tests = {}
@@ -108,23 +106,19 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
                 tests[tpath] = self._get_test_suite(tpath, argv)
             except Exception as e:
                 results.append_result(tpath, self.reprex(e))
-        result = _TestResult() #unittest.TestResult()
-        suite = unittest.TestSuite(tests.values())
+        result = unittest.TestResult()
         if one_process:
+            suite = unittest.TestSuite(tests.values())
             self._prepare_and_run(TestsContainer(suite, result), one_process)
+            results.append_result('all', result)
         else:
             for tpath, tst in tests.iteritems():
-                tst = TestsContainer(tpath, result)
+                tst = TestsContainer(tpath, argv=argv)
                 if not is_pickable(tst):
-                    self.log.e(tst)
+                    self.log.e('Cannot pickle %r. Won\'t test it' % tst)
                     continue
                 r = self._prepare_and_run(tst, one_process)
-                if isinstance(r, TestException):
-                    results.append_result('all', r)
-                elif isinstance(r, unittest.TestResult):
-                    result = r
-        results.append_result('all', result)
-#        self._make_report(suite, result)
+                results.append_result(tpath, r)
         return results
 
     def _path_to_test_path(self, path):
@@ -208,9 +202,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         self.log.d('Running %r' % tests)
         result = tests.run(get_test=self._get_test_suite)
         self._tear_down_process()
-        if not is_pickable(result):
-            #result = SmoothTestResult(result)
-            result = repr(result)
+        result = SmoothTestResult(result)
         return result
 
 
