@@ -123,6 +123,7 @@ class TestRunnerBase(object):
             if hasattr(test, 'tearDownProcess'):
                 self.log.d('Tearing down process for %r' % test)
                 test.tearDownProcess(argv)
+        self._already_setup.clear()
 
 
 def smoke_test_module():
