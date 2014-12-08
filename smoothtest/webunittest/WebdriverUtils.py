@@ -166,10 +166,12 @@ class WebdriverUtils(object):
         self.get_driver().save_screenshot(filename)        
 
     def screenshot(self, *args, **kwargs):
-        self.log.w('WebdriverUtils.screenshot not yet implemented.')
+        #self.log.w('WebdriverUtils.screenshot not yet implemented.')
+        pass
     
     def assert_screenshot(self, name, valid=None):
-        self.log.w('WebdriverUtils.assert_screenshot not yet implemented.')
+        #self.log.w('WebdriverUtils.assert_screenshot not yet implemented.')
+        pass
 
     def current_path(self):
         return urlparse.urlparse(self.get_driver().current_url).path
