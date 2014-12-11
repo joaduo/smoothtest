@@ -18,8 +18,6 @@ from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
 from smoothtest.webunittest.WebdriverManager import stop_display
 from fnmatch import fnmatch
 from smoothtest.TestResults import TestResults, SmoothTestResult
-from smoothtest.HTMLTestRunner import HTMLTestRunner
-import datetime
 from smoothtest.utils import is_pickable
 
 

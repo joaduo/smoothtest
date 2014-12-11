@@ -229,11 +229,11 @@ class WebdriverUtils(object):
             self.log.d(msg)
         return loaded
     
-    def _get_xpath_script(self, xpath, ret='node', single=True):
+    def _get_xpath_script(self, xpath, single=True):
         common_func = '''
 function extract_elem(elem){
     var elem = elem
-    //elem.noteType == 1 > web element
+    //elem.noteType == 1 //web element
     if(elem.nodeType == 2){
       //attribute
       elem = elem.value;
@@ -246,14 +246,14 @@ function extract_elem(elem){
 }
         '''
         if single:
-            script = '''
+            script_single = '''
 var xpath = %(xpath)r;
 //XPathResult.FIRST_ORDERED_NODE_TYPE = 9
 var e = document.evaluate(xpath, document, null,9, null).singleNodeValue;
 return extract_elem(e);
             '''
         else:
-            script = '''
+            script_list = '''
 var xpath = %(xpath)r;
 //XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5
 var es = document.evaluate(xpath, document, null, 5, null);
@@ -265,11 +265,7 @@ while(r){
 }
 return eslist;
         '''
-        ret_dict = dict(
-                        node='return e',
-                        text='return e.textContent',
-                        click='e.click()',
-                        )
+        script = script_single if single else script_list
         return common_func + script % locals()
 
     def select_xpath(self, xpath, single=True):
@@ -293,7 +289,10 @@ return eslist;
         result = self.select_xpath(xpath, single)
         if isinstance(result, WebElement):
             result = result.text
-        assert isinstance(result, basestring)
+        if single:
+            assert isinstance(result, basestring)
+        else:
+            assert not any(not isinstance(s, basestring) for s in result)
         return result
 
     def fill_input(self, xpath, value):
