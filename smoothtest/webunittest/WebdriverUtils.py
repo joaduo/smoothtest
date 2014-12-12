@@ -176,11 +176,14 @@ class WebdriverUtils(object):
     def current_path(self):
         return urlparse.urlparse(self.get_driver().current_url).path
 
+    def build_url(self, path):
+        return urlparse.urljoin(self._base_url, path)
+
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
         base = base if base else self._base_url
         driver = self.get_driver()
-        url = urlparse.urljoin(self._base_url, path)
+        url = self.build_url(path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
             self.log.d('PhantomJS fails with https if you don\'t pass '
                        'service_args=[\'--ignore-ssl-errors=true\']' 
@@ -200,7 +203,7 @@ class WebdriverUtils(object):
 
     def get_page_once(self, path, base=None, check_load=False, condition=None):
         driver = self.get_driver()
-        if driver.current_url != path:
+        if driver.current_url != self.build_url(path):
             return self.get_page(path, base, check_load, condition)
         return driver
 
