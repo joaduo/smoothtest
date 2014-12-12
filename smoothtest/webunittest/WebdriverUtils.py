@@ -17,6 +17,7 @@ from functools import wraps
 from types import MethodType
 from threading import Lock
 from smoothtest.Logger import Logger
+import urllib
 
 
 _with_screenshot = '_with_screenshot'
@@ -64,6 +65,27 @@ class WebdriverUtils(object):
     #TODO:
         * finish screenshot logging
     '''
+
+    class Url(object):
+        '''A url object that can be compared with other url orbjects
+        without regard to the vagaries of encoding, escaping, and ordering
+        of parameters in query strings.
+        from http://stackoverflow.com/questions/5371992/comparing-two-urls-in-python
+        '''
+
+        def __init__(self, url):
+            parts = urlparse.urlparse(url)
+            _query = frozenset(urlparse.parse_qsl(parts.query))
+            _path = urllib.unquote_plus(parts.path)
+            parts = parts._replace(query=_query, path=_path)
+            self.parts = parts
+
+        def __eq__(self, other):
+            return self.parts == other.parts
+
+        def __hash__(self):
+            return hash(self.parts)
+
     def __init__(self, base_url, webdriver, logger, settings):
         self._init_webdriver(base_url, webdriver, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
@@ -179,13 +201,16 @@ class WebdriverUtils(object):
     def build_url(self, path):
         return urlparse.urljoin(self._base_url, path)
 
+    def url_equals(self, url_a, url_b):
+        return self.Url(url_a) == self.Url(url_b)
+
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
         base = base if base else self._base_url
         driver = self.get_driver()
         url = self.build_url(path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
-            self.log.d('PhantomJS fails with https if you don\'t pass '
+            self.log.d('PhantomJS may fail with https if you don\'t pass '
                        'service_args=[\'--ignore-ssl-errors=true\']' 
                        ' Trying to fetch {url!r}'.format(url=url))
         self.log.d('Fetching page at {url!r}'.format(url=url))
@@ -194,16 +219,16 @@ class WebdriverUtils(object):
         msg = 'Couldn\'t load page at {url!r}'.format(url=url)
         if check_load and not self.wait_condition(condition):
             raise LookupError(msg)
-        if isinstance(driver, webdriver.PhantomJS) and driver.current_url == u'about:blank':
+        if driver.current_url == u'about:blank':
             raise LookupError(msg + '. Url is u"about:blank"')
-        if url != driver.current_url:
+        if not self.url_equals(url, driver.current_url):
             self.log.d('Fetching {url!r} and we got {driver.current_url!r}.'
                        .format(**locals()))
         return driver
 
     def get_page_once(self, path, base=None, check_load=False, condition=None):
         driver = self.get_driver()
-        if driver.current_url != self.build_url(path):
+        if not self.url_equals(self.build_url(path), driver.current_url):
             return self.get_page(path, base, check_load, condition)
         return driver
 
