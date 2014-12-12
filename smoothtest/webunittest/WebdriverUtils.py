@@ -198,6 +198,12 @@ class WebdriverUtils(object):
                        .format(**locals()))
         return driver
 
+    def get_page_once(self, path, base=None, check_load=False, condition=None):
+        driver = self.get_driver()
+        if driver.current_url != path:
+            return self.get_page(path, base, check_load, condition)
+        return driver
+
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
     def wait_condition(self, condition=None, max_wait=None, print_msg=True):
