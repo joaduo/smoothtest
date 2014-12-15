@@ -196,13 +196,20 @@ class WebdriverUtils(object):
         pass
 
     def current_path(self):
-        return urlparse.urlparse(self.get_driver().current_url).path
+        return urlparse.urlparse(self.current_url()).path
+
+    def current_url(self):
+        return self.get_driver().current_url
 
     def build_url(self, path):
         return urlparse.urljoin(self._base_url, path)
 
     def url_equals(self, url_a, url_b):
         return self.Url(url_a) == self.Url(url_b)
+
+    def path_equals(self, path_a, path_b):
+        clean = lambda p: urllib.unquote_plus(p.strip('/'))
+        return clean(path_a) == clean(path_b)
 
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
