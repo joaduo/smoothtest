@@ -23,7 +23,7 @@ class DefaultSettings(object):
     webdriver_keep_open = False
 
     screenshot_level = 0
-
+    screenshot_exceptions_dir = './'
 
 def smoke_test_module():
     DefaultSettings()

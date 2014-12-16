@@ -3,6 +3,11 @@
 1. Multiplatform -> pickable fork callbacks
 1. Take screenshots
 
+## TODO tests
+1. test screenshots on test reports (w/wo)
+1. test API with selenium
+1. I will ignore autotest for a while, since many tools already do the same
+
 ## TODO
 
 1. add support for .cfg configs

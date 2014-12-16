@@ -18,6 +18,7 @@ from types import MethodType
 from threading import Lock
 from smoothtest.Logger import Logger
 import urllib
+import os
 
 
 _with_screenshot = '_with_screenshot'
@@ -86,7 +87,7 @@ class WebdriverUtils(object):
         def __hash__(self):
             return hash(self.parts)
 
-    def __init__(self, base_url, webdriver, logger, settings):
+    def __init__(self, base_url, webdriver, logger, settings={}):
         self._init_webdriver(base_url, webdriver, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
 
@@ -99,7 +100,6 @@ class WebdriverUtils(object):
         self._wait_timeout = self.settings.get('wait_timeout', 2)
         
     def _decorate_exc_sshot(self, meth_filter=None):
-        self._exc_sshot_count = 0
         fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
                                    or n.startswith('test'))
         meth_filter = meth_filter or fltr
@@ -167,6 +167,7 @@ class WebdriverUtils(object):
         else:
             return str_
 
+    _exc_sshot_count = 0
     def _exception_screenshot(self, name, exc):
         self._exc_sshot_count += 1
         dr = self.get_driver()
@@ -175,7 +176,9 @@ class WebdriverUtils(object):
         test = self.__class__.__name__
         filename = '{count:03d}.{test}.{name}.{exc}.png'.format(**locals())
         self.log.e('Saving exception screenshot to: %r' % filename)
-        dr.save_screenshot(filename)
+        exc_dir = self.settings.get('screenshot_exceptions_dir')
+        dr.save_screenshot(os.path.join(exc_dir, filename))
+        return filename
 
     _quick_sshot_count = 0
     def _quick_screenshot(self):

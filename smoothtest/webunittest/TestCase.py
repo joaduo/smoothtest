@@ -68,6 +68,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
     def __init__(self, *args, **kwargs):
         self.decorate_exc_sshot()
         super(TestCase, self).__init__(*args, **kwargs)
+        self._exc_screenshots = []
 
     def decorate_exc_sshot(self):
         settings = solve_settings()
@@ -75,7 +76,11 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
         if (settings.get('screenshot_level')
             and settings.get('screenshot_level') <= logging.ERROR):
             self._decorate_exc_sshot()
-        self._decorate_exc_sshot()
+
+    def _exception_screenshot(self, name, exc):
+        filename = super(TestCase, self)._exception_screenshot(name, exc)
+        self._exc_screenshots.append(filename)
+        return filename
 
     @staticmethod
     def disable_method(cls, meth, log_func=lambda msg:None):

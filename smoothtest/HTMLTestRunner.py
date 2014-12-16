@@ -484,6 +484,37 @@ a.popup_link:hover {
 """ # variables: (tid, Class, style, desc, status)
 
 
+    REPORT_TEST_WITH_OUTPUT_SCREENSHOT_TMPL = r"""
+<tr id='%(tid)s' class='%(Class)s'>
+    <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
+    <td colspan='5' align='center'>
+
+    <!--css div popup start-->
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showTestDetail('div_%(tid)s')" >
+        %(status)s</a>
+
+    <div id='div_%(tid)s' class="popup_window">
+        <div style='text-align: right; color:red;cursor:pointer'>
+        <a onfocus='this.blur();' onclick="document.getElementById('div_%(tid)s').style.display = 'none' " >
+           [x]</a>
+        </div>
+        <pre>
+        %(script)s
+        </pre>
+        <ul>
+            %(screenshots)s
+        </ul>
+    </div>
+    <!--css div popup end-->
+
+    </td>
+</tr>
+""" # variables: (tid, Class, style, desc, status)
+
+    SCREENSHOT_ITEM_TMPL=r"""
+    <li><a href="%(filename)s">%(name)s<img width=300 src="%(filename)s"/><a/></li>
+    """# variables: (filename, name)
+
     REPORT_TEST_NO_OUTPUT_TMPL = r"""
 <tr id='%(tid)s' class='%(Class)s'>
     <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
@@ -758,25 +789,26 @@ class HTMLTestRunner(Template_mixin):
         desc = doc and ('%s: %s' % (name, doc)) or name
         tmpl = has_output and self.REPORT_TEST_WITH_OUTPUT_TMPL or self.REPORT_TEST_NO_OUTPUT_TMPL
 
-        # o and e should be byte string because they are collected from stdout and stderr?
-        if isinstance(o,str):
-            # TODO: some problem with 'string_escape': it escape \n and mess up formating
-            # uo = unicode(o.encode('string_escape'))
-            uo = o.decode('latin-1')
-        else:
-            uo = o
-        if isinstance(e,str):
-            # TODO: some problem with 'string_escape': it escape \n and mess up formating
-            # ue = unicode(e.encode('string_escape'))
-            ue = e.decode('latin-1')
-        else:
-            ue = e
+        def decode(oe):
+            # oe and e should be byte string because they are collected from stdout and stderr?
+            if isinstance(oe,str):
+                # TODO: some problem with 'string_escape': it escape \n and mess up formating
+                # uoe = unicode(oe.encode('string_escape'))
+                uoe = oe.decode('latin-1')
+            else:
+                uoe = oe
+            return uoe
+
+        uo = decode(o)
+        ue = decode(e)
 
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
             id = tid,
             output = saxutils.escape(uo+ue),
         )
 
+        screenshots = getattr(t, '_exc_screenshots', [])
+        tmpl = self.REPORT_TEST_WITH_OUTPUT_SCREENSHOT_TMPL if screenshots else tmpl
         row = tmpl % dict(
             tid = tid,
             Class = (n == 0 and 'hiddenRow' or 'none'),
@@ -784,10 +816,19 @@ class HTMLTestRunner(Template_mixin):
             desc = desc,
             script = script,
             status = self.STATUS[n],
+            screenshots = self._generate_screenshots_html(screenshots),
         )
         rows.append(row)
         if not has_output:
             return
+
+    def _generate_screenshots_html(self, screenshots):
+        html = ''
+        tmpl = self.SCREENSHOT_ITEM_TMPL
+        for filename in screenshots:
+            name = filename.rstrip('.png')
+            html += tmpl % locals()
+        return html
 
     def _generate_ending(self):
         return self.ENDING_TMPL
