@@ -2,6 +2,29 @@
 
 General purpose Testing Utilities and also special testing tools for Web Applications
 
+## Better API for accessing Selenium
+
+With smoothtest you can write nicer tests for web sites.
+
+```python
+class Home(TestCaseBase):
+
+    _tested_page = '/'
+
+    def test_home(self):
+        self.get_page(self._tested_page)
+        self.assert_text('//p[@id="msg"]', u'Sign up to request beta access.')
+        
+    def test_empty_email(self):
+        self.get_page(self._tested_page)
+        self.click('//a[@class="new_job tab_link"]')
+        class_ = self.extract_xpath('//input[@name="email"]/@class')
+        self.assertTrue('error' in class_.split(), 'No error style applied')
+
+```
+
+The API is very XPath oriented, so you can test your XPath in Firefox with extension like FirePath.
+
 ## How to use smoothtest
 
 The main utility is the `autotest` command. This command monitors your project's files and you unittest files for changes, it will trigger reloading and rerunning tests when a file changes. This means you can work in your code and see how tests are affected automatically. You can select a group of tests files to be monitored - that trigger partial reloads of those same modules -  and an group of files or directories to trigger full reloads of the project.
