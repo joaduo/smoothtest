@@ -10,6 +10,7 @@ from smoothtest.settings.solve_settings import solve_settings
 from smoothtest.base import SmoothTestBase
 from .WebdriverUtils import WebdriverUtils
 from .WebdriverManager import new_webdriver, stop_display
+import logging
 
 
 class TestBase(WebdriverUtils):
@@ -64,6 +65,18 @@ class TestBase(WebdriverUtils):
 
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
+    def __init__(self, *args, **kwargs):
+        self.decorate_exc_sshot()
+        super(TestCase, self).__init__(*args, **kwargs)
+
+    def decorate_exc_sshot(self):
+        settings = solve_settings()
+        # Decorate methods for taking screenshots upon exceptions
+        if (settings.get('screenshot_level')
+            and settings.get('screenshot_level') <= logging.ERROR):
+            self._decorate_exc_sshot()
+        self._decorate_exc_sshot()
+
     @staticmethod
     def disable_method(cls, meth, log_func=lambda msg:None):
         if not isinstance(meth, basestring):

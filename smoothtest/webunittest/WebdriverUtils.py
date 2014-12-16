@@ -97,10 +97,6 @@ class WebdriverUtils(object):
         # Initialize values
         self._base_url = base_url
         self._wait_timeout = self.settings.get('wait_timeout', 2)
-        # Decorate methods for taking screenshots upon exceptions
-        if (settings.get('screenshot_level')
-            and settings.get('screenshot_level') <= logging.ERROR):
-            self._decorate_exc_sshot()
         
     def _decorate_exc_sshot(self, meth_filter=None):
         self._exc_sshot_count = 0
@@ -117,6 +113,7 @@ class WebdriverUtils(object):
                 setattr(self, name, method)
             elif(name != 'screenshot' 
                 and meth_filter(name, method)):
+                self.log.debug('Decorating %r for screenshot' % name)
                 method = self._decorate(name, method)
                 setattr(self, name, method) 
                 
@@ -357,8 +354,8 @@ return eslist;
 def smoke_test_module():
     class WDU(WebdriverUtils):
         def __init__(self, base):
-            self._decorate_exc_sshot()
             self.log = Logger(self.__class__.__name__)
+            self._decorate_exc_sshot()
             
         def get_driver(self, *args, **kwargs):
             class Driver(object):
