@@ -7,7 +7,6 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import urlparse
 import time
-import logging
 import re
 import inspect
 from selenium.webdriver.remote.webelement import WebElement
@@ -103,32 +102,47 @@ class WebdriverUtils(object):
         fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
                                    or n.startswith('test'))
         meth_filter = meth_filter or fltr
+        # Gather all exceptions seen (to avoid repeating screenshots) 
+        self._seen_exceptions = set()
+        # Lock for avoiding taking screenshots
         self._sshot_lock = Lock()
         for name, method in inspect.getmembers(self):
-            if not (isinstance(method, MethodType)
-            and getattr(method, _with_screenshot, True)):
+            if (getattr(method, '_screenshot_decorated', False)
+                or not (isinstance(method, MethodType)
+                        and getattr(method, _with_screenshot, True))):
+                # Do not decorate if:
+                # - already decorated
+                # - its not a method
+                # - attribute _with_screenshot = False
                 continue
             if getattr(method, _zero_screenshot, False):
+                # Decorate to avoid excs screenshots on this method, neither
+                # on deeper levels
                 method = self._decorate(name, method, zero_screeshot=True)
                 setattr(self, name, method)
             elif(name != 'screenshot' 
                 and meth_filter(name, method)):
+                # We want to decorate this method to capture screenshots
                 self.log.debug('Decorating %r for screenshot' % name)
                 method = self._decorate(name, method)
                 setattr(self, name, method) 
                 
     def _decorate(self, name, method, zero_screeshot=False):
         if not zero_screeshot:
+            # Capture sreenshot
             @wraps(method)
             def dec(*args, **kwargs):
                 try:
                     return method(*args, **kwargs)
                 except Exception as e:
-                    if self._sshot_lock.acquire(False):
+                    if (e not in self._seen_exceptions
+                            and self._sshot_lock.acquire(False)):
+                        self._seen_exceptions.add(e)
                         self._exception_screenshot(name, e)
                         self._sshot_lock.release()
                     raise
         else:
+            # No excs screenshot at any deeper level decorator
             @wraps(method)
             def dec(*args, **kwargs):
                 #block any further exception screenshot, until
@@ -139,6 +153,7 @@ class WebdriverUtils(object):
                 finally:
                     if locked:
                         self._sshot_lock.release()
+        dec._screenshot_decorated = True
         return dec
 
     def _quit_webdriver(self):
@@ -168,7 +183,7 @@ class WebdriverUtils(object):
             return str_
 
     _exc_sshot_count = 0
-    def _exception_screenshot(self, name, exc):
+    def _exception_screenshot(self, name, exc, exc_dir=None):
         self._exc_sshot_count += 1
         dr = self.get_driver()
         exc = self._string_to_filename(repr(exc))
@@ -176,7 +191,7 @@ class WebdriverUtils(object):
         test = self.__class__.__name__
         filename = '{count:03d}.{test}.{name}.{exc}.png'.format(**locals())
         self.log.e('Saving exception screenshot to: %r' % filename)
-        exc_dir = self.settings.get('screenshot_exceptions_dir')
+        exc_dir = exc_dir or self.settings.get('screenshot_exceptions_dir')
         dr.save_screenshot(os.path.join(exc_dir, filename))
         return filename
 
@@ -358,6 +373,8 @@ def smoke_test_module():
     class WDU(WebdriverUtils):
         def __init__(self, base):
             self.log = Logger(self.__class__.__name__)
+            self._decorate_exc_sshot()
+            #Test twice
             self._decorate_exc_sshot()
             
         def get_driver(self, *args, **kwargs):
