@@ -72,7 +72,8 @@
 
 ## DONE
 
-3. Improve configuration framework
+1. Add wipe_alerts method
+1. Improve configuration framework
 1. TestRunner addon -> Selenium Setup -> Virtual screen Setup
 1. Rename parcial to partial
 1. Create full_callback support and project watching support

@@ -20,6 +20,9 @@ class WebdriverManager(SmoothTestBase):
     # class' variable to share the display object
     default_display = None
     
+    def __init__(self):
+        self.__webdrivers = []
+
     def new_webdriver(self, browser=None, *args, **kwargs):
         browser = self._get_full_name(browser)
         # Setup display before creating the browser
@@ -27,8 +30,13 @@ class WebdriverManager(SmoothTestBase):
         if browser == 'PhantomJS':
             kwargs.update(service_args=['--ignore-ssl-errors=true'])
         driver = getattr(webdriver, browser)(*args, **kwargs)
+        self.__webdrivers.append(driver)
         return driver
-    
+
+    def close_webdrivers(self):
+        for w in self.__webdrivers:
+            w.close()
+
     def setup_display(self):
         '''
         Create virtual display if set by configuration

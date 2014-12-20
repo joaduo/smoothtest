@@ -11,13 +11,16 @@ import re
 import inspect
 from selenium.webdriver.remote.webelement import WebElement
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException,\
+    TimeoutException
 from functools import wraps
 from types import MethodType
 from threading import Lock
 from smoothtest.Logger import Logger
 import urllib
 import os
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 
 
 _with_screenshot = '_with_screenshot'
@@ -76,7 +79,7 @@ class WebdriverUtils(object):
         def __init__(self, url):
             parts = urlparse.urlparse(url)
             _query = frozenset(urlparse.parse_qsl(parts.query))
-            _path = urllib.unquote_plus(parts.path)
+            _path = urllib.unquote_plus(parts.path).rstrip('/')
             parts = parts._replace(query=_query, path=_path)
             self.parts = parts
 
@@ -98,7 +101,7 @@ class WebdriverUtils(object):
         self._base_url = base_url
         self._wait_timeout = self.settings.get('wait_timeout', 2)
         
-    def _decorate_exc_sshot(self, meth_filter=None):
+    def _decorate_exc_sshot(self, meth_filter=None, inspected=None):
         fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
                                    or n.startswith('test'))
         meth_filter = meth_filter or fltr
@@ -106,6 +109,8 @@ class WebdriverUtils(object):
         self._seen_exceptions = set()
         # Lock for avoiding taking screenshots
         self._sshot_lock = Lock()
+        # Decorate our own methods, if None provided #TODO: remove later
+        inspected = inspected or self
         for name, method in inspect.getmembers(self):
             if (getattr(method, '_screenshot_decorated', False)
                 or not (isinstance(method, MethodType)
@@ -163,7 +168,7 @@ class WebdriverUtils(object):
     def get_driver(self):
         assert self._driver, 'driver was not initialized'
         return self._driver
-    
+
     def _string_to_filename(self, str_, max_size=150):
         '''
         For example:
@@ -223,8 +228,8 @@ class WebdriverUtils(object):
         return self.Url(url_a) == self.Url(url_b)
 
     def path_equals(self, path_a, path_b):
-        clean = lambda p: urllib.unquote_plus(p.strip('/'))
-        return clean(path_a) == clean(path_b)
+        build = self.build_url
+        return self.url_equals(build(path_a), build(path_b))
 
     def get_page(self, path, base=None, check_load=False, condition=None):
         #default value
@@ -241,9 +246,9 @@ class WebdriverUtils(object):
         msg = 'Couldn\'t load page at {url!r}'.format(url=url)
         if check_load and not self.wait_condition(condition):
             raise LookupError(msg)
-        if driver.current_url == u'about:blank':
+        if self.current_url() == u'about:blank':
             raise LookupError(msg + '. Url is u"about:blank"')
-        if not self.url_equals(url, driver.current_url):
+        if not self.url_equals(url, self.current_url()):
             self.log.d('Fetching {url!r} and we got {driver.current_url!r}.'
                        .format(**locals()))
         return driver
@@ -367,6 +372,19 @@ return eslist;
     def wait(self, timeout=None):
         time.sleep(timeout or self._wait_timeout)
 
+    def wipe_alerts(self, timeout=0.5):
+        '''
+        Accept all existing alerts
+        :param timeout: wait for alert in second (default=0.5)
+        '''
+        try:
+            WebDriverWait(self.get_driver(), timeout
+                          ).until(expected_conditions.alert_is_present(),
+                                  'Timed out waiting alert.')
+            alert = self.get_driver().switch_to_alert()
+            alert.accept()
+        except TimeoutException:
+            pass
 
 
 def smoke_test_module():
