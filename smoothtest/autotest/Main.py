@@ -129,10 +129,8 @@ class Main(ParentBase):
     @property
     def test(self):
         cmd = 'partial_callback'
-        answers = self.send_recv(cmd)
-        ans = self._get_answer(answers, cmd)
-        if ans.error:
-            self.log.e(ans.error)
+        ans = self.send_recv(cmd)
+        self.log.e(ans.error)
         return ans
 
     def send(self, cmd, *args, **kwargs):

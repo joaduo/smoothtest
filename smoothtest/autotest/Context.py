@@ -5,23 +5,9 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-#parent_pipe, child_pipe = multiprocessing.Pipe()
 import rel_imp; rel_imp.init()
 from .Master import Master
-
-class singleton_decorator(object):
-    '''
-      Singleton pattern decorator.
-      There will be only one instance of the decorated class.
-      Decorator always returns same instance.
-    '''
-    def __init__(self, class_):
-        self.class_ = class_
-        self.instance = None
-    def __call__(self, *a, **ad):
-        if self.instance == None:
-            self.instance = self.class_(*a,**ad)
-        return self.instance
+from smoothtest.singleton_decorator import singleton_decorator
 
 @singleton_decorator
 class Context(object):

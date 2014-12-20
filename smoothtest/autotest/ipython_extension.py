@@ -32,13 +32,13 @@ class AutotestMagics(Magics):
         test_config = command.get_test_config(args, unknown)
         test_config.update(force=args.force)
         return args, test_config
-    
+
     def _send(self, test_config):
         self.main.send_test(**test_config)
 
     def _test_magic_cmd_parser(self):
         parser = ArgumentParser(description='Manually trigger a test.')
-        parser.add_argument('-f', '--force', help='Trigger full reload.', 
+        parser.add_argument('-f', '--force', help='Trigger full reload.',
                             default=False, action='store_true')
         return parser
 
@@ -60,7 +60,7 @@ class AutotestMagics(Magics):
         args, test_config = self.__common(line)
         if args.update:
             #Update set values
-            for k,v in self.main.test_config.iteritems():
+            for k, v in self.main.test_config.iteritems():
                 if not test_config.get(k):
                     test_config[k] = v
             if args.smoke is not None:
@@ -70,7 +70,6 @@ class AutotestMagics(Magics):
             test_config.update(force=args.force)
         self._send(test_config)
         return test_config
-            
 
 
 def load_extension(ipython, main):
@@ -92,7 +91,7 @@ def unload_ipython_extension(ipython):
 def smoke_test_module():
     am = AutotestMagics(None)
     from pprint import pprint
-    pprint( am.expand_files(['./*.py']))
+    pprint(am.expand_files(['./*.py']))
 
 
 if __name__ == "__main__":
