@@ -22,20 +22,20 @@ class Main(ParentBase):
         self.ishell = None
         self.test_config = {}
         self._slave = None
-        
+
     def run(self, test_config, embed_ipython=False, block=False):
         self.log.set_pre_post(pre='Main ')
         self.test_config = test_config
         self.create_child()
         if embed_ipython:
-            s = self # nice alias
+            s = self  # nice alias
             self.embed()
             self.kill_child
             raise SystemExit(0)
         elif block:
             self.log.i(self._subprocess_conn.recv())
         WebdriverManager().stop_display()
-    
+
     def embed(self, **kwargs):
         """Call this to embed IPython at the current point in your program.
         """
@@ -69,12 +69,12 @@ class Main(ParentBase):
         load_extension(self.ishell, self)
         #Stack depth is 3 because we use self.embed first
         self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
-            
+
     @property
     def new_child(self):
         self.kill_child
         self.create_child()
-    
+
     def send_test(self, **test_config):
         self.send_recv('new_test', **test_config)
         self.test_config = test_config
@@ -93,14 +93,14 @@ class Main(ParentBase):
     @property
     def ffox(self):
         self.new_browser('f')
-    
+
     @property
     def chrome(self):
         self.new_browser('c')
-        
+
     @property
     def phantomjs(self):
-        self.new_browser('p')        
+        self.new_browser('p')
 
     def _build_slave(self, force=False, browser=None):
         if (not self._slave or force):
@@ -114,18 +114,18 @@ class Main(ParentBase):
 
     def create_child(self):
         slave = self._build_slave()
-        
+
         def callback(conn):
             if self.ishell:
                 self.ishell.exit_now = True
             sys.stdin.close()
             master = Master(conn, slave)
             poll = master.io_loop(self.test_config)
-            while 1:
+            while True:
                 poll.next()
-        
+
         super(Main, self).start_subprocess(callback, pre='Master')
-    
+
     @property
     def test(self):
         cmd = 'partial_callback'
@@ -135,9 +135,9 @@ class Main(ParentBase):
 
     def send(self, cmd, *args, **kwargs):
         while self.poll():
-            self.log.i('Remaining in buffer: %r'%self.recv())
+            self.log.i('Remaining in buffer: %r' % self.recv())
         return super(Main, self).send(cmd, *args, **kwargs)
-    
+
     @property
     def kill_child(self):
         return self.kill(block=True, timeout=3)

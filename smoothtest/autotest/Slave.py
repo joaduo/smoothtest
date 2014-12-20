@@ -10,7 +10,7 @@ from .base import ParentBase
 
 
 class Slave(ParentBase):
-    def __init__(self, child_cls, child_args=[], child_kwargs={}, timeout=3):
+    def __init__(self, child_cls, child_args=(), child_kwargs={}, timeout=3):
         self._timeout = timeout
         self._child_args = child_args
         self._child_kwargs = child_kwargs
@@ -18,16 +18,26 @@ class Slave(ParentBase):
         self._subprocess = None
         self._subprocess_conn = None
         self._first_test = True
-        
+
+    def _callback(self, conn, post_callback, child_cls, child_args,
+                  child_kwargs):
+        if post_callback:
+            post_callback()
+        child = child_cls(*child_args, **child_kwargs)
+        #wait for io
+        child.io_loop(conn, stdin=None, stdout=None, stderr=None)
+
     def start_subprocess(self, post_callback=None):
-        def callback(conn):
-            if post_callback:
-                post_callback()
-            child = self._child_cls(*self._child_args, **self._child_kwargs)
-            #wait for io
-            child.io_loop(conn, stdin=None, stdout=None, stderr=None)
-        
-        super(Slave, self).start_subprocess(callback, pre='TestRunner')
+        '''
+        Start testrunner subprocess.
+
+        :param post_callback: callback after forking a process. Must be
+            pickable to work in windows.
+        '''
+        args = (post_callback, self._child_cls, self._child_args,
+                self._child_kwargs)
+        super(Slave, self).start_subprocess(self._callback, pre='TestRunner',
+                                            args=args)
 
     def restart_subprocess(self, post_callback):
         self.kill(block=True, timeout=self._timeout)
@@ -66,15 +76,15 @@ class Slave(ParentBase):
 def smoke_test_module():
     from .TestRunner import TestRunner
     pre = 'smoothtest.tests.example.test_Example.'
-    test_paths = [pre+'Example.test_example',
-                  pre+'Example.test_error',
-                  pre+'Example.test_failure',
-                  pre+'NonExistingExample.test',
-      'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
+    test_paths = [pre + 'Example.test_example',
+                  pre + 'Example.test_error',
+                  pre + 'Example.test_failure',
+                  pre + 'NonExistingExample.test',
+  'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
                   ]
     slave = Slave(TestRunner, [], {})
     slave.start_subprocess()
-    for i in range(1,len(test_paths)+1):
+    for i in range(1, len(test_paths) + 1):
         slave.log.i(slave.test(test_paths[:i], block=True))
     slave.kill(block=True)
 
