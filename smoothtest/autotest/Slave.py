@@ -75,8 +75,8 @@ class Slave(ParentBase):
 
 
 def smoke_test_module():
-    import os
-    sys.stderr = open(os.devnull, 'w')
+    from StringIO import StringIO
+    sys.stderr = StringIO()
     from .TestRunner import TestRunner
     pre = 'smoothtest.tests.example.test_Example.'
     test_paths = [pre + 'Example.test_example',
