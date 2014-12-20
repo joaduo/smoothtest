@@ -7,6 +7,15 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp; rel_imp.init()
 from .base import ParentBase
+import sys
+
+
+def slave_callback(conn, post_callback, child_cls, child_args, child_kwargs):
+    if post_callback:
+        post_callback()
+    child = child_cls(*child_args, **child_kwargs)
+    #wait for io
+    child.io_loop(conn, stdin=None, stdout=None, stderr=None)
 
 
 class Slave(ParentBase):
@@ -19,14 +28,6 @@ class Slave(ParentBase):
         self._subprocess_conn = None
         self._first_test = True
 
-    def _callback(self, conn, post_callback, child_cls, child_args,
-                  child_kwargs):
-        if post_callback:
-            post_callback()
-        child = child_cls(*child_args, **child_kwargs)
-        #wait for io
-        child.io_loop(conn, stdin=None, stdout=None, stderr=None)
-
     def start_subprocess(self, post_callback=None):
         '''
         Start testrunner subprocess.
@@ -36,7 +37,7 @@ class Slave(ParentBase):
         '''
         args = (post_callback, self._child_cls, self._child_args,
                 self._child_kwargs)
-        super(Slave, self).start_subprocess(self._callback, pre='TestRunner',
+        super(Slave, self).start_subprocess(slave_callback, pre='TestRunner',
                                             args=args)
 
     def restart_subprocess(self, post_callback):
@@ -63,17 +64,19 @@ class Slave(ParentBase):
 
     def recv_answer(self):
         answers = self.recv()
-        self.log.d('Received TestRunner\'s answer: ' + 
+        self.log.d('Received TestRunner\'s answer: ' +
                    self.fmt_answers(answers))
         kans = self._get_answer(answers, self._kill_command)
         if kans and kans.result == self._kill_answer:
-            self.log.w('Answer is %r. Perhaps 2 kill commands sent?' % 
+            self.log.w('Answer is %r. Perhaps 2 kill commands sent?' %
                        answers)
         self._first_test = False
         return self._get_answer(answers, self._child_cls.test)
 
 
 def smoke_test_module():
+    import os
+    sys.stderr = open(os.devnull, 'w')
     from .TestRunner import TestRunner
     pre = 'smoothtest.tests.example.test_Example.'
     test_paths = [pre + 'Example.test_example',

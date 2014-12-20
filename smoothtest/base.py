@@ -18,7 +18,7 @@ from .TestResults import TestException
 
 class SmoothTestBase(object):
     log = Logger('autotest')
-    
+
     @property
     def global_settings(self):
         return solve_settings()

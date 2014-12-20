@@ -10,6 +10,7 @@ class Logger(object):
     handler_level = logging.DEBUG
     default_fmt = '%(asctime)s: %(message)s'
     default_datefmt = '%H:%M:%S'
+
     def __init__(self, name, output=None, level=None):
         if not level:
             level = self.default_level
@@ -27,7 +28,7 @@ class Logger(object):
         logging.root.addHandler(hdlr)
         self.set_fmt()
         return logging.getLogger(name)
-    
+
     def set_fmt(self, fmt=None, datefmt=None):
         datefmt = datefmt or self.default_datefmt
         fmt = fmt or self.default_fmt
@@ -36,10 +37,10 @@ class Logger(object):
                         datefmt=datefmt
                         )
         hdlr.setFormatter(fmt)
-        
+
     def set_pre_post(self, pre='', post=''):
-        self.set_fmt(fmt=pre+self.default_fmt+post)
-        
+        self.set_fmt(fmt=pre + self.default_fmt + post)
+
     def critical(self, msg):
         self.output.critical(str(msg))
     def error(self, msg):
