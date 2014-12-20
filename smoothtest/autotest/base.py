@@ -13,6 +13,7 @@ import multiprocessing
 from types import MethodType, FunctionType
 import sys
 from smoothtest.singleton_decorator import singleton_decorator
+import signal
 
 
 AutotestCmd = namedtuple('AutotestCmd', 'cmd args kwargs')
@@ -69,60 +70,52 @@ class ChildBase(AutoTestBase):
         return AutotestCmd(cmd, args, kwargs)
 
 
-@singleton_decorator
-class CrossProcessCallbacks(AutoTestBase):
-    def __init__(self):
-        self._callbacks = {}
-
-    def register(self, callback):
-        hash_str = str(hash(callback))
-        self._callbacks[hash_str] = callback
-        return hash_str
-
-    def pop(self, hash_str):
-        callback = self._callbacks[hash_str]
-        del self._callbacks[hash_str]
-        return callback
-
-
 class TargetFunction(SmoothTestBase):
-    def __init__(self, callback, parent_conn, child_conn, pre, close_stdin=False):
-        self.hash_str = CrossProcessCallbacks().register(callback)
-        # Some callbacks are not pickable
-        self.callback = None
+    def __init__(self, callback, parent_conn, child_conn, pre, close_stdin,
+                 disable_key_int):
+        self.callback = callback
         self.parent_conn = parent_conn
-        self.conn = child_conn
+        self.child_conn = child_conn
         self.pre = pre
         self.close_stdin = close_stdin
+        self.disable_key_int = disable_key_int
 
-    def __call__(self):
+    def _disable_keyboard_interrupt(self):
+        def signal_handler(signal, frame):
+            self.log.i('Ignoring keyboard interrupt')
+        signal.signal(signal.SIGINT, signal_handler)
+
+    def __call__(self, *args, **kwargs):
         self.parent_conn.close()
+        self.log.set_pre_post(pre=self.pre)
         if self.close_stdin:
             self.log.d('Closing stdin')
             sys.stdin.close()
-        self.log.set_pre_post(pre=self.pre)
+        if self.disable_key_int:
+            self._disable_keyboard_interrupt()
         self.log.d('Forked process started...')
-        if not self.callback:
-            self.callback = CrossProcessCallbacks().pop(self.hash_str)
-        self.callback(self.conn)
+        self.callback(self.child_conn, *args, **kwargs)
 
 
 class ParentBase(ChildBase):
-    def start_subprocess(self, callback, pre='', close_stdin=True):
+    def start_subprocess(self, callback, args=(), kwargs={}, pre='',
+                         close_stdin=True, disable_key_int=True):
         '''
         Start a subprocess child.
 
         :param callback: callback to start the subprocess
         :param pre: logging prefix
         :param close_stdin: close stdin in child after forking
+        :param disable_key_int: disable keyboard interrupt on subprocess
         '''
         parent, child = multiprocessing.Pipe()
         #Add space if defined
         pre = pre if not pre else pre + ' '
         #Windows needs target to be pickable
-        target = TargetFunction(callback, parent, child, pre, close_stdin)
-
-        self._subprocess = multiprocessing.Process(target=target)
+        target = TargetFunction(callback, parent, child, pre, close_stdin,
+                                disable_key_int)
+        self._subprocess = multiprocessing.Process(target=target, args=args,
+                                                   kwargs=kwargs)
         self._subprocess.start()
         self._subprocess_conn = parent
         child.close()
@@ -211,14 +204,16 @@ class ParentBase(ChildBase):
         return self._subprocess_conn
 
     def _kill_subprocess(self, block=False, timeout=None):
-        self.log.d('Killing Slave child with pid %r.' % self._subprocess.ident)
+        self.log.d('Killing subprocess with pid %r.' % self._subprocess.ident)
         answer = None
 
         def end():
-            self._subprocess.join()
-            self._suprocess = None
-            self._subprocess_conn.close()
-            self._subprocess_conn = None
+            if self._subprocess:
+                self._subprocess.join()
+                self._suprocess = None
+            if self._subprocess_conn:
+                self._subprocess_conn.close()
+                self._subprocess_conn = None
 
         if not self._subprocess:
             return answer
@@ -245,58 +240,14 @@ class ParentBase(ChildBase):
         else:
             self._subprocess.terminate()
             pid, status = self._subprocess.ident, self._subprocess.exitcode
-            self.log.w('Child pid {pid} killed by force with exit status {status}.'
-                       ''.format(pid=pid, status=status))
+            self.log.w('Child pid {pid} killed by force with exit status '
+                       '{status}.'.format(pid=pid, status=status))
         end()
         return answer
 
 
 def smoke_test_module():
-    xpcb = CrossProcessCallbacks()
-
-    def callback(x):
-        print x
-    hash_str = xpcb.register(callback)
-    xpcb.log.i(xpcb.pop(hash_str))
-
-    class TR(object):
-        def test(self):
-            pass
-    base = ChildBase()
-    base.log.d(base.cmd(TR.test))
-    base.log.d('Debug')
-    base.log.i('Info')
-    test_path = 'smoothtest.tests.example.test_Example.Example.test_example'
-    base.log.i(base.split_test_path(test_path))
-    base.log.i(base.split_test_path(test_path, meth=True))
-
-    class PBTest(ParentBase):
-        def dummy_cmd(self, *args, **kwargs):
-            self.log.d(str(args))
-            self.log.d(str(kwargs))
-            return 'dummy answer'
-    pb = PBTest()
-
-    def build_callback(secs):
-        def callback(conn):
-            import time
-            pb.log('Child callback')
-            time.sleep(secs)
-            while True:
-                pb._dispatch_cmds(conn)
-        return callback
-    pb.start_subprocess(build_callback(0), pre='Child1')
-    args = (1, 'two', set())
-    kwargs = dict(example=30)
-    pb.send(pb.dummy_cmd, *args, **kwargs)
-    ans = pb.recv()[0]
-    pb.log.d(ans)
-    assert ans.sent_cmd.args == args
-    assert ans.sent_cmd.kwargs == kwargs
-    pb.kill(block=True, timeout=0.1)
-    pb.start_subprocess(build_callback(0.5), pre='Child2')
-    pb.kill(block=True, timeout=0.1)
-
+    pass
 
 if __name__ == "__main__":
     smoke_test_module()

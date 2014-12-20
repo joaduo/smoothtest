@@ -5,9 +5,9 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+from smoothtest.autotest.Context import Context
 import unittest
-from ..Context import Context
+
 
 class ContextTest(unittest.TestCase):
     def test_context(self):
