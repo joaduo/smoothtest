@@ -35,7 +35,8 @@ class TestRunner(ChildBase, TestRunnerBase):
         '''
         results = TestResults()
         if smoke or not test_paths:
-            self.log.i('Ignoring %r \n  (smoke mode or no tests found)'%list(test_paths))
+            self.log.i('Ignoring %r \n  (smoke mode or no tests found)' %
+                       list(test_paths))
             return results
         for tpath in test_paths:
             class_ = self._import_test(tpath)
@@ -49,7 +50,7 @@ class TestRunner(ChildBase, TestRunnerBase):
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
         while True:
             self._dispatch_cmds(conn)
-            
+
     def _receive_kill(self, *args, **kwargs):
         self._tear_down_process()
 
@@ -73,7 +74,7 @@ class TestRunner(ChildBase, TestRunnerBase):
             module = importlib.import_module(modstr)
             module = reload(module)
             class_ = getattr(module, clsstr)
-            return class_ 
+            return class_
         except Exception as e:
             return self.reprex(e)
 
@@ -82,6 +83,7 @@ def smoke_test_module():
     from .base import AutotestCmd
     test_paths = ['smoothtest.tests.example.test_Example']
     tr = TestRunner()
+
     class DummyIpc(object):
         def recv(self):
             cmds = [
@@ -94,7 +96,7 @@ def smoke_test_module():
             cmds = [
                     AutotestCmd(TestRunner._kill_command, (0,), {}),
                     ]
-            self.recv = lambda : []
+            self.recv = lambda: []
             return cmds
 
         def send(self, msg):
