@@ -860,5 +860,10 @@ main = TestProgram
 # Executing this module from the command line
 ##############################################################################
 
+
+def smoke_test_module():
+    # Disable warning for missing test
+    pass
+
 if __name__ == "__main__":
     main(module=None)
