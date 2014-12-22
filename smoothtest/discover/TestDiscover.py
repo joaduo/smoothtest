@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from .ModuleAttrIterator import ModuleAttrIterator
 from smoothtest.import_unittest import unittest
 from types import TypeType
@@ -22,6 +23,7 @@ from smoothtest.utils import is_pickable
 
 
 class TestFunction(unittest.TestCase):
+
     def __init__(self, test_path, function, modstr, log, methodName='runTest'):
         self.test_path = test_path
         self.function = function
@@ -35,6 +37,7 @@ class TestFunction(unittest.TestCase):
 
 
 class TestsContainer(object):
+
     def __init__(self, tests, result=None, get_test=None, argv=None):
         self.tests = tests
         self.result = result
@@ -52,6 +55,7 @@ class TestsContainer(object):
 
 
 class TestDiscoverBase(ParentBase, TestRunnerBase):
+
     def __init__(self, filter_func):
         self.filter_func = filter_func
         self.inspector = ModuleAttrIterator()
@@ -61,15 +65,15 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         for module, attrs in iter_mod(package, self.filter_func, reload_=False):
             for name, attr in attrs:
                 yield module, name, attr
-    
+
     def test_package(self, package, modules=[], argv=None, one_process=False):
         '''
         Inspect a package searching for tests inside their modules. Then run 
         those tests found.
-        
+
         Right now modules are imported in order to be inspected. 
         #TODO: This is not always desirable. 
-        
+
         :param package: package to be inspected
         :param modules: optional modules names list to filter in (reject others)
         :param argv: optional command line arguments to be passed to tests
@@ -132,7 +136,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
     def _import(self, path):
         return importlib.import_module(self._path_to_modstr(path))
 
-    #Implement if you want to print missing attrs in modules
+    # Implement if you want to print missing attrs in modules
     get_missing = None
 
     def _get_class_file(self):
@@ -147,7 +151,8 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             if one_process:
                 result = self._run_test(tests)
             else:
-                self.start_subprocess(self.dispatch_cmds, pre='Discover Runner')
+                self.start_subprocess(
+                    self.dispatch_cmds, pre='Discover Runner')
                 answer = self.send_recv(self._run_test, tests)
                 result = answer.result if answer.result else answer.error
                 self.kill(block=True, timeout=10)
@@ -155,7 +160,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         except Exception as e:
             return self.reprex(e)
         return result
-    
+
     def stop_display(self):
         '''
         Stop display if there is a virtual screen running
@@ -182,8 +187,8 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         module = importlib.import_module(modstr)
         func_cls = getattr(module, attr_name)
         log = self.log
-        if (isinstance(func_cls, TypeType) 
-        and issubclass(func_cls, unittest.TestCase)):
+        if (isinstance(func_cls, TypeType)
+                and issubclass(func_cls, unittest.TestCase)):
             # Its already a test class, lets instance it
             self._setup_process(func_cls, test_path, argv)
             suite = unittest.TestLoader().loadTestsFromTestCase(func_cls)
@@ -205,11 +210,13 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
 
 
 class DiscoverCommandBase(CommandBase):
+
     '''
     Common class to build test discovery tools. Base classes can filter
     modules arbitrarily for specific classes or functions.
     '''
-    #TODO:add similar arguments as unittest
+    # TODO:add similar arguments as unittest
+
     def __init__(self, desc='Test discovery tool', print_missing=False):
         self.description = desc
         self.test_discover = None
@@ -223,30 +230,30 @@ class DiscoverCommandBase(CommandBase):
         parser = ArgumentParser(description=self.description,
                                 formatter_class=ArgumentDefaultsHelpFormatter)
         parser.add_argument('-t', '--tests', type=is_valid_file,
-                    help='Specify the modules to run tests from (path or python'
-                    ' namespace). If specified, no discovery is done.',
-                    default=defaults.get('tests',[]), nargs='+')
+                            help='Specify the modules to run tests from (path or python'
+                            ' namespace). If specified, no discovery is done.',
+                            default=defaults.get('tests', []), nargs='+')
         parser.add_argument('-p', '--pattern', type=str,
-                    help='Fnmatch pattern to match test module names, not files.',
-                    default=defaults.get('pattern','test*'), nargs=1)
+                            help='Fnmatch pattern to match test module names, not files.',
+                            default=defaults.get('pattern', 'test*'), nargs=1)
         parser.add_argument('-P', '--packages', type=str,
-                    help='Specify the packages to discover tests from. (path or python namespace)',
-                    default=defaults.get('packages',[]), nargs='+')
+                            help='Specify the packages to discover tests from. (path or python namespace)',
+                            default=defaults.get('packages', []), nargs='+')
         parser.add_argument('-o', '--one-process',
-                    help='Run all tests inside 1 single process.',
-                    default=defaults.get('one_process', False), action='store_true')
+                            help='Run all tests inside 1 single process.',
+                            default=defaults.get('one_process', False), action='store_true')
         if self.print_missing:
             parser.add_argument('-i', '--ignore-missing',
-                        help='Ignore missing smoke tests.',
-                        default=defaults.get('ignore_missing', False), action='store_true')
+                                help='Ignore missing smoke tests.',
+                                default=defaults.get('ignore_missing', False), action='store_true')
         self._add_smoothtest_common_args(parser)
         return parser
-    
+
     def _import(self, path):
         return self.test_discover._import(path)
 
     def _discover_run(self, packages, argv=None, missing=True, one_process=False):
-        #pydev friendly printing
+        # pydev friendly printing
         def formatPathPrint(path, line=None):
             if not line:
                 line = 1
@@ -261,13 +268,13 @@ class DiscoverCommandBase(CommandBase):
             #run and count
             res = tdisc.test_package(pkg, argv=argv, one_process=one_process)
             results.append_results(res)
-            #Print missing
+            # Print missing
             if missing and tdisc.get_missing:
                 for m in tdisc.get_missing(pkg):
                     pth = self.get_module_file(m)
                     tdisc.log('Missing test in module %s' % m)
                     tdisc.log(formatPathPrint(pth))
-        #return results
+        # return results
         return results
 
     def _set_test_discover(self, args):
@@ -281,12 +288,13 @@ class DiscoverCommandBase(CommandBase):
         results = None
         if args.tests:
             results = self.test_discover.test_modules(args.tests,
-                                                  argv=unknown,
-                                                  one_process=args.one_process)
+                                                      argv=unknown,
+                                                      one_process=args.one_process)
         elif args.packages:
             results = self._discover_run(args.packages, argv=unknown,
-                               missing=not getattr(args,'ignore_missing', True),
-                               one_process=args.one_process)
+                                         missing=not getattr(
+                                             args, 'ignore_missing', True),
+                                         one_process=args.one_process)
         # Stop display in case we have a virtual display
         self.test_discover.stop_display()
         # Report status
@@ -295,12 +303,15 @@ class DiscoverCommandBase(CommandBase):
 
 
 class DiscoverCommand(DiscoverCommandBase):
+
     '''
     Unittest discovering concrete class
     '''
+
     def _set_test_discover(self, args):
         # Unpack just in case args changes later
         pattern = args.pattern
+
         def unittest_filter_func(attr, mod):
             name = mod.__name__.split('.')[-1]
             return (isinstance(attr, TypeType)
@@ -310,7 +321,8 @@ class DiscoverCommand(DiscoverCommandBase):
 
 
 def smoke_test_module():
-    main(['-t','smoothtest.tests.example.test_Example.Example'])
+    main(['-t', 'smoothtest.tests.example.test_Example.Example'])
+
 
 def main(argv=None):
     DiscoverCommand().main(argv)

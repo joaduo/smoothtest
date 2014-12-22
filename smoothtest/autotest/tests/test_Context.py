@@ -10,6 +10,7 @@ import unittest
 
 
 class ContextTest(unittest.TestCase):
+
     def test_context(self):
         ctx = Context()
         ctx.initialize({})

@@ -11,19 +11,21 @@ It lets smoothtest to left a hook at the passive waiting over inputs.
 But since Ipython notebook uses multiprocessing seems impossible to pass
 objects to the notebooks. Perhaps i need to investigate a bit more.
 '''
-import rel_imp; rel_imp.init()
-from zmq.eventloop.ioloop import PollIOLoop, IOLoop,tornado_version, Poller, ZMQPoller, ZMQIOLoop
+import rel_imp
+rel_imp.init()
+from zmq.eventloop.ioloop import PollIOLoop, IOLoop, tornado_version, Poller, ZMQPoller, ZMQIOLoop
 from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
 from zmq.backend import zmq_poll
 from tornado.platform.select import _Select
 from .Context import Context
 
+
 def install(IOLoop_cls):
     """set the tornado IOLoop instance with the pyzmq IOLoop.
-    
+
     After calling this function, tornado's IOLoop.instance() and pyzmq's
     IOLoop.instance() will return the same object.
-    
+
     An assertion error will be raised if tornado's IOLoop has been initialized
     prior to calling this function.
     """
@@ -31,7 +33,8 @@ def install(IOLoop_cls):
     # check if tornado's IOLoop is already initialized to something other
     # than the pyzmq IOLoop instance:
     assert (not ioloop.IOLoop.initialized()) or \
-        ioloop.IOLoop.instance() is IOLoop.instance(), "tornado IOLoop already initialized"
+        ioloop.IOLoop.instance() is IOLoop.instance(
+    ), "tornado IOLoop already initialized"
 
     if tornado_version >= (3,):
         # tornado 3 has an official API for registering new defaults, yay!
@@ -40,7 +43,9 @@ def install(IOLoop_cls):
         # we have to set the global instance explicitly
         ioloop.IOLoop._instance = IOLoop_cls.instance()
 
+
 class AtPollerBase(object):
+
     def initialize_autotest(self, wait_type):
         ctx = Context()
         poll = select = None
@@ -50,19 +55,21 @@ class AtPollerBase(object):
         else:
             import select as select_mod
             select = select_mod.select
-            
+
         ctx.initialize(poll=poll, select=select)
         self._master = ctx.master
         self._slave = ctx.slave
         self._generator = ctx.poll
-        self.initialize_autotest = lambda:None
+        self.initialize_autotest = lambda: None
 
-###### Using select.select
+# Using select.select
+
 
 class AtSelectPoller(_Select, AtPollerBase):
+
     def initialize_autotest(self):
         AtPollerBase.initialize_autotest(self, wait_type='select')
-    
+
     def poll(self, timeout):
         self.initialize_autotest()
         self._master.set_select_args(rlist=self.read_fds,
@@ -77,22 +84,25 @@ class AtSelectPoller(_Select, AtPollerBase):
             events[fd] = events.get(fd, 0) | IOLoop.WRITE
         for fd in errors:
             events[fd] = events.get(fd, 0) | IOLoop.ERROR
-        return events.items()    
+        return events.items()
 
 
 class AtSelectIOLoop(PollIOLoop):
+
     def initialize(self, **kwargs):
         super(AtSelectIOLoop, self).initialize(impl=AtSelectPoller(), **kwargs)
-    
+
     @staticmethod
     def instance():
         if tornado_version >= (3,):
             PollIOLoop.configure(AtSelectIOLoop)
         return PollIOLoop.instance()
 
-######## Using ZMQ Poller
+# Using ZMQ Poller
+
 
 class AtPoller(Poller, AtPollerBase):
+
     def initialize_autotest(self):
         AtPollerBase.initialize_autotest(self, wait_type='poll')
 
@@ -105,14 +115,17 @@ class AtPoller(Poller, AtPollerBase):
         self._master.set_poll_args(self.sockets, timeout)
         return self._generator.next()
 
+
 class AtPollZMQIOLoop(ZMQIOLoop):
+
     class AtZMQPoller(ZMQPoller):
+
         def __init__(self):
             self._poller = AtPoller()
-    
+
     def initialize(self, **kwargs):
         super(ZMQIOLoop, self).initialize(impl=self.AtZMQPoller(), **kwargs)
-    
+
     @staticmethod
     def instance():
         if tornado_version >= (3,):

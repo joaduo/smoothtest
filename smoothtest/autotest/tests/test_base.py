@@ -27,6 +27,7 @@ def pickable_callback(conn, pb, secs):
 
 
 class Test(unittest.TestCase):
+
     def test_parent_base(self):
         pb = ParebBaseTest()
         # Start pickable callback (listening events)
@@ -47,6 +48,7 @@ class Test(unittest.TestCase):
 
     def test_child_base(self):
         class TR(object):
+
             def test(self):
                 pass
         base = ChildBase()

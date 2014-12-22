@@ -13,6 +13,7 @@ TestException = namedtuple('TestException', 'msg repr traceback')
 
 
 class SmoothTestResult(object):
+
     def __init__(self, unittest_result):
         self._attrs = self.to_pickable_result(unittest_result)
 
@@ -20,7 +21,8 @@ class SmoothTestResult(object):
         attrs = super(SmoothTestResult, self).__getattribute__('_attrs')
         if name in attrs:
             return attrs[name]
-        raise AttributeError('No attribute {name} in {self}'.format(**locals()))
+        raise AttributeError(
+            'No attribute {name} in {self}'.format(**locals()))
 
     def __repr__(self):
         name = self.__class__.__name__
@@ -32,30 +34,30 @@ class SmoothTestResult(object):
     def to_pickable_result(self, result):
         # Dictionary with example data
         accepted_attrs = {
-                '_mirrorOutput': 'False',
-                '_moduleSetUpFailed': 'False',
-                #'_original_stderr': "<open file '<stderr>', mode 'w' at 0x7fe301fd61e0>",
-                #'_original_stdout': "<open file '<stdout>', mode 'w' at 0x7fe301fd6150>",
-                #'_previousTestClass': "<class '__main__.Example'>",
-                #'_stderr_buffer': 'None',
-                #'_stdout_buffer': 'None',
-                '_testRunEntered': 'False',
-                'buffer': 'False',
-                'descriptions': 'True',
-                'dots': 'True',
-                'errors': [('__main__.Example.test_error',
+            '_mirrorOutput': 'False',
+            '_moduleSetUpFailed': 'False',
+            #'_original_stderr': "<open file '<stderr>', mode 'w' at 0x7fe301fd61e0>",
+            #'_original_stdout': "<open file '<stdout>', mode 'w' at 0x7fe301fd6150>",
+            #'_previousTestClass': "<class '__main__.Example'>",
+            #'_stderr_buffer': 'None',
+            #'_stdout_buffer': 'None',
+            '_testRunEntered': 'False',
+            'buffer': 'False',
+            'descriptions': 'True',
+            'dots': 'True',
+            'errors': [('__main__.Example.test_error',
                             'Traceback (most recent call last):\n  File "/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/testing_results.py", line 19, in test_error\n    raise LookupError(\'Purposely uncaught raised error!\')\nLookupError: Purposely uncaught raised error!\n')],
-                'expectedFailures': [],
-                'failfast': 'False',
-                'failures': [('__main__.Example.test_failure',
-                              'Traceback (most recent call last):\n  File "/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/testing_results.py", line 22, in test_failure\n    self.assertTrue(False, \'Forced failed Assert!\')\nAssertionError: Forced failed Assert!\n')],
-                'shouldStop': 'False',
-                'showAll': 'False',
-                'skipped': [],
-                #'stream': '<unittest.runner._WritelnDecorator object at 0x7fe301e5a550>',
-                'testsRun': '3',
-                'unexpectedSuccesses': [],
-                }
+            'expectedFailures': [],
+            'failfast': 'False',
+            'failures': [('__main__.Example.test_failure',
+                          'Traceback (most recent call last):\n  File "/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/testing_results.py", line 22, in test_failure\n    self.assertTrue(False, \'Forced failed Assert!\')\nAssertionError: Forced failed Assert!\n')],
+            'shouldStop': 'False',
+            'showAll': 'False',
+            'skipped': [],
+            #'stream': '<unittest.runner._WritelnDecorator object at 0x7fe301e5a550>',
+            'testsRun': '3',
+            'unexpectedSuccesses': [],
+        }
         new_res = {}
         for name, val in result.__dict__.iteritems():
             if name not in accepted_attrs:
@@ -85,6 +87,7 @@ class SmoothTestResult(object):
 
 
 class TestResults(object):
+
     def __init__(self):
         self._results = []
 
@@ -131,10 +134,11 @@ class TestResults(object):
 
     def __str__(self):
         detail_dict = dict(
-            exceptions = list(tpath for tpath,_ in self.filter_results('exception')),
-            failures = list(self.get_details('failures')),
-            errors = list(self.get_details('errors')),
-            )
+            exceptions=list(
+                tpath for tpath, _ in self.filter_results('exception')),
+            failures=list(self.get_details('failures')),
+            errors=list(self.get_details('errors')),
+        )
         detail_str = ''
         if any(val for val in detail_dict.values()):
             detail_str = 'Details:'
@@ -152,9 +156,9 @@ def smoke_test_module():
     pickle.dumps(results)
     str(results)
     results._append_exception('test_path', 'exn')
-    results.failures = [('bla',2)]
-    results.errors = [('bla',2)]
-    results.total = [('bla',2)]
+    results.failures = [('bla', 2)]
+    results.errors = [('bla', 2)]
+    results.total = [('bla', 2)]
     log.i(str(results))
 
 

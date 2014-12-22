@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
 import glob
@@ -47,19 +48,19 @@ class AutotestMagics(Magics):
         parser = self._test_magic_cmd_parser()
         args = parser.parse_args(shlex.split(line))
         if args.force:
-            #Force full reload
+            # Force full reload
             test_config = self.main.test_config.copy()
             test_config.update(force=True)
             self._send(test_config)
         else:
-            #Simply invoque .test TODO
+            # Simply invoque .test TODO
             self.main.test
 
     @line_magic
     def autotest(self, line):
         args, test_config = self.__common(line)
         if args.update:
-            #Update set values
+            # Update set values
             for k, v in self.main.test_config.iteritems():
                 if not test_config.get(k):
                     test_config[k] = v

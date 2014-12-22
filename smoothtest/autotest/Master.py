@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from .base import ChildBase
 from .Slave import Slave
 from .TestRunner import TestRunner
@@ -56,19 +57,21 @@ def filter_sockets(sockets, exclude):
             if flags & POLLERR:
                 xlist.append(s)
         else:
-            filtered_sockets.append((s,flags))
+            filtered_sockets.append((s, flags))
     return filtered_sockets, (rlist, wlist, xlist)
 
 
 def get_zmq_poll():
-    #avoid depending on zmq (only import if poll not present)
+    # avoid depending on zmq (only import if poll not present)
     from zmq.backend import zmq_poll
     return zmq_poll
 
 
 class Master(ChildBase):
+
     '''
     '''
+
     def __init__(self, parent_conn=None, slave=None):
         self._parent_conn = parent_conn
         self._watcher = SourceWatcher()
@@ -77,10 +80,10 @@ class Master(ChildBase):
         self._m_w_conn = master
         self._w_m_conn = watcher
 
-        #poll inputs
+        # poll inputs
         self._poll_sockets = []
         self._poll_timeout = 0
-        #select inputs
+        # select inputs
         self._select_args = {}
         self._restart_lock = threading.Lock()
         self._io_list = [self.parent_conn, self.slave_conn, self.m_w_conn]
@@ -105,31 +108,31 @@ class Master(ChildBase):
         self._timeout = timeout
 
     def io_loop(self, test_config, poll=None, select=None, block=True):
-        #manager of the subprocesses
+        # manager of the subprocesses
         self._slave.start_subprocess()
 
-        #create callback for re-testing on changes/msgs
+        # create callback for re-testing on changes/msgs
         self.new_test(**test_config)
 
-        #build the block function listening to events
+        # build the block function listening to events
         get_event = self._build_get_event(poll, select)
 
         self.wait_input = True
-        #loop listening events
+        # loop listening events
         while self.wait_input:
             do_yield, yield_obj, rlist = get_event()
             self._dispatch(rlist)
             if do_yield:
                 yield yield_obj
             self.wait_input = self.wait_input and block
-        #We need to kill the child
+        # We need to kill the child
         self._receive_kill()
 
     def new_test(self, test_paths=[], partial_reloads=[], full_reloads=[],
-             partial_decorator=lambda x: x, full_decorator=lambda x: x,
-             full_filter=None,
-             smoke=False, force=False, argv=[]):
-        #create callback for re-testing on changes/msgs
+                 partial_decorator=lambda x: x, full_decorator=lambda x: x,
+                 full_filter=None,
+                 smoke=False, force=False, argv=[]):
+        # create callback for re-testing on changes/msgs
         def test_callback():
             self._slave.test(test_paths, argv, smoke=smoke)
 
@@ -143,15 +146,15 @@ class Master(ChildBase):
         def full_callback(path=None):
             self.log.i('Full reload for: %r. Triggered by %r' %
                        (list(test_paths), path))
-            #to force reloading all modules we directly kill and restart
-            #the process
+            # to force reloading all modules we directly kill and restart
+            # the process
             with self._restart_lock:  # locking is just in case of being bombed
                 self._watcher.unwatch_all()
                 self.restart_subprocess()
                 self._watcher.start_observer()
                 test_callback()
 
-        #save for future dispatching
+        # save for future dispatching
         self.partial_callback = partial_callback
         self.full_callback = full_callback
 
@@ -178,16 +181,16 @@ class Master(ChildBase):
         full_filter = self._build_path_filter(partial_reloads, full_filter)
         for fpath in full_reloads:
             self._watcher.watch_recursive(fpath, full_msg,
-                                         path_filter=full_filter)
+                                          path_filter=full_filter)
 
         if force:
             #_slave's subprocess where tests will be done
             self.restart_subprocess()
 
-        #do first time test (for master)
+        # do first time test (for master)
         partial_callback('First test after setup')
 
-        #Start inotify observer:
+        # Start inotify observer:
         self._watcher.start_observer()
 
     def _build_path_filter(self, partial_reloads, path_filter):
@@ -209,7 +212,7 @@ class Master(ChildBase):
 
     def restart_subprocess(self):
         def post_callback():
-            #post-fork callback to close open fd
+            # post-fork callback to close open fd
             self._watcher.unwatch_all(clear=True)
             self._m_w_conn.close()
             self._w_m_conn.close()
@@ -223,12 +226,12 @@ class Master(ChildBase):
             rlist = [conn().fileno() for conn in rlist]
             return rlist
 
-        #If not set, set the io wait method
+        # If not set, set the io wait method
         select = select_mod.select if not(poll or select) else select
 
         if poll:
             def build_sockets():
-                #in interactive mode we need to listen to stdin
+                # in interactive mode we need to listen to stdin
                 sockets = lists_to_sockets(local_rlist(), [], [])
                 return sockets + self._poll_sockets
 
@@ -239,7 +242,7 @@ class Master(ChildBase):
 
         elif select:
             def build_rlist():
-                #in interactive mode we need to listen to stdin
+                # in interactive mode we need to listen to stdin
                 return local_rlist() + list(self._select_args.get('rlist', []))
 
             def get_event():
@@ -252,8 +255,8 @@ class Master(ChildBase):
                     rlist, wlist, xlist = select(rlist, wlist, xlist, timeout)
                 else:
                     rlist, wlist, xlist = select(rlist, wlist, xlist)
-                #filter internal fds/sockets, don't yield them
-                #and make a separated list
+                # filter internal fds/sockets, don't yield them
+                # and make a separated list
                 yieldrlist = list(set(rlist) - set(lrlist))
                 int_rlist = list(set(rlist) & set(lrlist))
                 yield_obj = (yieldrlist, wlist, xlist)
@@ -261,20 +264,20 @@ class Master(ChildBase):
         return get_event
 
     def _dispatch(self, rlist):
-        #Build a dispatch dictionary
+        # Build a dispatch dictionary
         #{conn_func:dispatch_lambda} dict
         fdict = {self.slave_conn: (lambda: self._recv_slave()),
-             self.m_w_conn: (lambda: self._dispatch_cmds(self._m_w_conn, False)),
-             self.parent_conn: (lambda: self._dispatch_cmds(self._parent_conn)),
-             }
-        #Convert to {fileno:(dispatch_lambda, conn_func)...} dict
+                 self.m_w_conn: (lambda: self._dispatch_cmds(self._m_w_conn, False)),
+                 self.parent_conn: (lambda: self._dispatch_cmds(self._parent_conn)),
+                 }
+        # Convert to {fileno:(dispatch_lambda, conn_func)...} dict
         fnodict = dict((f().fileno(), (lb, f)) for f, lb in fdict.items()
-                        if f())
-        #dispatch events
+                       if f())
+        # dispatch events
         for f in rlist:
             try:
-                #depending on the input, dispatch actions
-                #call lambda callback
+                # depending on the input, dispatch actions
+                # call lambda callback
                 fnodict[f][0]()
             except Exception as e:
                 self.log.e(self.reprex(e))
@@ -283,7 +286,7 @@ class Master(ChildBase):
                            .format(conn=conn_func.func_name, e=e))
                 self.log.e('Blacklisting {conn}. Restart Master to enable it.'
                            .format(conn=conn_func.func_name))
-                #black list in future io
+                # black list in future io
                 self._io_blacklist.add(conn_func)
 
     def _receive_kill(self, *args, **kwargs):

@@ -3,7 +3,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from functools import wraps
 from ..webunittest import unittest
 from smoothtest.settings.solve_settings import solve_settings
@@ -14,19 +15,21 @@ import logging
 
 
 class TestBase(WebdriverUtils):
+
     '''
     TODO:
         * make Unittest method decoration for screenshots work
     '''
     _global_webdriver = None
+
     @staticmethod
     def set_webdriver(webdriver):
         TestBase._global_webdriver = webdriver
-    
+
     @staticmethod
     def _new_webdriver(settings):
-        #TODO: passing a webdriver factory, so we can cycle them
-        #locking and releasing them
+        # TODO: passing a webdriver factory, so we can cycle them
+        # locking and releasing them
         browser = settings.get('webdriver_browser')
         if settings.get('webdriver_pooling'):
             if not TestBase._global_webdriver:
@@ -39,7 +42,8 @@ class TestBase(WebdriverUtils):
     def init_webdriver(self, settings=None, webdriver=None):
         settings = self._settings = settings if settings else solve_settings()
         base_url = settings.get('web_server_url')
-        webdriver = webdriver if webdriver else TestBase._new_webdriver(settings)
+        webdriver = webdriver if webdriver else TestBase._new_webdriver(
+            settings)
         self._setup_webdriver(webdriver, settings)
         self._init_webdriver(base_url, webdriver, settings)
 
@@ -47,7 +51,7 @@ class TestBase(WebdriverUtils):
         if settings.get('webdriver_implicit_wait'):
             webdriver.implicitly_wait(settings.get('webdriver_implicit_wait'))
         if (settings.get('webdriver_window_size')
-            and webdriver.get_window_size() != settings.get('webdriver_window_size')):
+                and webdriver.get_window_size() != settings.get('webdriver_window_size')):
             webdriver.set_window_size(*settings.get('webdriver_window_size'))
         self._set_webdriver_log_level(settings.get('webdriver_log_level'))
 
@@ -58,13 +62,14 @@ class TestBase(WebdriverUtils):
 
     def shutdown_webdriver(self):
         if (not self._settings.get('webdriver_keep_open') and
-            not self._settings.get('webdriver_pooling')):
+                not self._settings.get('webdriver_pooling')):
             self._quit_webdriver()
             # Test if we also should close the virtual display
             stop_display()
 
 
 class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
+
     def __init__(self, *args, **kwargs):
         self.decorate_exc_sshot()
         super(TestCase, self).__init__(*args, **kwargs)
@@ -74,7 +79,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
         settings = solve_settings()
         # Decorate methods for taking screenshots upon exceptions
         if (settings.get('screenshot_level')
-            and settings.get('screenshot_level') <= logging.ERROR):
+                and settings.get('screenshot_level') <= logging.ERROR):
             self._decorate_exc_sshot()
 
     def _exception_screenshot(self, name, exc):
@@ -83,7 +88,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
         return filename
 
     @staticmethod
-    def disable_method(cls, meth, log_func=lambda msg:None):
+    def disable_method(cls, meth, log_func=lambda msg: None):
         if not isinstance(meth, basestring):
             if not hasattr(meth, 'func_name'):
                 meth = meth.im_func
@@ -96,7 +101,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
                 @wraps(func)
                 def no_op(*_,  **__):
                     log_func('Ignoring call to {cls.__name__}.{meth}'
-                              .format(cls=cls, meth=meth))
+                             .format(cls=cls, meth=meth))
                 setattr(cls, meth, no_op)
                 return no_op
 

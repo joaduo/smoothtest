@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from .base import ParentBase
 import sys
 
@@ -14,11 +15,12 @@ def slave_callback(conn, post_callback, child_cls, child_args, child_kwargs):
     if post_callback:
         post_callback()
     child = child_cls(*child_args, **child_kwargs)
-    #wait for io
+    # wait for io
     child.io_loop(conn, stdin=None, stdout=None, stderr=None)
 
 
 class Slave(ParentBase):
+
     def __init__(self, child_cls, child_args=(), child_kwargs={}, timeout=3):
         self._timeout = timeout
         self._child_args = child_args
@@ -82,7 +84,7 @@ def smoke_test_module():
                   pre + 'Example.test_error',
                   pre + 'Example.test_failure',
                   pre + 'NonExistingExample.test',
-  'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
+                  'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
                   ]
     slave = Slave(TestRunner, [], {})
     slave.start_subprocess()

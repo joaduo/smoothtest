@@ -6,7 +6,8 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from ..base import SmoothTestBase
 from collections import namedtuple
 import multiprocessing
@@ -62,15 +63,16 @@ class ChildBase(AutoTestBase):
         return cmd
 
     def cmd(self, cmd, *args, **kwargs):
-        #Make it ready for sending
+        # Make it ready for sending
         return [self._cmd(self._get_cmd_str(cmd), *args, **kwargs)]
 
     def _cmd(self, cmd, *args, **kwargs):
-        #use when queying several commands
+        # use when queying several commands
         return AutotestCmd(cmd, args, kwargs)
 
 
 class TargetFunction(SmoothTestBase):
+
     def __init__(self, callback, parent_conn, child_conn, pre, close_stdin,
                  disable_key_int):
         self.callback = callback
@@ -98,6 +100,7 @@ class TargetFunction(SmoothTestBase):
 
 
 class ParentBase(ChildBase):
+
     def start_subprocess(self, callback, args=(), kwargs={}, pre='',
                          close_stdin=True, disable_key_int=True):
         '''
@@ -109,9 +112,9 @@ class ParentBase(ChildBase):
         :param disable_key_int: disable keyboard interrupt on subprocess
         '''
         parent, child = multiprocessing.Pipe()
-        #Add space if defined
+        # Add space if defined
         pre = pre if not pre else pre + ' '
-        #Windows needs target to be pickable
+        # Windows needs target to be pickable
         target = TargetFunction(callback, parent, child, pre, close_stdin,
                                 disable_key_int)
         self._subprocess = multiprocessing.Process(target=target, args=args,

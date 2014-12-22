@@ -34,8 +34,8 @@ class Logger(object):
         fmt = fmt or self.default_fmt
         hdlr = logging.root.handlers[0]
         fmt = logging.Formatter(fmt=fmt,
-                        datefmt=datefmt
-                        )
+                                datefmt=datefmt
+                                )
         hdlr.setFormatter(fmt)
 
     def set_pre_post(self, pre='', post=''):
@@ -43,30 +43,43 @@ class Logger(object):
 
     def critical(self, msg):
         self.output.critical(str(msg))
+
     def error(self, msg):
         self.output.error(str(msg))
+
     def warning(self, msg):
         self.output.warning(str(msg))
+
     def info(self, msg):
         self.output.info(str(msg))
+
     def debug(self, msg):
         self.output.debug(str(msg))
+
     def verbose(self, msg):
         self.output.debug(str(msg))
+
     def exception(self, msg):
         self.output.exception(str(msg))
+
     def c(self, msg):
         self.critical(msg)
+
     def e(self, msg):
         self.error(msg)
+
     def w(self, msg):
         self.warning(msg)
+
     def i(self, msg):
         self.info(msg)
+
     def d(self, msg):
         self.debug(msg)
+
     def v(self, msg):
         self.verbose(msg)
+
     def printFilePath(self, file_path, line=None, error=False):
         if error:
             out = self.e
@@ -82,6 +95,7 @@ class Logger(object):
             self.output.setLevel(level)
         else:
             self.w('Cannot set logging level')
+
     def __call__(self, msg):
         self.info(msg)
 
@@ -91,7 +105,7 @@ def smoke_test_module():
     logger = Logger('a.logger')
     logger.setLevel(logging.DEBUG)
     logger.set_pre_post(pre='Master ')
-    #logger.set_fmt('')
+    # logger.set_fmt('')
     logger.critical('critical')
     logger.debug('debug')
     logger.error('error')

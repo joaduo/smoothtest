@@ -7,19 +7,22 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import importlib
 import unittest
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from .base import ChildBase
 from smoothtest.TestResults import TestResults, TestException
 from smoothtest.base import TestRunnerBase
 
 
 class TestRunner(ChildBase, TestRunnerBase):
+
     '''
     Responsabilities
         - Import the Test Class
         - Run test over all methods or specific methods
         - Report any errors
     '''
+
     def __init__(self, webdriver=None):
         super(TestRunner, self).__init__()
         self._set_webdriver(webdriver)
@@ -85,17 +88,18 @@ def smoke_test_module():
     tr = TestRunner()
 
     class DummyIpc(object):
+
         def recv(self):
             cmds = [
-                    AutotestCmd('test', (test_paths,), dict(smoke=True)),
-                    ]
+                AutotestCmd('test', (test_paths,), dict(smoke=True)),
+            ]
             self.recv = self.recv2
             return cmds
 
         def recv2(self):
             cmds = [
-                    AutotestCmd(TestRunner._kill_command, (0,), {}),
-                    ]
+                AutotestCmd(TestRunner._kill_command, (0,), {}),
+            ]
             self.recv = lambda: []
             return cmds
 

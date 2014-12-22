@@ -6,7 +6,8 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 import re
 import os
 import logging
@@ -34,9 +35,9 @@ class SmoothTestBase(object):
             offset = -2
             module = '.'.join(test_path[:offset])
             class_ = test_path[offset]
-            method = test_path[offset+1]
+            method = test_path[offset + 1]
             return module, class_, method
-        else: #only module+class
+        else:  # only module+class
             offset = -1
             module = '.'.join(test_path[:offset])
             class_ = test_path[offset]
@@ -49,7 +50,7 @@ class SmoothTestBase(object):
         return pth
 
     def reprex(self, e, print_=True):
-        #TODO: shuoldn't format last exception,but passed one
+        # TODO: shuoldn't format last exception,but passed one
         if print_:
             traceback.print_exc()
         return TestException(str(e), repr(e), traceback.format_exc())
@@ -57,7 +58,7 @@ class SmoothTestBase(object):
 
 def get_module_regex():
     def rpl(str_, local_vars):
-        #replace locals vars in the string
+        # replace locals vars in the string
         return str_.format(**local_vars)
     mod = r'(?:[a-zA-Z_][a-zA-Z_0-9]*)'
     mod_path = rpl(r'^{mod}(?:\.{mod})*$', locals())
@@ -69,7 +70,7 @@ def is_valid_file(path):
     Validate if a passed argument is a existing file (used by argsparse)
     or its a python module namespace path (example.foo.bar.baz)
     '''
-    #TODO: should it always validate module string?
+    # TODO: should it always validate module string?
     abspath = os.path.abspath(path)
     if not (os.path.exists(abspath)
             and os.path.isfile(abspath)
@@ -82,7 +83,7 @@ def is_file_or_dir(path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
     '''
-    #TODO: should it always validate module string?
+    # TODO: should it always validate module string?
     abspath = os.path.abspath(path)
     if not (os.path.exists(abspath)
             and (os.path.isfile(abspath) or os.path.isdir(abspath))
@@ -93,12 +94,13 @@ def is_file_or_dir(path):
 
 
 class CommandBase(SmoothTestBase):
+
     def _add_smoothtest_common_args(self, parser):
         parser.add_argument('--smoothtest-settings', type=is_valid_file,
-            help='Specific smoothtest_settings module path '
-            '(useful if smoothtest_settings module is not in PYTHONPATH).', 
-            default=None, nargs=1)
-        
+                            help='Specific smoothtest_settings module path '
+                            '(useful if smoothtest_settings module is not in PYTHONPATH).',
+                            default=None, nargs=1)
+
     def _process_common_args(self, args):
         # Specific settings
         if args.smoothtest_settings:
@@ -106,6 +108,7 @@ class CommandBase(SmoothTestBase):
 
 
 class TestRunnerBase(object):
+
     def __init_values(self):
         if not hasattr(self, '_already_setup'):
             self._already_setup = {}
@@ -113,7 +116,7 @@ class TestRunnerBase(object):
     def _setup_process(self, test, test_path, argv):
         self.__init_values()
         if (hasattr(test, 'setUpProcess')
-        and test_path not in self._already_setup):
+                and test_path not in self._already_setup):
             test.setUpProcess(argv)
             self._already_setup[test_path] = (test, argv)
 

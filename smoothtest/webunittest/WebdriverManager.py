@@ -19,7 +19,7 @@ def stop_display():
 class WebdriverManager(SmoothTestBase):
     # class' variable to share the display object
     default_display = None
-    
+
     def __init__(self):
         self.__webdrivers = []
 
@@ -52,10 +52,10 @@ class WebdriverManager(SmoothTestBase):
             # There is a display configured
             return
         # We need to setup a new virtual display
-        d = Display(size=get('size',(800,600)), visible=get('visible'))
+        d = Display(size=get('size', (800, 600)), visible=get('visible'))
         d.start()
         WebdriverManager.default_display = d
-        
+
     def stop_display(self):
         '''
         Convenient function to stop the virtual display
@@ -64,17 +64,17 @@ class WebdriverManager(SmoothTestBase):
         display = WebdriverManager.default_display
         if ((not self.global_settings.get('virtual_display_keep_open')
              or not self.global_settings.get('virtual_display_visible'))
-            and display):
+                and display):
             self.log.d('Stopping virtual display %r' % display)
             display.stop()
             WebdriverManager.default_display = None
 
     def _get_full_name(self, browser=None):
-        # Solve name based on first character (easier to specify by the user) 
-        browser = (browser if browser 
-                   else self.global_settings.get('webdriver_browser', 'Firefox'))        
+        # Solve name based on first character (easier to specify by the user)
+        browser = (browser if browser
+                   else self.global_settings.get('webdriver_browser', 'Firefox'))
         # Select based in first letter
-        #TODO: add IE and Opera
+        # TODO: add IE and Opera
         char_browser = dict(f='Firefox',
                             c='Chrome',
                             p='PhantomJS',

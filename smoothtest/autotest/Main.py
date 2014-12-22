@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 import sys
 from .base import ParentBase
 from .Master import Master
@@ -16,6 +17,7 @@ from smoothtest.webunittest.WebdriverManager import WebdriverManager
 
 
 class Main(ParentBase):
+
     def __init__(self, smoke=False):
         self._timeout = 1
         self.smoke = smoke
@@ -42,16 +44,18 @@ class Main(ParentBase):
         iptyhon_msg = ('Could not embed Ipython, falling back to ipdb'
                        ' shell. Exception: %r')
         ipdb_msg = ('Could not embed ipdb, falling back to pdb'
-                       ' shell. Exception: %r')
+                    ' shell. Exception: %r')
         try:
             self._embed_ipython(**kwargs)
         except Exception as e:
             self.log.w(iptyhon_msg % e)
             try:
-                import ipdb; ipdb.set_trace()
+                import ipdb
+                ipdb.set_trace()
             except Exception as e:
                 self.log.e(ipdb_msg % e)
-                import pdb ; pdb.set_trace()
+                import pdb
+                pdb.set_trace()
 
     def _embed_ipython(self, **kwargs):
         from IPython.terminal.ipapp import load_default_config
@@ -67,7 +71,7 @@ class Main(ParentBase):
         kwargs.setdefault('display_banner', False)
         self.ishell = InteractiveShellEmbed.instance(**kwargs)
         load_extension(self.ishell, self)
-        #Stack depth is 3 because we use self.embed first
+        # Stack depth is 3 because we use self.embed first
         self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
 
     @property
@@ -80,13 +84,13 @@ class Main(ParentBase):
         self.test_config = test_config
 
     def new_browser(self, browser=None):
-        #Build the new slave
+        # Build the new slave
         if browser:
             m = dict(f='Firefox',
                      c='Chrome',
                      p='PhantomJS',
                      )
-            browser = m.get(browser.lower()[0],m['f'])
+            browser = m.get(browser.lower()[0], m['f'])
         self._build_slave(force=True, browser=browser)
         self.new_child
 

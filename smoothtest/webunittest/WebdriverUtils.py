@@ -60,16 +60,18 @@ def no_screenshot(method):
 
 
 class WebdriverUtils(object):
+
     '''
     Utilities for making Webdriver more xpath-friendly.
     This class is designed to be framework independent, to be reused by other
     testing frameworks.
-    
+
     #TODO:
         * finish screenshot logging
     '''
 
     class Url(object):
+
         '''A url object that can be compared with other url orbjects
         without regard to the vagaries of encoding, escaping, and ordering
         of parameters in query strings.
@@ -100,12 +102,12 @@ class WebdriverUtils(object):
         # Initialize values
         self._base_url = base_url
         self._wait_timeout = self.settings.get('wait_timeout', 2)
-        
+
     def _decorate_exc_sshot(self, meth_filter=None, inspected=None):
         fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
                                    or n.startswith('test'))
         meth_filter = meth_filter or fltr
-        # Gather all exceptions seen (to avoid repeating screenshots) 
+        # Gather all exceptions seen (to avoid repeating screenshots)
         self._seen_exceptions = set()
         # Lock for avoiding taking screenshots
         self._sshot_lock = Lock()
@@ -125,13 +127,13 @@ class WebdriverUtils(object):
                 # on deeper levels
                 method = self._decorate(name, method, zero_screeshot=True)
                 setattr(self, name, method)
-            elif(name != 'screenshot' 
-                and meth_filter(name, method)):
+            elif(name != 'screenshot'
+                 and meth_filter(name, method)):
                 # We want to decorate this method to capture screenshots
                 self.log.debug('Decorating %r for screenshot' % name)
                 method = self._decorate(name, method)
-                setattr(self, name, method) 
-                
+                setattr(self, name, method)
+
     def _decorate(self, name, method, zero_screeshot=False):
         if not zero_screeshot:
             # Capture sreenshot
@@ -150,8 +152,8 @@ class WebdriverUtils(object):
             # No excs screenshot at any deeper level decorator
             @wraps(method)
             def dec(*args, **kwargs):
-                #block any further exception screenshot, until
-                #we return from this call
+                # block any further exception screenshot, until
+                # we return from this call
                 locked = self._sshot_lock.acquire(False)
                 try:
                     return method(*args, **kwargs)
@@ -188,6 +190,7 @@ class WebdriverUtils(object):
             return str_
 
     _exc_sshot_count = 0
+
     def _exception_screenshot(self, name, exc, exc_dir=None):
         self._exc_sshot_count += 1
         dr = self.get_driver()
@@ -201,16 +204,17 @@ class WebdriverUtils(object):
         return filename
 
     _quick_sshot_count = 0
+
     def _quick_screenshot(self):
         self._quick_sshot_count += 1
         filename = '{count:03d}.quick_screenshot.png'.format(**locals())
         self.log.i('Saving exception screenshot to: %r' % filename)
-        self.get_driver().save_screenshot(filename)        
+        self.get_driver().save_screenshot(filename)
 
     def screenshot(self, *args, **kwargs):
         #self.log.w('WebdriverUtils.screenshot not yet implemented.')
         pass
-    
+
     def assert_screenshot(self, name, valid=None):
         #self.log.w('WebdriverUtils.assert_screenshot not yet implemented.')
         pass
@@ -232,17 +236,17 @@ class WebdriverUtils(object):
         return self.url_equals(build(path_a), build(path_b))
 
     def get_page(self, path, base=None, check_load=False, condition=None):
-        #default value
+        # default value
         base = base if base else self._base_url
         driver = self.get_driver()
         url = self.build_url(path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
             self.log.d('PhantomJS may fail with https if you don\'t pass '
-                       'service_args=[\'--ignore-ssl-errors=true\']' 
+                       'service_args=[\'--ignore-ssl-errors=true\']'
                        ' Trying to fetch {url!r}'.format(url=url))
         self.log.d('Fetching page at {url!r}'.format(url=url))
         driver.get(url)
-        #Errors
+        # Errors
         msg = 'Couldn\'t load page at {url!r}'.format(url=url)
         if check_load and not self.wait_condition(condition):
             raise LookupError(msg)
@@ -261,35 +265,36 @@ class WebdriverUtils(object):
 
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
+
     def wait_condition(self, condition=None, max_wait=None, print_msg=True):
         '''
         Active wait (polling) function, for a specific condition inside a page.
         '''
         condition = condition if condition else self._default_condition
         if isinstance(condition, basestring):
-            #Its a javascript script
+            # Its a javascript script
             def condition_func(driver):
                 return driver.execute_script(condition)
             condtn = condition_func
         else:
             condtn = condition
-        #first start waiting a tenth of the max time
+        # first start waiting a tenth of the max time
         parts = 10
         max_wait = max_wait or self._max_wait
         top = int(parts * max_wait)
-        for i in range(1, top+1):
+        for i in range(1, top + 1):
             loaded = condtn(self.get_driver())
             if loaded:
                 self.log.d('Condition "%s" is True.' % condition)
                 break
             self.log.d('Waiting condition "%s" to be True.' % condition)
-            time.sleep(float(i)/parts)
+            time.sleep(float(i) / parts)
         if not loaded and print_msg:
             msg = ('Page took too long to load. Increase max_wait (secs) class'
                    ' attr. Or override _wait_script method.')
             self.log.d(msg)
         return loaded
-    
+
     def _get_xpath_script(self, xpath, single=True):
         common_func = '''
 function extract_elem(elem){
@@ -335,7 +340,7 @@ return eslist;
             e = dr.execute_script(self._get_xpath_script(xpath, single))
         except WebDriverException as e:
             msg = ('WebDriverException: Could not select xpath {xpath!r} '
-                'for page {dr.current_url!r}\n Error:\n {e}'.format(**locals()))
+                   'for page {dr.current_url!r}\n Error:\n {e}'.format(**locals()))
             raise LookupError(msg)
         return e
 
@@ -368,7 +373,7 @@ return eslist;
     def fill(self, xpath, value):
         self.fill_input(xpath, value)
         self.screenshot('fill', xpath, value)
-        
+
     def wait(self, timeout=None):
         time.sleep(timeout or self._wait_timeout)
 
@@ -389,14 +394,16 @@ return eslist;
 
 def smoke_test_module():
     class WDU(WebdriverUtils):
+
         def __init__(self, base):
             self.log = Logger(self.__class__.__name__)
             self._decorate_exc_sshot()
-            #Test twice
+            # Test twice
             self._decorate_exc_sshot()
-            
+
         def get_driver(self, *args, **kwargs):
             class Driver(object):
+
                 def save_screenshot(self, path):
                     print('Would save to: %r' % path)
             return Driver()
@@ -404,7 +411,7 @@ def smoke_test_module():
         @zero_screenshot
         def extract_xpath(self, xpath, ret='text'):
             self.select_xpath(xpath, ret)
-        
+
         @screenshot
         def _example(self, bar):
             try:
@@ -413,41 +420,39 @@ def smoke_test_module():
                 raise LookupError('With screenshot')
 
         def _example2(self, bar):
-            raise LookupError('Without screenshot')        
-        
+            raise LookupError('Without screenshot')
 
         def _example3(self, bar):
             try:
                 self.select_xpath(bar)
             finally:
-                raise LookupError('Without screenshot')        
+                raise LookupError('Without screenshot')
 
         @no_screenshot
         def example4(self, bar):
             try:
                 self.select_xpath(bar)
             finally:
-                raise LookupError('Without screenshot')        
+                raise LookupError('Without screenshot')
 
-        
-    wdu = WDU('http://www.juju.com/', 
-             #browser='Chrome'
-             )
-    #wdu.get_page('/')
+    wdu = WDU('http://www.juju.com/',
+              # browser='Chrome'
+              )
+    # wdu.get_page('/')
     #import traceback
     for m in [
-            wdu.select_xpath, #select_xpath
-            wdu.extract_xpath, 
-            wdu._example,  #select_xpath + _example
-            wdu._example2, 
-            wdu._example3, #select_xpath
-            wdu.example4, #select_xpath
-              ]:            
+        wdu.select_xpath,  # select_xpath
+        wdu.extract_xpath,
+        wdu._example,  # select_xpath + _example
+        wdu._example2,
+        wdu._example3,  # select_xpath
+        wdu.example4,  # select_xpath
+    ]:
         try:
             m('bar')
         except Exception as e:
             pass
-            #traceback.print_exc()
+            # traceback.print_exc()
 
 if __name__ == "__main__":
     smoke_test_module()

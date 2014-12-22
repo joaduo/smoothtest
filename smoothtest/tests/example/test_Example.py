@@ -10,12 +10,13 @@ import logging
 
 
 class Example(unittest.TestCase):
+
     def test_example(self):
         logging.debug('Running test at %s!' % __file__)
 
     def test_error(self):
         raise LookupError('Purposely uncaught raised error!')
-    
+
     def test_failure(self):
         self.assertTrue(False, 'Forced failed Assert!')
 

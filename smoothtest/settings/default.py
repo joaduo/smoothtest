@@ -6,14 +6,15 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 
+
 class DefaultSettings(object):
     production = False
 
     web_server_url = ''
-    
+
     virtual_display_enable = False
     virtual_display_visible = False
-    virtual_display_size = (800,600)
+    virtual_display_size = (800, 600)
     virtual_display_keep_open = False
 
     webdriver_browser = 'PhantomJS'
@@ -24,6 +25,7 @@ class DefaultSettings(object):
 
     screenshot_level = 0
     screenshot_exceptions_dir = './'
+
 
 def smoke_test_module():
     DefaultSettings()

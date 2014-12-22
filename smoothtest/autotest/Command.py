@@ -5,7 +5,8 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 import os
 from argparse import ArgumentParser
 from .base import AutoTestBase
@@ -16,37 +17,38 @@ from smoothtest.base import CommandBase, is_valid_file, is_file_or_dir
 
 
 class Command(AutoTestBase, CommandBase):
+
     def get_parser(self):
         parser = ArgumentParser(description='Automatically runs (unit) '
                                 'tests upon code changes.')
         parser.add_argument('-t', '--tests', type=is_valid_file,
-            help='Tests\' files or modules path to  to be monitored.'
-            ' Changes on these files trigger a reload of those same modules '
-            'and rerunning the tests they contain.',default=[], nargs='*')
+                            help='Tests\' files or modules path to  to be monitored.'
+                            ' Changes on these files trigger a reload of those same modules '
+                            'and rerunning the tests they contain.', default=[], nargs='*')
         parser.add_argument('-r', '--methods-regex', type=str,
-            help='Specify regex for Methods matching', default='')
+                            help='Specify regex for Methods matching', default='')
         parser.add_argument('-n', '--no-ipython', help='Do not embed ipython'
-            ' interactive shell as UI.', default=False, action='store_true')
+                            ' interactive shell as UI.', default=False, action='store_true')
         parser.add_argument('--smoke', help='Do not run tests. Simply test'
-            ' the whole monitoring system',default=None, action='store_true')
+                            ' the whole monitoring system', default=None, action='store_true')
         parser.add_argument('-F', '--full-reloads', type=is_file_or_dir,
-            help='Files or directories to be monitored. They will trigger '
-            'reloading all files involved and rerunning tests.', default=[], 
-            nargs='+')
+                            help='Files or directories to be monitored. They will trigger '
+                            'reloading all files involved and rerunning tests.', default=[],
+                            nargs='+')
         parser.add_argument('-m', '--fnmatch', type=str, help='Fnmatch '
-            'pattern to filter files in full reloads directories.'
-            ' (default=*.py)',  default='*.py')
+                            'pattern to filter files in full reloads directories.'
+                            ' (default=*.py)',  default='*.py')
         self._add_smoothtest_common_args(parser)
         return parser
 
     def get_extension_parser(self):
         parser = self.get_parser()
         parser.add_argument('-f', '--force', help='force reloading tests '
-            '(also restarting webdriver)', default=False, action='store_true')
+                            '(also restarting webdriver)', default=False, action='store_true')
         parser.add_argument('-u', '--update', help='update test config',
-            default=False, action='store_true')
+                            default=False, action='store_true')
         parser.add_argument('--nosmoke', help='force non-smoke mode for'
-            ' updating', default=None, action='store_true')
+                            ' updating', default=None, action='store_true')
         return parser
 
     def get_test_config(self, args, argv):
@@ -72,11 +74,11 @@ class Command(AutoTestBase, CommandBase):
     def main(self, argv=None):
         curdir = os.path.abspath(os.curdir)
         filedir = os.path.abspath(os.path.dirname(__file__))
-        
-        #Remove the dir of this file if we are not in this directory
+
+        # Remove the dir of this file if we are not in this directory
         if curdir != filedir and filedir in sys.path:
             sys.path.remove(filedir)
-        
+
         args, unkonwn = self.get_parser().parse_known_args(argv)
         self._process_common_args(args)
 

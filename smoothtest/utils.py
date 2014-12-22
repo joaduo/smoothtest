@@ -19,7 +19,7 @@ def is_pickable(obj):
 def smoke_test_module():
     unpickable = lambda x: x
     assert not is_pickable(unpickable)
-    assert is_pickable(1)    
+    assert is_pickable(1)
 
 if __name__ == "__main__":
     smoke_test_module()

@@ -1,5 +1,6 @@
 
-import rel_imp; rel_imp.init()
+import rel_imp
+rel_imp.init()
 from smoothtest.import_unittest import unittest
 from .TestCase import TestCase
 

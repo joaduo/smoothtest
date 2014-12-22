@@ -10,14 +10,16 @@ from smoothtest.Logger import Logger
 import os
 from selenium.common.exceptions import UnexpectedAlertPresentException
 
+
 class TestWebdriverUtils(unittest.TestCase):
+
     def setUp(self):
         self._mngr = WebdriverManager()
         self._mngr.setup_display()
         webdriver = self._mngr.new_webdriver()
         logger = Logger(self.__class__.__name__)
         self.browser = WebdriverUtils('', webdriver, logger, settings={})
-        
+
     def tearDown(self):
         self._mngr.close_webdrivers()
         self._mngr.stop_display()

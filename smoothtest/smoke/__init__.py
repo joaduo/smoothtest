@@ -5,6 +5,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 
+
 def fake_init(class_, instance=True):
     '''
     Fake initialization of a class to avoid calling it's real __init__
@@ -16,6 +17,7 @@ def fake_init(class_, instance=True):
         an instance of the fake class is returned
     '''
     class fake_init(class_):
+
         def __init__(self):
             pass
     if instance:
