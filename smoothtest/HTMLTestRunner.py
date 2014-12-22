@@ -630,7 +630,12 @@ class HTMLTestRunner(Template_mixin):
     """
     """
 
-    def __init__(self, stream=sys.stdout, verbosity=1, title=None, description=None):
+    def __init__(
+            self,
+            stream=sys.stdout,
+            verbosity=1,
+            title=None,
+            description=None):
         self.stream = stream
         self.verbosity = verbosity
         if title is None:
@@ -661,7 +666,7 @@ class HTMLTestRunner(Template_mixin):
         classes = []
         for n, t, o, e in result_list:
             cls = t.__class__
-            if not rmap.has_key(cls):
+            if cls not in rmap:
                 rmap[cls] = []
                 classes.append(cls)
             rmap[cls].append((n, t, o, e))
@@ -767,9 +772,12 @@ class HTMLTestRunner(Template_mixin):
             test_list=''.join(rows),
             count=str(
                 result.success_count + result.failure_count + result.error_count),
-            Pass=str(result.success_count),
-            fail=str(result.failure_count),
-            error=str(result.error_count),
+            Pass=str(
+                result.success_count),
+            fail=str(
+                result.failure_count),
+            error=str(
+                result.error_count),
         )
         return report
 

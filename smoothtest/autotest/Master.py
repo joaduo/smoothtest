@@ -266,10 +266,13 @@ class Master(ChildBase):
     def _dispatch(self, rlist):
         # Build a dispatch dictionary
         #{conn_func:dispatch_lambda} dict
-        fdict = {self.slave_conn: (lambda: self._recv_slave()),
-                 self.m_w_conn: (lambda: self._dispatch_cmds(self._m_w_conn, False)),
-                 self.parent_conn: (lambda: self._dispatch_cmds(self._parent_conn)),
-                 }
+        fdict = {
+            self.slave_conn: (
+                lambda: self._recv_slave()), self.m_w_conn: (
+                lambda: self._dispatch_cmds(
+                    self._m_w_conn, False)), self.parent_conn: (
+                    lambda: self._dispatch_cmds(
+                        self._parent_conn)), }
         # Convert to {fileno:(dispatch_lambda, conn_func)...} dict
         fnodict = dict((f().fileno(), (lb, f)) for f, lb in fdict.items()
                        if f())

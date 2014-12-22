@@ -104,8 +104,8 @@ class WebdriverUtils(object):
         self._wait_timeout = self.settings.get('wait_timeout', 2)
 
     def _decorate_exc_sshot(self, meth_filter=None, inspected=None):
-        fltr = lambda n, method:  (getattr(method, _with_screenshot, False)
-                                   or n.startswith('test'))
+        fltr = lambda n, method: (getattr(method, _with_screenshot, False)
+                                  or n.startswith('test'))
         meth_filter = meth_filter or fltr
         # Gather all exceptions seen (to avoid repeating screenshots)
         self._seen_exceptions = set()
@@ -175,7 +175,7 @@ class WebdriverUtils(object):
         '''
         For example:
           'My Super Company' into 'my_super_company'
-        It will became like a python variable name, although it will accept 
+        It will became like a python variable name, although it will accept
           starting with a number
         2-Will collect alphanumeric characters and ignore the rest
         3-Will join collected groups of alphanumeric characters with "_"
@@ -339,8 +339,10 @@ return eslist;
         try:
             e = dr.execute_script(self._get_xpath_script(xpath, single))
         except WebDriverException as e:
-            msg = ('WebDriverException: Could not select xpath {xpath!r} '
-                   'for page {dr.current_url!r}\n Error:\n {e}'.format(**locals()))
+            msg = (
+                'WebDriverException: Could not select xpath {xpath!r} '
+                'for page {dr.current_url!r}\n Error:\n {e}'.format(
+                    **locals()))
             raise LookupError(msg)
         return e
 

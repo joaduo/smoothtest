@@ -80,12 +80,17 @@ def smoke_test_module():
     sys.stderr = StringIO()
     from .TestRunner import TestRunner
     pre = 'smoothtest.tests.example.test_Example.'
-    test_paths = [pre + 'Example.test_example',
-                  pre + 'Example.test_error',
-                  pre + 'Example.test_failure',
-                  pre + 'NonExistingExample.test',
-                  'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
-                  ]
+    test_paths = [
+        pre +
+        'Example.test_example',
+        pre +
+        'Example.test_error',
+        pre +
+        'Example.test_failure',
+        pre +
+        'NonExistingExample.test',
+        'smoothtest.tests.example.test_ErroringExample.ErroringExample.test_example',
+    ]
     slave = Slave(TestRunner, [], {})
     slave.start_subprocess()
     for i in range(1, len(test_paths) + 1):

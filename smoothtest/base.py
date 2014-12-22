@@ -96,10 +96,13 @@ def is_file_or_dir(path):
 class CommandBase(SmoothTestBase):
 
     def _add_smoothtest_common_args(self, parser):
-        parser.add_argument('--smoothtest-settings', type=is_valid_file,
-                            help='Specific smoothtest_settings module path '
-                            '(useful if smoothtest_settings module is not in PYTHONPATH).',
-                            default=None, nargs=1)
+        parser.add_argument(
+            '--smoothtest-settings',
+            type=is_valid_file,
+            help='Specific smoothtest_settings module path '
+            '(useful if smoothtest_settings module is not in PYTHONPATH).',
+            default=None,
+            nargs=1)
 
     def _process_common_args(self, args):
         # Specific settings

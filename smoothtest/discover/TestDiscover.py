@@ -62,17 +62,18 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
 
     def _gather(self, package):
         iter_mod = self.inspector.iter_modules2
-        for module, attrs in iter_mod(package, self.filter_func, reload_=False):
+        for module, attrs in iter_mod(
+                package, self.filter_func, reload_=False):
             for name, attr in attrs:
                 yield module, name, attr
 
     def test_package(self, package, modules=[], argv=None, one_process=False):
         '''
-        Inspect a package searching for tests inside their modules. Then run 
+        Inspect a package searching for tests inside their modules. Then run
         those tests found.
 
-        Right now modules are imported in order to be inspected. 
-        #TODO: This is not always desirable. 
+        Right now modules are imported in order to be inspected.
+        #TODO: This is not always desirable.
 
         :param package: package to be inspected
         :param modules: optional modules names list to filter in (reject others)
@@ -229,30 +230,63 @@ class DiscoverCommandBase(CommandBase):
         defaults = self._get_args_defaults()
         parser = ArgumentParser(description=self.description,
                                 formatter_class=ArgumentDefaultsHelpFormatter)
-        parser.add_argument('-t', '--tests', type=is_valid_file,
-                            help='Specify the modules to run tests from (path or python'
-                            ' namespace). If specified, no discovery is done.',
-                            default=defaults.get('tests', []), nargs='+')
-        parser.add_argument('-p', '--pattern', type=str,
-                            help='Fnmatch pattern to match test module names, not files.',
-                            default=defaults.get('pattern', 'test*'), nargs=1)
-        parser.add_argument('-P', '--packages', type=str,
-                            help='Specify the packages to discover tests from. (path or python namespace)',
-                            default=defaults.get('packages', []), nargs='+')
-        parser.add_argument('-o', '--one-process',
-                            help='Run all tests inside 1 single process.',
-                            default=defaults.get('one_process', False), action='store_true')
+        parser.add_argument(
+            '-t',
+            '--tests',
+            type=is_valid_file,
+            help='Specify the modules to run tests from (path or python'
+            ' namespace). If specified, no discovery is done.',
+            default=defaults.get(
+                'tests',
+                []),
+            nargs='+')
+        parser.add_argument(
+            '-p',
+            '--pattern',
+            type=str,
+            help='Fnmatch pattern to match test module names, not files.',
+            default=defaults.get(
+                'pattern',
+                'test*'),
+            nargs=1)
+        parser.add_argument(
+            '-P',
+            '--packages',
+            type=str,
+            help='Specify the packages to discover tests from. (path or python namespace)',
+            default=defaults.get(
+                'packages',
+                []),
+            nargs='+')
+        parser.add_argument(
+            '-o',
+            '--one-process',
+            help='Run all tests inside 1 single process.',
+            default=defaults.get(
+                'one_process',
+                False),
+            action='store_true')
         if self.print_missing:
-            parser.add_argument('-i', '--ignore-missing',
-                                help='Ignore missing smoke tests.',
-                                default=defaults.get('ignore_missing', False), action='store_true')
+            parser.add_argument(
+                '-i',
+                '--ignore-missing',
+                help='Ignore missing smoke tests.',
+                default=defaults.get(
+                    'ignore_missing',
+                    False),
+                action='store_true')
         self._add_smoothtest_common_args(parser)
         return parser
 
     def _import(self, path):
         return self.test_discover._import(path)
 
-    def _discover_run(self, packages, argv=None, missing=True, one_process=False):
+    def _discover_run(
+            self,
+            packages,
+            argv=None,
+            missing=True,
+            one_process=False):
         # pydev friendly printing
         def formatPathPrint(path, line=None):
             if not line:
@@ -287,9 +321,10 @@ class DiscoverCommandBase(CommandBase):
         assert self.test_discover, 'Value self.test_discover not set.'
         results = None
         if args.tests:
-            results = self.test_discover.test_modules(args.tests,
-                                                      argv=unknown,
-                                                      one_process=args.one_process)
+            results = self.test_discover.test_modules(
+                args.tests,
+                argv=unknown,
+                one_process=args.one_process)
         elif args.packages:
             results = self._discover_run(args.packages, argv=unknown,
                                          missing=not getattr(

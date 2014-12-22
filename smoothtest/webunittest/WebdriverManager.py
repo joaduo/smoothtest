@@ -71,8 +71,10 @@ class WebdriverManager(SmoothTestBase):
 
     def _get_full_name(self, browser=None):
         # Solve name based on first character (easier to specify by the user)
-        browser = (browser if browser
-                   else self.global_settings.get('webdriver_browser', 'Firefox'))
+        browser = (
+            browser if browser else self.global_settings.get(
+                'webdriver_browser',
+                'Firefox'))
         # Select based in first letter
         # TODO: add IE and Opera
         char_browser = dict(f='Firefox',

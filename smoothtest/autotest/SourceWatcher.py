@@ -92,7 +92,7 @@ class FileAction(FileSystemEventHandler):
             to be removed
         '''
 
-        if event_type == None:
+        if event_type is None:
             # no event_type, then remove callback from all lists
             for event_type, functions in self._event_callbacks.iteritems():
                 if callback in functions:
@@ -219,8 +219,12 @@ class SourceWatcher(AutoTestBase):
         def callback_wrapper(event, action, mnager):
             callback(dir_path)
 
-        action = self._dir_actions.setdefault(dir_path,
-                                              DirAction(dir_path, path_filter, log=self.log))
+        action = self._dir_actions.setdefault(
+            dir_path,
+            DirAction(
+                dir_path,
+                path_filter,
+                log=self.log))
         action.append(callback_wrapper, 'modified')
 
     def dispatch(self, timeout=0.0):
@@ -240,7 +244,7 @@ def smoke_test_module():
     sw.watch_file(path, callback)
     sw.watch_file(__file__, callback)
     sw.watch_recursive(os.path.dirname(__file__), callback)
-    print sw._file_actions,  sw._dir_actions
+    print sw._file_actions, sw._dir_actions
     sw.start_observer()
     sec = 0.05
     time.sleep(sec)

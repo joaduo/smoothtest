@@ -23,7 +23,11 @@ import traceback
 class TestSearcher(AutoTestBase):
     # TODO: rename test_path_regex to test_path
 
-    def _build_solve_paths(self, test_path_regex, *test_path_regexes, **kwargs):
+    def _build_solve_paths(
+            self,
+            test_path_regex,
+            *test_path_regexes,
+            **kwargs):
         def solve_paths(conn):
             specific_class = kwargs.get('specific_class')
             test_class = kwargs.get('test_class', unittest.TestCase)
@@ -49,8 +53,15 @@ class TestSearcher(AutoTestBase):
                                     or not issubclass(cls, test_class)):
                                 continue
                             clsstr = cls.__name__
-                            self.append_methods(test_paths, partial_reloads,
-                                                mod, cls, regex, valid, modstr, clsstr)
+                            self.append_methods(
+                                test_paths,
+                                partial_reloads,
+                                mod,
+                                cls,
+                                regex,
+                                valid,
+                                modstr,
+                                clsstr)
 
                 except Exception:
                     traceback.print_exc()

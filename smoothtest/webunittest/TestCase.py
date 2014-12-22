@@ -50,8 +50,8 @@ class TestBase(WebdriverUtils):
     def _setup_webdriver(self, webdriver, settings):
         if settings.get('webdriver_implicit_wait'):
             webdriver.implicitly_wait(settings.get('webdriver_implicit_wait'))
-        if (settings.get('webdriver_window_size')
-                and webdriver.get_window_size() != settings.get('webdriver_window_size')):
+        if (settings.get('webdriver_window_size') and webdriver.get_window_size(
+        ) != settings.get('webdriver_window_size')):
             webdriver.set_window_size(*settings.get('webdriver_window_size'))
         self._set_webdriver_log_level(settings.get('webdriver_log_level'))
 
@@ -99,7 +99,7 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
             if isinstance(cls.__dict__[meth], ftype):
                 @ftype
                 @wraps(func)
-                def no_op(*_,  **__):
+                def no_op(*_, **__):
                     log_func('Ignoring call to {cls.__name__}.{meth}'
                              .format(cls=cls, meth=meth))
                 setattr(cls, meth, no_op)

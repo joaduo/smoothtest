@@ -12,7 +12,7 @@ import imp
 class SettingsWrapper(object):
 
     '''
-    Provide the .get(name, default=None) method for accessing an object's 
+    Provide the .get(name, default=None) method for accessing an object's
     attributes.
     Useful for configuration.
     '''

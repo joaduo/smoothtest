@@ -20,7 +20,7 @@ class singleton_decorator(object):
         self.instance = None
 
     def __call__(self, *a, **ad):
-        if self.instance == None:
+        if self.instance is None:
             self.instance = self.class_(*a, **ad)
         return self.instance
 
