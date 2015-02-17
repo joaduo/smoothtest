@@ -123,6 +123,9 @@ class ParentBase(ChildBase):
         self._subprocess_conn = parent
         child.close()
 
+    def get_subprocess_pid(self):
+        return self._subprocess.pid()
+
     def restart_subprocess(self, callback, pre='', close_stdin=True):
         '''
         Kill subprocess (forcing) and restart it again.
@@ -233,8 +236,7 @@ class ParentBase(ChildBase):
             return answer
 
         if self._subprocess_conn.poll(timeout):
-            answer = self._subprocess_conn.recv()
-            answer = self._get_answer(answer, self._kill_command)
+            answer = self._get_answer(self.recv(), self._kill_command)
             assert answer, 'No answer for the kill command sent.'
             self.log.d('Received kill answer %s' % self._fmt_answer(answer))
             pid, status = self._subprocess.ident, self._subprocess.exitcode

@@ -111,6 +111,9 @@ class Master(ChildBase):
         self._poll_sockets = sockets
         self._timeout = timeout
 
+    def get_subprocess_pid(self):
+        return self._slave.get_subprocess_pid()
+
     def io_loop(self, test_config, poll=None, select=None, block=True):
         # manager of the subprocesses
         self._slave.start_subprocess()
