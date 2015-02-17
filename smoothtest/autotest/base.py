@@ -95,7 +95,7 @@ class TargetFunction(SmoothTestBase):
             sys.stdin.close()
         if self.disable_key_int:
             self._disable_keyboard_interrupt()
-        self.log.d('Forked process started...')
+        self.log.d('Forked process callback starting...')
         self.callback(self.child_conn, *args, **kwargs)
 
 

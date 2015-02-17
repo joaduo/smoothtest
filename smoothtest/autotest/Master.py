@@ -25,7 +25,9 @@ def lists_to_sockets(rlist, wlist, xlist):
     :param wlist:
     :param xlist:
     '''
-    from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
+    from zmq.sugar.constants import (POLLIN,  # @UnresolvedImport
+                                     POLLOUT,  # @UnresolvedImport
+                                     POLLERR)  # @UnresolvedImport
     sockets = []
     for s in set(rlist + wlist + xlist):
         flags = 0
@@ -45,7 +47,9 @@ def filter_sockets(sockets, exclude):
     :param sockets: sockets returned by poll
     :param exclude: fds/sockets to be excluded
     '''
-    from zmq.sugar.constants import POLLIN, POLLOUT, POLLERR
+    from zmq.sugar.constants import (POLLIN,  # @UnresolvedImport
+                                     POLLOUT,  # @UnresolvedImport
+                                     POLLERR)  # @UnresolvedImport
     rlist, wlist, xlist = [], [], []
     filtered_sockets = []
     for s, flags in sockets:
@@ -63,7 +67,7 @@ def filter_sockets(sockets, exclude):
 
 def get_zmq_poll():
     # avoid depending on zmq (only import if poll not present)
-    from zmq.backend import zmq_poll
+    from zmq.backend import zmq_poll  # @UnresolvedImport
     return zmq_poll
 
 
@@ -184,7 +188,7 @@ class Master(ChildBase):
                                           path_filter=full_filter)
 
         if force:
-            #_slave's subprocess where tests will be done
+            # Slave's subprocess where tests will be done
             self.restart_subprocess()
 
         # do first time test (for master)
@@ -265,7 +269,7 @@ class Master(ChildBase):
 
     def _dispatch(self, rlist):
         # Build a dispatch dictionary
-        #{conn_func:dispatch_lambda} dict
+        # {conn_func:dispatch_lambda} dict
         fdict = {
             self.slave_conn: (
                 lambda: self._recv_slave()), self.m_w_conn: (
@@ -292,7 +296,7 @@ class Master(ChildBase):
                 # black list in future io
                 self._io_blacklist.add(conn_func)
 
-    def _receive_kill(self, *args, **kwargs):
+    def _receive_kill(self, *_args, **_kwargs):
         self._watcher.unwatch_all()
         self._slave.kill(block=True, timeout=3)
 
