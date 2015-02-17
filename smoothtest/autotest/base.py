@@ -124,7 +124,7 @@ class ParentBase(ChildBase):
         child.close()
 
     def get_subprocess_pid(self):
-        return self._subprocess.pid()
+        return self._subprocess.pid
 
     def restart_subprocess(self, callback, pre='', close_stdin=True):
         '''

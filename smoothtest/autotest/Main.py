@@ -6,6 +6,8 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import os
+import signal
 rel_imp.init()
 import sys
 from .base import ParentBase
@@ -24,6 +26,7 @@ class Main(ParentBase):
         self.ishell = None
         self.test_config = {}
         self._slave = None
+        self._child_pids = []
 
     def run(self, test_config, embed_ipython=False, block=False):
         self.log.set_pre_post(pre='Main ')
@@ -35,7 +38,7 @@ class Main(ParentBase):
             self.kill_child
             raise SystemExit(0)
         elif block:
-            self.log.i(self._subprocess_conn.recv())
+            self.log.i(self.recv())
         WebdriverManager().stop_display()
 
     def embed(self, **kwargs):
@@ -128,7 +131,10 @@ class Main(ParentBase):
             while True:
                 poll.next()
 
-        super(Main, self).start_subprocess(callback, pre='Master')
+        self.start_subprocess(callback, pre='Master')
+        slave_pid = self.call_remote(Master.get_subprocess_pid)
+        self._child_pids.append(('slave_pid', slave_pid))
+        self._child_pids.append(('master_pid', self.get_subprocess_pid()))
 
     @property
     def test(self):
@@ -144,15 +150,45 @@ class Main(ParentBase):
 
     @property
     def kill_child(self):
-        return self.kill(block=True, timeout=3)
+        answer = self.kill(block=True, timeout=3)
+        self._force_kill(self._child_pids)
+        self._child_pids = []
+        return answer
+
+    def _force_kill(self, child_pids):
+        '''
+        Fallback mechanism that sends SIGKILL signal if any subprocess is still up.
+        :param child_pids: iterable of subprocesses pids
+        '''
+        def process_running(pid):
+            # Check For the existence of a unix pid.
+            try:
+                # Why not use signal.SIG_DFL ? (= 0)
+                # Seems 0 will kill a process on Windows
+                # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
+                os.kill(pid, 0)
+                return True
+            except OSError:
+                return False
+        for name, pid in child_pids:
+            if process_running(pid):
+                self.log.w('Pid (%r,%r) still up. Sending SIGKILL...' % (name, pid))
+                os.kill(pid, signal.SIGKILL)
 
 
 def smoke_test_module():
-    main = Main(smoke=True)
-    main.run({}, embed_ipython=False, block=False)
     import time
+    def get_main():
+        main = Main(smoke=True)
+        main.run({}, embed_ipython=False, block=False)
+        return main
+    main = get_main()
     time.sleep(0.5)
     main.kill_child
+    # Test forcing kills
+    main = get_main()
+    main._force_kill(main._child_pids)
+    # TODO: build a master and _slave that need to be killed
 
 if __name__ == "__main__":
     smoke_test_module()
