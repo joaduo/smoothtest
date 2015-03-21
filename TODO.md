@@ -4,14 +4,14 @@
 	i. return both to main at fork Main<-Master<-Slave
 	i. keep track of them from main
 		i. on every test? main->master? master->slave?
-		if there is an IO error on PIPEs, then check pids
-	i. kill processes if still running when exiting
+		if there is an IO error on PIPEs, then check pids (NOT READY)
+	i. kill processes if still running when exiting. DONE!
 1. Check Firefox and Xvfb processes
 	i. get pid from Xvfb
 	i. get pid from firefox/etc
 	i. print warning if they keep running on exit
-		i. kill if not keep
-1. Multiplatform -> pickable fork callbacks
+		i. kill if not kept
+1. Multiplatform -> pickable fork callbacks (VERY HARD TO IMPLEMENT?)
 1. Take screenshots
 
 ## TODO tests
