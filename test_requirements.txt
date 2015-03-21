@@ -1,0 +1,12 @@
+#This requirements add tornado and ipython in order to test some optional features
+
+rel_imp
+watchdog
+selenium
+importlib
+pyvirtualdisplay
+ipython
+tornado
+
+#windows
+#read_directory_changes
