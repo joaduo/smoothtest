@@ -91,11 +91,28 @@ class WebdriverUtils(object):
         def __hash__(self):
             return hash(self.parts)
 
-    def __init__(self, base_url, webdriver, logger, settings={}):
+    def __init__(self, base_url, webdriver, logger=None, settings={}):
+        '''
+        If you don't ignore __init__, arguments 
+        :param base_url: like in _init_webdriver method
+        :param webdriver: like in _init_webdriver method
+        :param logger: You can optionally pass a smoothtest.Logger instance (or a child class's instance) 
+        :param settings: like in _init_webdriver method
+        '''
+        
         self._init_webdriver(base_url, webdriver, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
 
     def _init_webdriver(self, base_url, webdriver, settings={}):
+        '''
+        Use this method when you want to ignore __init__ and call this method
+        when when setting up a test (in setUp method on unittest class for example)
+        
+        :param base_url: common base url (e.g: http://example.com, http://example.com/some/common/path) 
+            Used to build URL for all methods accepting the "path" argument. 
+        :param webdriver: selenium's webdriver object (connected to Firefox, Chrome, etc...)  
+        :param settings: smoothtest settings object.
+        '''
         assert webdriver, 'You must provide a webdriver'
         self._driver = webdriver
         self.settings = settings
