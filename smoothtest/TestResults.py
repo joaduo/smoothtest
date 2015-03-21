@@ -147,6 +147,10 @@ class TestResults(object):
                 detail_str += '\n  {name}={val}'.format(name=name, val=val)
         return self._get_counters(**detail_dict) + '\n' + detail_str
 
+    def get_return_value(self):
+        details = lambda detail_type: list(self.get_details(detail_type))
+        return int(bool(details('failures') or details('errors')))
+
 
 def smoke_test_module():
     import pickle

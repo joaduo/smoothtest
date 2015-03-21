@@ -6,6 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import sys
 rel_imp.init()
 from .ModuleAttrIterator import ModuleAttrIterator
 from smoothtest.import_unittest import unittest
@@ -335,6 +336,12 @@ class DiscoverCommandBase(CommandBase):
         # Report status
         if results:
             self.log.i(str(results))
+            #Return non-zero if failure or error is present
+            return results.get_return_value()
+        else:
+            #No results, means no tests ran
+            self.log.e('No tests specified')
+            return 1
 
 
 class DiscoverCommand(DiscoverCommandBase):
@@ -360,7 +367,7 @@ def smoke_test_module():
 
 
 def main(argv=None):
-    DiscoverCommand().main(argv)
+    return DiscoverCommand().main(argv)
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
