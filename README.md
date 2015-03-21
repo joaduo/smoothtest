@@ -1,5 +1,7 @@
 # SmoothTest
 
+[ ![Codeship Status for joaduo/smoothtest](https://codeship.com/projects/cdad4830-b21d-0132-82c3-62decd5a7cb3/status?branch=master)](https://codeship.com/projects/69981)
+
 General purpose Testing Utilities and also special testing tools for Web Applications
 
 ## Better API for accessing Selenium
@@ -23,7 +25,7 @@ class Home(TestCaseBase):
 
 ```
 
-The API is very XPath oriented, so you can test your XPath in Firefox with extension like FirePath.
+The API is very XPath oriented, so you can test your XPath with Firefox's extensions like FirePath.
 
 ## How to use smoothtest
 
@@ -81,4 +83,4 @@ pip uninstall smoothtest
 
 ## Windows and Mac OSX
 
-I tested Smoothtest under Linux, although it was designed to be multiplatform, although I still haven't fully tested outside Linux.
+I tested Smoothtest under Linux, although it was designed to be multiplatform I still haven't fully tested outside Linux.
