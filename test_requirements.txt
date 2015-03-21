@@ -1,11 +1,14 @@
-#This requirements add tornado and ipython in order to test some optional features
+#This requirements add optional packages in order to test some optional features
 
 rel_imp
 watchdog
 selenium
 importlib
 pyvirtualdisplay
+
+#Optional
 ipython
+pyzmq
 tornado
 
 #windows
