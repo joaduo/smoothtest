@@ -6,9 +6,9 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+rel_imp.init()
 import os
 import signal
-rel_imp.init()
 import sys
 from .base import ParentBase
 from .Master import Master
@@ -16,6 +16,7 @@ from smoothtest.settings.solve_settings import solve_settings
 from .Slave import Slave
 from .TestRunner import TestRunner
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
+from smoothtest.IpythonEmbedder import IpythonEmbedder
 
 
 class Main(ParentBase):
@@ -34,48 +35,13 @@ class Main(ParentBase):
         self.create_child()
         if embed_ipython:
             s = self  # nice alias
-            self.embed()
+            from .ipython_extension import load_extension
+            IpythonEmbedder.embed(load_extension)
             self.kill_child
             raise SystemExit(0)
         elif block:
             self.log.i(self.recv())
         WebdriverManager().stop_display()
-
-    def embed(self, **kwargs):
-        """Call this to embed IPython at the current point in your program.
-        """
-        iptyhon_msg = ('Could not embed Ipython, falling back to ipdb'
-                       ' shell. Exception: %r')
-        ipdb_msg = ('Could not embed ipdb, falling back to pdb'
-                    ' shell. Exception: %r')
-        try:
-            self._embed_ipython(**kwargs)
-        except Exception as e:
-            self.log.w(iptyhon_msg % e)
-            try:
-                import ipdb
-                ipdb.set_trace()
-            except Exception as e:
-                self.log.e(ipdb_msg % e)
-                import pdb
-                pdb.set_trace()
-
-    def _embed_ipython(self, **kwargs):
-        from IPython.terminal.ipapp import load_default_config
-        from IPython.terminal.embed import InteractiveShellEmbed
-        from .ipython_extension import load_extension
-        config = kwargs.get('config')
-        header = kwargs.pop('header', u'')
-        compile_flags = kwargs.pop('compile_flags', None)
-        if config is None:
-            config = load_default_config()
-            config.InteractiveShellEmbed = config.TerminalInteractiveShell
-            kwargs['config'] = config
-        kwargs.setdefault('display_banner', False)
-        self.ishell = InteractiveShellEmbed.instance(**kwargs)
-        load_extension(self.ishell, self)
-        # Stack depth is 3 because we use self.embed first
-        self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
 
     @property
     def new_child(self):

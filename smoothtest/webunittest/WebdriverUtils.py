@@ -120,6 +120,9 @@ class WebdriverUtils(object):
         self._base_url = base_url
         self._wait_timeout = self.settings.get('wait_timeout', 2)
 
+    def set_base_url(self, base_url):
+        self._base_url = base_url
+
     def _decorate_exc_sshot(self, meth_filter=None, inspected=None):
         fltr = lambda n, method: (getattr(method, _with_screenshot, False)
                                   or n.startswith('test'))
@@ -351,7 +354,13 @@ return eslist;
         script = script_single if single else script_list
         return common_func + script % locals()
 
-    def select_xpath(self, xpath, single=True):
+    def select_xpath(self, xpath):
+        return self._select_xpath(xpath, single=False)
+
+    def select_xsingle(self, xpath):
+        return self.select_xpath(xpath, single=True)
+
+    def _select_xpath(self, xpath, single):
         dr = self.get_driver()
         try:
             e = dr.execute_script(self._get_xpath_script(xpath, single))
@@ -370,8 +379,14 @@ return eslist;
         except LookupError:
             return False
 
-    def extract_xpath(self, xpath, single=True):
-        result = self.select_xpath(xpath, single)
+    def extract_xpath(self, xpath):
+        return self._extract_xpath(xpath, single=False)
+
+    def extract_xsingle(self, xpath):
+        return self._extract_xpath(xpath, single=True)
+
+    def _extract_xpath(self, xpath, single):
+        result = self._select_xpath(xpath, single)
         if isinstance(result, WebElement):
             result = result.text
         if single:
