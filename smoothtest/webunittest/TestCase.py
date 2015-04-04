@@ -106,7 +106,15 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
                 return no_op
 
     def assert_text(self, xpath, value):
-        extracted = self.extract_xpath(xpath)
+        '''
+        Assert the text of the first node given by xpath is `value`
+        (if xpath retrieves multiple nodes, only first node will be taken 
+        in count)
+
+        :param xpath: xpath to extract text/html from
+        :param value: value of the extracted text
+        '''
+        extracted = self.extract_xsingle(xpath)
         msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
                format(**locals()))
         self.assertEqual(extracted, value, msg)
