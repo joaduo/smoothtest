@@ -373,8 +373,14 @@ return eslist;
         return e
 
     def has_xpath(self, xpath):
+        return self._has_xpath(xpath, single=False)
+
+    def has_xsingle(self, xpath):
+        return self._has_xpath(xpath, single=True)
+
+    def _has_xpath(self, xpath, single):
         try:
-            self.select_xsingle(xpath)
+            self._extract_xpath(xpath, single)
             return True
         except LookupError:
             return False
