@@ -358,7 +358,7 @@ return eslist;
         return self._select_xpath(xpath, single=False)
 
     def select_xsingle(self, xpath):
-        return self.select_xpath(xpath, single=True)
+        return self._select_xpath(xpath, single=True)
 
     def _select_xpath(self, xpath, single):
         dr = self.get_driver()
@@ -374,7 +374,7 @@ return eslist;
 
     def has_xpath(self, xpath):
         try:
-            self.select_xpath(xpath)
+            self.select_xsingle(xpath)
             return True
         except LookupError:
             return False
@@ -396,12 +396,12 @@ return eslist;
         return result
 
     def fill_input(self, xpath, value):
-        e = self.select_xpath(xpath)
+        e = self.select_xsingle(xpath)
         e.clear()
         e.send_keys(value)
 
     def click(self, xpath):
-        e = self.select_xpath(xpath)
+        e = self.select_xsingle(xpath)
         e.click()
 
     def fill(self, xpath, value):
