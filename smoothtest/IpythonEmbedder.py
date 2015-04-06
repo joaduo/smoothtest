@@ -44,7 +44,7 @@ class IpythonEmbedder(object):
         kwargs.setdefault('display_banner', False)
         self.ishell = InteractiveShellEmbed.instance(**kwargs)
         if load_extension:
-            load_extension(self.ishell, self)
+            load_extension(self.ishell)
         # Stack depth is 3 because we use self.embed first
         self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
 

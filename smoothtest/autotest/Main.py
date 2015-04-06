@@ -36,7 +36,9 @@ class Main(ParentBase):
         if embed_ipython:
             s = self  # nice alias
             from .ipython_extension import load_extension
-            IpythonEmbedder.embed(load_extension)
+            def extension(ipython):
+                return load_extension(ipython, self)
+            IpythonEmbedder().embed(extension)
             self.kill_child
             raise SystemExit(0)
         elif block:
