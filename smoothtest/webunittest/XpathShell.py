@@ -23,16 +23,16 @@ class XpathShell(TestBase):
         if not u.scheme:
             u = ('http', u.netloc, u.path, u.params, u.query, u.fragment)
             url = urlparse.urlunparse(u)
-        self.get_driver().get(url)
+        self.get_url(url)
         self.log.i('Current url: %r' % self.current_url())
 
     def run_shell(self, url=None):
         self.init_webdriver()
         self.set_base_url(None)
         #Aliases #TODO: add ipython extension
-        dr = driver = self.get_driver()
         ex  = extract = self.extract_xpath
-        xs = xsingle = self.extract_xsingle
+        exs = xsingle = self.extract_xsingle
+        get = self.get
         if url:
             self.get(url)
         IpythonEmbedder().embed()

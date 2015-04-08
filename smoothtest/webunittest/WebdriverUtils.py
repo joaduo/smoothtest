@@ -59,6 +59,51 @@ def no_screenshot(method):
     return method
 
 
+class Url(object):
+
+    '''A url object that can be compared with other url orbjects
+    without regard to the vagaries of encoding, escaping, and ordering
+    of parameters in query strings.
+    from http://stackoverflow.com/questions/5371992/comparing-two-urls-in-python
+    '''
+
+    def __init__(self, url):
+        if not isinstance(url, Url):
+            self._orig = parts = urlparse.urlparse(url)
+            _query = frozenset(urlparse.parse_qsl(parts.query))
+            _path = urllib.unquote_plus(parts.path).rstrip('/')
+            parts = parts._replace(query=_query, path=_path)
+            self.parts = parts
+        else:
+            self._orig = url._orig
+            self.parts = url.parts
+
+    def get_original(self):
+        '''
+        Get original url.
+        '''
+        return urlparse.urlunparse(self._orig)
+
+    def get_path_and_on(self):
+        '''
+        Get (path + params + query + fragment) as string from original url.
+        '''
+        return urlparse.urlunparse(self._orig._replace(scheme='', netloc=''))
+
+    @staticmethod
+    def are_equal(url_a, url_b):
+        return Url(url_a) == Url(url_b)
+
+    def __eq__(self, other):
+        if not isinstance(other, Url):
+            raise ValueError('Cannot compare %r against %r. Wrong type:%r' %
+                             (self, other, type(other)))
+        return self.parts == other.parts
+
+    def __hash__(self):
+        return hash(self.parts)
+
+
 class WebdriverUtils(object):
 
     '''
@@ -69,29 +114,9 @@ class WebdriverUtils(object):
     #TODO:
         * finish screenshot logging
     '''
+    Url = Url
 
-    class Url(object):
-
-        '''A url object that can be compared with other url orbjects
-        without regard to the vagaries of encoding, escaping, and ordering
-        of parameters in query strings.
-        from http://stackoverflow.com/questions/5371992/comparing-two-urls-in-python
-        '''
-
-        def __init__(self, url):
-            parts = urlparse.urlparse(url)
-            _query = frozenset(urlparse.parse_qsl(parts.query))
-            _path = urllib.unquote_plus(parts.path).rstrip('/')
-            parts = parts._replace(query=_query, path=_path)
-            self.parts = parts
-
-        def __eq__(self, other):
-            return self.parts == other.parts
-
-        def __hash__(self):
-            return hash(self.parts)
-
-    def __init__(self, base_url, webdriver, logger=None, settings={}):
+    def __init__(self, base_url, webdriver, logger=None, settings=None):
         '''
         If you don't ignore __init__, arguments 
         :param base_url: like in _init_webdriver method
@@ -99,7 +124,7 @@ class WebdriverUtils(object):
         :param logger: You can optionally pass a smoothtest.Logger instance (or a child class's instance) 
         :param settings: like in _init_webdriver method
         '''
-        
+        settings = settings or {}
         self._init_webdriver(base_url, webdriver, settings=settings)
         self.log = logger or Logger(self.__class__.__name__)
 
@@ -240,26 +265,27 @@ class WebdriverUtils(object):
         pass
 
     def current_path(self):
-        return urlparse.urlparse(self.current_url()).path
+        '''
+        Get (path + params + query + fragment) as string from current url.
+        '''
+        return self.Url(self.current_url()).get_path_and_on()
 
     def current_url(self):
         return self.get_driver().current_url
 
     def build_url(self, path):
+        assert self._base_url, 'No base_url set for building urls'
         return urlparse.urljoin(self._base_url, path)
 
-    def url_equals(self, url_a, url_b):
-        return self.Url(url_a) == self.Url(url_b)
-
-    def path_equals(self, path_a, path_b):
-        build = self.build_url
-        return self.url_equals(build(path_a), build(path_b))
-
-    def get_page(self, path, base=None, check_load=False, condition=None):
-        # default value
-        base = base if base else self._base_url
+    def get_url(self, url, condition):
+        '''
+        Open a page in the browser controlled by webdriver.
+        
+        :param path: path or url we want to get the page from.
+        :param base: If we provide a base, the final url will be base+bath joined.
+        :param condition: condition script or functor passed to the `wait_condition` method
+        '''
         driver = self.get_driver()
-        url = self.build_url(path)
         if url.startswith('https') and isinstance(driver, webdriver.PhantomJS):
             self.log.d('PhantomJS may fail with https if you don\'t pass '
                        'service_args=[\'--ignore-ssl-errors=true\']'
@@ -268,20 +294,29 @@ class WebdriverUtils(object):
         driver.get(url)
         # Errors
         msg = 'Couldn\'t load page at {url!r}'.format(url=url)
-        if check_load and not self.wait_condition(condition):
+        if condition and not self.wait_condition(condition):
             raise LookupError(msg)
         if self.current_url() == u'about:blank':
             raise LookupError(msg + '. Url is u"about:blank"')
-        if not self.url_equals(url, self.current_url()):
-            self.log.d('Fetching {url!r} and we got {driver.current_url!r}.'
-                       .format(**locals()))
-        return driver
+        if not self.Url.are_equal(url, self.current_url()):
+            self.log.d('For {url!r} we got {current!r}.'
+                       .format(url=url, current=self.current_url()))
 
-    def get_page_once(self, path, base=None, check_load=False, condition=None):
-        driver = self.get_driver()
-        if not self.url_equals(self.build_url(path), driver.current_url):
-            return self.get_page(path, base, check_load, condition)
-        return driver
+    def get_page(self, path, condition=None):
+        '''
+        Open a page in the browser controlled by webdriver.
+        
+        :param path: path or url we want to get the page from.
+        :param base: If we provide a base, the final url will be base+bath joined.
+        :param condition: condition script or functor passed to the `wait_condition` method
+        '''
+        self.get_url(self.build_url(path), condition)
+
+    def get_page_once(self, path, condition=None):
+        if not self.Url.are_equal(self.build_url(path), self.current_url()):
+            self.get_page(path, condition)
+        else:
+            self.log.d('Pare already loaded once: %r' % self.build_url(path))
 
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
@@ -433,66 +468,17 @@ return eslist;
 
 
 def smoke_test_module():
-    class WDU(WebdriverUtils):
+    from smoothtest.webunittest.WebdriverManager import WebdriverManager
+    mngr = WebdriverManager()
+#    mngr.setup_display()
+#    webdriver = mngr.new_webdriver()
+    u = u'https://www.google.cl/?gfe_rd=cr&ei=ix0kVfH8M9PgwASPoIFo&gws_rd=ssl'
+    print WebdriverUtils.Url(u).get_path_and_on()
+#    browser = WebdriverUtils('', webdriver)
+#    browser.get_page('http://www.google.com')
+#    browser.log.i(browser.current_path())
 
-        def __init__(self, base):
-            self.log = Logger(self.__class__.__name__)
-            self._decorate_exc_sshot()
-            # Test twice
-            self._decorate_exc_sshot()
-
-        def get_driver(self, *args, **kwargs):
-            class Driver(object):
-
-                def save_screenshot(self, path):
-                    print('Would save to: %r' % path)
-            return Driver()
-
-        @zero_screenshot
-        def extract_xpath(self, xpath, ret='text'):
-            self.select_xpath(xpath, ret)
-
-        @screenshot
-        def _example(self, bar):
-            try:
-                self.select_xpath(bar)
-            finally:
-                raise LookupError('With screenshot')
-
-        def _example2(self, bar):
-            raise LookupError('Without screenshot')
-
-        def _example3(self, bar):
-            try:
-                self.select_xpath(bar)
-            finally:
-                raise LookupError('Without screenshot')
-
-        @no_screenshot
-        def example4(self, bar):
-            try:
-                self.select_xpath(bar)
-            finally:
-                raise LookupError('Without screenshot')
-
-    wdu = WDU('http://www.juju.com/',
-              # browser='Chrome'
-              )
-    # wdu.get_page('/')
-    #import traceback
-    for m in [
-        wdu.select_xpath,  # select_xpath
-        wdu.extract_xpath,
-        wdu._example,  # select_xpath + _example
-        wdu._example2,
-        wdu._example3,  # select_xpath
-        wdu.example4,  # select_xpath
-    ]:
-        try:
-            m('bar')
-        except Exception as e:
-            pass
-            # traceback.print_exc()
 
 if __name__ == "__main__":
     smoke_test_module()
+

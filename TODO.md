@@ -1,5 +1,8 @@
 ## High priority
-
+1. fix current_path() to get all data
+1. Rename WebdriverUtils to SmoothTestBrowser
+1. Extract xpath from WebdriverUtils.py into XpathWebdriver
+1. Extract also screenshots?
 1. Identify child process
 	i. return both to main at fork Main<-Master<-Slave
 	i. keep track of them from main
