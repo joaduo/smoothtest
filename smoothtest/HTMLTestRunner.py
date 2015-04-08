@@ -93,6 +93,8 @@ Version in 0.7.1
 import datetime
 import StringIO
 import sys
+import rel_imp
+rel_imp.init()
 from .import_unittest import unittest
 from xml.sax import saxutils
 

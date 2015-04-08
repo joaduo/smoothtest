@@ -1,4 +1,7 @@
 ## High priority
+1. check /ticket/15403
+   i. specify screenshot format function
+   i. specify screenshot dir (by command line?)
 1. fix current_path() to get all data
 1. Rename WebdriverUtils to SmoothTestBrowser
 1. Extract xpath from WebdriverUtils.py into XpathWebdriver
