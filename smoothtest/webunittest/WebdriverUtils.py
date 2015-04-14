@@ -277,7 +277,7 @@ class WebdriverUtils(object):
         assert self._base_url, 'No base_url set for building urls'
         return urlparse.urljoin(self._base_url, path)
 
-    def get_url(self, url, condition):
+    def get_url(self, url, condition=None):
         '''
         Open a page in the browser controlled by webdriver.
         
