@@ -1,4 +1,9 @@
 ## High priority
+1. Xpath: 
+	Passing web browser
+	Using scrapy's hxs selector
+	Using scrapy's shell directly
+	Doing selections both, in scrapy and in webdriver
 1. check /ticket/15403
    i. specify screenshot format function
    i. specify screenshot dir (by command line?)
