@@ -6,8 +6,9 @@ Copyright (c) 2015 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
-import urlparse
 rel_imp.init()
+import urlparse
+from smoothtest.webunittest.XpathBrowser import XpathBrowser
 from argparse import ArgumentParser
 from smoothtest.base import CommandBase
 from smoothtest.IpythonEmbedder import IpythonEmbedder

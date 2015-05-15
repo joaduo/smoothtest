@@ -6,7 +6,9 @@ Code Licensed under MIT License. See LICENSE file.
 from smoothtest.base import SmoothTestBase
 from selenium import webdriver
 from pyvirtualdisplay import Display
-
+from smoothtest.singleton_decorator import singleton_decorator
+from contextlib import contextmanager
+from collections import defaultdict
 
 def new_webdriver(browser=None, *args, **kwargs):
     return WebdriverManager().new_webdriver(browser, *args, **kwargs)
@@ -16,12 +18,41 @@ def stop_display():
     return WebdriverManager().stop_display()
 
 
+@singleton_decorator
 class WebdriverManager(SmoothTestBase):
-    # class' variable to share the display object
-    default_display = None
 
     def __init__(self):
-        self.__webdrivers = []
+        self._locked = {}
+        self._released = defaultdict(list)
+        self._virtual_display = None
+
+    @contextmanager
+    def get_webdriver(self, browser=None, keep=True):
+        wdriver = self._get_webdriver(browser)
+        try:
+            yield wdriver
+        except:
+            raise
+        finally:
+            self._release_webdriver(wdriver, keep)
+
+    def _release_webdriver(self, wdriver, keep):
+        assert wdriver in self._locked, 'Webdriver %r was never locked' % wdriver
+        browser = self._locked[wdriver]
+        del self._locked[wdriver]
+        if keep:
+            self._released[browser].append(wdriver)
+        else:
+            wdriver.close()
+    
+    def _get_webdriver(self, browser):
+        browser = self._get_full_name(browser)
+        if self._released.get(browser):
+            wdriver = self._released[browser].pop()
+        else:
+            wdriver = self.new_webdriver(browser)
+        self._locked[wdriver] = browser
+        return wdriver
 
     def new_webdriver(self, browser=None, *args, **kwargs):
         browser = self._get_full_name(browser)
@@ -30,11 +61,11 @@ class WebdriverManager(SmoothTestBase):
         if browser == 'PhantomJS':
             kwargs.update(service_args=['--ignore-ssl-errors=true'])
         driver = getattr(webdriver, browser)(*args, **kwargs)
-        self.__webdrivers.append(driver)
         return driver
 
     def close_webdrivers(self):
-        for w in self.__webdrivers:
+        all_wdrivers = self._locked.keys() + reduce(lambda x,y: y+x, self._released.values())
+        for w in all_wdrivers:
             w.close()
 
     def setup_display(self):
@@ -44,30 +75,30 @@ class WebdriverManager(SmoothTestBase):
         def get(name, default=None):
             return self.global_settings.get('virtual_display_' + name, default)
         if not get('enable'):
-            if WebdriverManager.default_display:
+            if self._virtual_display:
                 self.log.w('There is a display enabled although config says'
                            ' different')
             return
-        elif WebdriverManager.default_display:
+        elif self._virtual_display:
             # There is a display configured
             return
         # We need to setup a new virtual display
         d = Display(size=get('size', (800, 600)), visible=get('visible'))
         d.start()
-        WebdriverManager.default_display = d
+        self._virtual_display = d
 
     def stop_display(self):
         '''
         Convenient function to stop the virtual display
         '''
         # Nice alias
-        display = WebdriverManager.default_display
+        display = self._virtual_display
         if ((not self.global_settings.get('virtual_display_keep_open')
              or not self.global_settings.get('virtual_display_visible'))
                 and display):
             self.log.d('Stopping virtual display %r' % display)
             display.stop()
-            WebdriverManager.default_display = None
+            WebdriverManager._virtual_display = None
 
     def _get_full_name(self, browser=None):
         # Solve name based on first character (easier to specify by the user)
@@ -91,6 +122,9 @@ def smoke_test_module():
     ffox = mngr.new_webdriver('Firefox')
     ffox.quit()
     mngr.stop_display()
+    with mngr.get_webdriver('f') as ffox2:
+        print ffox2
+    mngr.close_webdrivers()
 
 
 if __name__ == "__main__":
