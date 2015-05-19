@@ -89,6 +89,13 @@ class TestCase(unittest.TestCase, TestBase, SmoothTestBase):
 
     @staticmethod
     def disable_method(cls, meth, log_func=lambda msg: None):
+        '''
+        Disable class method. (to disable future calls)
+
+        :param cls:
+        :param meth:
+        :param log_func:
+        '''
         if not isinstance(meth, basestring):
             if not hasattr(meth, 'func_name'):
                 meth = meth.im_func

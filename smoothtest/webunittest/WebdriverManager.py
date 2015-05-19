@@ -34,9 +34,9 @@ class WebdriverManager(SmoothTestBase):
         except:
             raise
         finally:
-            self._release_webdriver(wdriver, keep)
+            self.release_webdriver(wdriver, keep)
 
-    def _release_webdriver(self, wdriver, keep):
+    def release_webdriver(self, wdriver, keep=True):
         assert wdriver in self._locked, 'Webdriver %r was never locked' % wdriver
         browser = self._locked[wdriver]
         del self._locked[wdriver]
@@ -45,16 +45,16 @@ class WebdriverManager(SmoothTestBase):
         else:
             wdriver.close()
     
-    def _get_webdriver(self, browser):
+    def new_webdriver(self, browser):
         browser = self._get_full_name(browser)
         if self._released.get(browser):
             wdriver = self._released[browser].pop()
         else:
-            wdriver = self.new_webdriver(browser)
+            wdriver = self._new_webdriver(browser)
         self._locked[wdriver] = browser
         return wdriver
 
-    def new_webdriver(self, browser=None, *args, **kwargs):
+    def _new_webdriver(self, browser=None, *args, **kwargs):
         browser = self._get_full_name(browser)
         # Setup display before creating the browser
         self.setup_display()
@@ -64,9 +64,12 @@ class WebdriverManager(SmoothTestBase):
         return driver
 
     def close_webdrivers(self):
-        all_wdrivers = self._locked.keys() + reduce(lambda x,y: y+x, self._released.values())
+        all_wdrivers = self._locked.keys() + reduce(lambda x,y: y+x, self._released.values(), [])
         for w in all_wdrivers:
-            w.close()
+            try:
+                w.close()
+            except Exception as e:
+                self.log.w('Ignoring' % e)
 
     def setup_display(self):
         '''
