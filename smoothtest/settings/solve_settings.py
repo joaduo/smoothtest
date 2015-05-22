@@ -56,7 +56,9 @@ def solve_settings():
             from smoothtest_settings import Settings
         except ImportError:
             from smoothtest.settings.default import DefaultSettings as Settings
-        return SettingsWrapper(Settings())
+        global global_settings
+        global_settings = SettingsWrapper(Settings())
+        return global_settings
 
 
 def smoke_test_module():

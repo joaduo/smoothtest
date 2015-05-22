@@ -69,7 +69,7 @@ class WebdriverManager(SmoothTestBase):
         assert level, 'No process level set'
         # If its the right config level, then start the webdriver
         config_level = self.global_settings.get('webdriver_browser_life')
-        if config_level != level:
+        if config_level > level:
             return
         browser = self.get_browser_name()
         # Create webdriver if needed
@@ -216,12 +216,11 @@ class WebdriverLevelManager(object):
 
 def smoke_test_module():
     mngr = WebdriverManager()
-    ffox = mngr.lock_driver('Firefox')
-    ffox.quit()
+    lvl = mngr.enter_level(level=5)
+    ffox = lvl.acquire_driver()
+    lvl.leave_level()
     mngr.stop_display()
-    with mngr.get_webdriver('f') as ffox2:
-        print ffox2
-    mngr.close_webdrivers()
+    mngr.quit_all_webdrivers()
 
 
 if __name__ == "__main__":

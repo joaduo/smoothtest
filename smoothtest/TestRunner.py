@@ -49,7 +49,7 @@ def TestRunnerCommand(object):
 
 
 def main(argv=None):
-    
+    pass
 
 ##############################################################################
 # Executing this module from the command line

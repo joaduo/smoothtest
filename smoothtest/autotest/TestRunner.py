@@ -8,9 +8,9 @@ Code Licensed under MIT License. See LICENSE file.
 import importlib
 import unittest
 import rel_imp
+rel_imp.init()
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.settings.default import TEST_RUNNER_LIFE, TEST_ROUND_LIFE
-rel_imp.init()
 from .base import ChildBase
 from smoothtest.TestResults import TestResults, TestException
 from smoothtest.base import TestRunnerBase

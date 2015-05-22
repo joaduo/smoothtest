@@ -6,7 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
-from smoothtest.settings.default import PROCESS_LIFE
+from smoothtest.settings.default import PROCESS_LIFE, INMORTAL_LIFE
 rel_imp.init()
 import os
 import signal
@@ -215,13 +215,15 @@ class Main(ParentBase):
 
 def smoke_test_module():
     import time
+    from smoothtest.settings.solve_settings import solve_settings
+    solve_settings().set('webdriver_browser_life', INMORTAL_LIFE)
     def get_main():
-        main = Main(smoke=True)
+        main = Main()
         main.run({}, embed_ipython=False, block=False)
         return main
     main = get_main()
     time.sleep(0.5)
-    main.kill_child
+    main.kill_child()
     # Test forcing kills
     main = get_main()
     main._force_kill(main._child_pids)
