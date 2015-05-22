@@ -12,10 +12,13 @@ from functools import wraps
 
 
 def lock_driver(browser=None, *args, **kwargs):
+    #TODO: remove the usage of this function
+    raise NotImplementedError('FIXME!')
     return WebdriverManager().lock_driver(browser, *args, **kwargs)
 
 
 def stop_display():
+    #TODO: remove the usage of this function
     return WebdriverManager().stop_display()
 
 
