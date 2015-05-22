@@ -46,6 +46,8 @@ class WebdriverManager(SmoothTestBase):
             wdriver.close()
     
     def new_webdriver(self, browser):
+        if not self.global_settings.get('webdriver_pooling'):
+            self.close_webdrivers()
         browser = self._get_full_name(browser)
         if self._released.get(browser):
             wdriver = self._released[browser].pop()
@@ -75,6 +77,8 @@ class WebdriverManager(SmoothTestBase):
                 w.close()
             except Exception as e:
                 self.log.w('Ignoring %r:%s' % (e,e))
+        self._locked.clear()
+        self._released.clear()
 
     def setup_display(self):
         '''

@@ -84,6 +84,9 @@ class Main(ParentBase):
                 mngr = WebdriverManager()
                 mngr.close_webdrivers()
                 wd = mngr.new_webdriver(browser)
+                # We release the webdriver since we are not going use it here
+                # we simply want to create the inmortal driver
+                mngr.release_webdriver(wd, keep=True)
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave
