@@ -7,8 +7,8 @@ from smoothtest.base import SmoothTestBase
 from selenium import webdriver
 from pyvirtualdisplay import Display
 from smoothtest.singleton_decorator import singleton_decorator
-from contextlib import contextmanager
-from collections import defaultdict
+from threading import RLock
+from functools import wraps
 
 
 def lock_driver(browser=None, *args, **kwargs):
@@ -19,10 +19,21 @@ def stop_display():
     return WebdriverManager().stop_display()
 
 
-#TODO:locks
+def synchronized(lock):
+    """ Synchronization decorator. (for several methods with same lock, use
+    re-entrant lock)
+    """
+    def wrap_method(method):
+        @wraps(method)
+        def newFunction(*args, **kw):
+            with lock:
+                return method(*args, **kw)
+        return newFunction
+    return wrap_method
 
 @singleton_decorator
 class WebdriverManager(SmoothTestBase):
+    _methods_lock = RLock()
 
     def __init__(self):
         self._locked = set()
@@ -31,6 +42,7 @@ class WebdriverManager(SmoothTestBase):
         self._virtual_display = None
         self._level = None
     
+    @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
         if not wdriver:
             return
@@ -64,16 +76,18 @@ class WebdriverManager(SmoothTestBase):
     def get_browser_name(self):
         return self._get_full_name(self.global_settings.get('webdriver_browser'))
 
+    @synchronized(_methods_lock)
     def init_level(self, level):
         # Set level and check consistency
         assert level, 'No process level set'
-        # If its the right config level, then start the webdriver
-        config_level = self.global_settings.get('webdriver_browser_life')
-        if config_level > level:
-            return
-        browser = self.get_browser_name()
-        # Create webdriver if needed
-        if not self._get_released_set():
+        # Get rid of non-responding browsers
+        self.quit_all_failed_webdrivers()
+        # Get the set of released webdrivers for the selected browser
+        released = self._get_released_set()
+        # If no webdriver available, then create a new one 
+        if not released:
+            # Create webdriver if needed
+            browser = self.get_browser_name()
             wdriver = self._new_webdriver(browser)
             self._wdriver_pool[wdriver] = browser, level
             self._released.add(wdriver)
@@ -85,6 +99,7 @@ class WebdriverManager(SmoothTestBase):
                            if brws == browser])
         return (self._released & browser_set)
 
+    @synchronized(_methods_lock)
     def leave_level(self, level):
         def common(wdriver, container):
             _, blevel = self._wdriver_pool[wdriver]
@@ -101,6 +116,7 @@ class WebdriverManager(SmoothTestBase):
         for wdriver in self._locked.copy():
             common(wdriver, self._locked)
 
+    @synchronized(_methods_lock)
     def acquire_driver(self, level):
         self.init_level(level)
         wdriver = self._get_released_set().pop()
@@ -123,6 +139,7 @@ class WebdriverManager(SmoothTestBase):
             driver = getattr(webdriver, browser)(*args, **kwargs)
         return driver
 
+    @synchronized(_methods_lock)
     def quit_all_webdrivers(self):
         for wdriver in self._wdriver_pool:
             self._quit_webdriver(wdriver)
@@ -130,6 +147,7 @@ class WebdriverManager(SmoothTestBase):
         self._locked.clear()
         self._released.clear()
 
+    @synchronized(_methods_lock)
     def quit_all_failed_webdrivers(self):
         found_one = False
         remove = lambda s,e: e in s and s.remove(e)
@@ -141,6 +159,7 @@ class WebdriverManager(SmoothTestBase):
                 found_one = True
         return found_one
 
+    @synchronized(_methods_lock)
     def setup_display(self):
         '''
         Create virtual display if set by configuration
@@ -160,6 +179,7 @@ class WebdriverManager(SmoothTestBase):
         d.start()
         self._virtual_display = d
 
+    @synchronized(_methods_lock)
     def stop_display(self):
         '''
         Convenient function to stop the virtual display
@@ -189,6 +209,7 @@ class WebdriverManager(SmoothTestBase):
         assert char in char_browser, 'Could not find browser %r' % browser
         return char_browser.get(char)
     
+    @synchronized(_methods_lock)
     def enter_level(self, level):
         return WebdriverLevelManager(self, level)
 
