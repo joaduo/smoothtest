@@ -71,6 +71,7 @@ class WebdriverManager(SmoothTestBase):
         except Exception as e:
             self.log.e('Quitting webdriver %r due to exception %r:%s' %
                        (wdriver, e, e))
+            self._quit_webdriver(wdriver)
             return True
 
     def _quit_webdriver(self, wdriver):
@@ -89,7 +90,7 @@ class WebdriverManager(SmoothTestBase):
         # Get rid of non-responding browsers
         self.quit_all_failed_webdrivers()
         # Get the set of released webdrivers for the selected browser
-        released = self._get_released_set()
+        released = self.get_available_set()
         # If no webdriver available, then create a new one 
         if not released:
             # Create webdriver if needed
@@ -98,7 +99,12 @@ class WebdriverManager(SmoothTestBase):
             self._wdriver_pool[wdriver] = browser, level
             self._released.add(wdriver)
 
-    def _get_released_set(self):
+    @synchronized(_methods_lock)
+    def get_available_set(self):
+        '''
+        Return the set of avialable webdrivers for the current Browser selected
+        (in global configuration)
+        '''
         browser = self.get_browser_name()
         browser_set = set([wdriver
                            for wdriver,(brws,_) in self._wdriver_pool.iteritems()
@@ -125,7 +131,7 @@ class WebdriverManager(SmoothTestBase):
     @synchronized(_methods_lock)
     def acquire_driver(self, level):
         self.init_level(level)
-        wdriver = self._get_released_set().pop()
+        wdriver = self.get_available_set().pop()
         # Keep track of acquired webdrivers in case we need to close them
         self._locked.add(wdriver)
         self._released.remove(wdriver)
@@ -252,8 +258,16 @@ class WebdriverLevelManager(object):
         self.parent.init_level(self.level)
 
     def acquire_driver(self):
+        assert not self.webdriver, 'Webdriver already acquired'
         self.webdriver = self.parent.acquire_driver(self.level)
         return self.webdriver
+
+    def get_xpathbrowser(self, base_url=None, logger_name=''):
+        from smoothtest.Logger import Logger
+        from .XpathBrowser import XpathBrowser
+        # Initialize the XpathBrowser class
+        return XpathBrowser(base_url, self.acquire_driver(), 
+                            Logger(logger_name), settings={})
 
     def leave_level(self):
         self.release_driver()

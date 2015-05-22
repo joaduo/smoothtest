@@ -8,8 +8,6 @@ Code Licensed under MIT License. See LICENSE file.
 import unittest
 import rel_imp; rel_imp.init()
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
-from smoothtest.Logger import Logger
-from smoothtest.webunittest.XpathBrowser import XpathBrowser
 from smoothtest.settings.default import SINGLE_TEST_LIFE
 import os
 
@@ -19,12 +17,17 @@ class TestXpathBrowser(unittest.TestCase):
         # We need to enter "single test level" of life for each test
         # It will initialize the webdriver if no webdriver is present from upper levels
         self.__level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
-        # Once we make sure there is a webdriver available, we acquire it
-        # and block usage from other possible users
-        webdriver = self.__level_mngr.acquire_driver()
-        # Initialize the XpathBrowser class
-        logger = Logger(__name__)
-        self.browser = XpathBrowser('', webdriver, logger, settings={})
+        # Get Xpath browser
+        self.browser = self.__level_mngr.get_xpathbrowser(logger_name=__name__)
+        # Line above is equivalent to doing:
+        #    from smoothtest.Logger import Logger
+        #    from smoothtest.webunittest.XpathBrowser import XpathBrowser
+        #    # Once we make sure there is a webdriver available, we acquire it
+        #    # and block usage from other possible users
+        #    webdriver = self.__level_mngr.acquire_driver()
+        #    # Initialize the XpathBrowser class
+        #    logger = Logger(__name__)
+        #    self.browser = XpathBrowser('', webdriver, logger, settings={})
 
     def tearDown(self):
         # Make sure we quit those webdrivers created in this specific level of life
