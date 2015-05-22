@@ -20,17 +20,41 @@ from smoothtest.IpythonEmbedder import IpythonEmbedder
 
 
 class Main(ParentBase):
+    '''
+    This class contains the "main loop" logic of the autotest command
+    I will create 2 forked subprocess as:
+        Main Process (this one)
+          Master Subprocess (Child)
+            TestRunner Subprocess (Grand Child)
+
+    Roles are as:
+        Main: where the CLI loop is done, sending commands to Master.
+        Master: where file watching happens; events from Main and TestRunner are integrated
+            decides whether to trigger tests, kill TestRunner and recreate it.
+        TestRunner: where tests loaded and are ran. Results are sent back to Master.
+    '''
 
     def __init__(self):
+        '''
+        Initialize attributes
+        '''
         self._timeout = 1
-        self.ishell = None
-        self.test_config = {}
-        self._slave = None
-        self._child_pids = []
-        self._wdriver_mngr = WebdriverManager()
-        self._level_mngr = None
+        self._ishell = None   # Ipython Shell instance
+        self.test_config = {} # Configuration parameters sent for each test round
+        self._slave = None    # Slave instance (configures how tests are ran)
+        self._child_pids = [] # Store pids of children, in case we need to kill them
+        self._wdriver_mngr = WebdriverManager() # common WebdriverManager instance
+        self._level_mngr = None # WebdriverLevelManager for each time we enter/leave a "webdriver life level" 
 
     def run(self, test_config, embed_ipython=False, block=False):
+        '''
+        Runs the main CLI loop.
+        If ipython is not present it will fallback to gdb as CLI.
+
+        :param test_config: initial configuration parameters sent for each test round
+        :param embed_ipython: if True, it will embed a interactive shell. (if False no CLI is done)
+        :param block: block waiting for events (in case no CLI was enabled) In case we want to do some automation.
+        '''
         self.log.set_pre_post(pre='Autotest CLI')
         self.test_config = test_config
         self.create_child()
@@ -41,27 +65,37 @@ class Main(ParentBase):
             self._run_ipython(extension)
             self.kill_child()
             self.end_main()
+            self._wdriver_mngr.stop_display()
             raise SystemExit(0)
         elif block:
             self.log.i(self.recv())
-        self._wdriver_mngr.stop_display()
 
     def _run_ipython(self, extension):
-        test_config = self.test_config
-        IpythonEmbedder().embed(extension)
+        # Run embedded Ipython Shell
+        self._ishell = IpythonEmbedder().embed(extension)
 
     def reset(self):
+        '''
+        Reset as if we were from a fresh start.
+        '''
         self.end_main()
-        self._wdriver_mngr.quit_all_webdrivers()
+        self._wdriver_mngr.quit_all_failed_webdrivers()
         self.kill_child()
         self.create_child()
 
     def send_test(self, **test_config):
+        '''
+        Send tests parameters to the Master process. (which in turn will send to TestRunner)
+        '''
         if self._healthy_webdriver():
             self.send_recv('new_test', **test_config)
             self.test_config = test_config
 
     def new_browser(self, browser=None):
+        '''
+        Create or reuse a specific web browser in the tests.
+        :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
+        '''
         # Build the new slave
         if browser:
             m = dict(f='Firefox',
@@ -75,6 +109,7 @@ class Main(ParentBase):
         self.create_child()
 
     def _build_slave(self, force=False):
+        # Build the Slave instance (used to control how tests are ran)
         if (not self._slave or force):
             child_kwargs = {}
             # Release no longer used webdriver
@@ -88,18 +123,23 @@ class Main(ParentBase):
         return self._slave
 
     def _healthy_webdriver(self):
+        # Check if used webdrivers are in healthy status
         if self._wdriver_mngr.quit_all_failed_webdrivers():
             self.log.w('Webdriver failed. Restarting subprocesses...')
+            # Restart browser if needed
             self.new_browser()
             return False
         return True
 
     def create_child(self):
+        '''
+        Create Master role subprocess
+        '''
         slave = self._build_slave()
 
         def callback(conn):
-            if self.ishell:
-                self.ishell.exit_now = True
+            if self._ishell:
+                self._ishell.exit_now = True
             sys.stdin.close()
             master = Master(conn, slave)
             poll = master.io_loop(self.test_config)
@@ -112,6 +152,10 @@ class Main(ParentBase):
         self._child_pids.append(('master_pid', self.get_subprocess_pid()))
 
     def test(self):
+        '''
+        Send light testing command.
+        Means testing without recreating TestRunner subprocess
+        '''
         if self._healthy_webdriver():
             cmd = 'partial_callback'
             ans = self.send_recv(cmd)
@@ -119,11 +163,21 @@ class Main(ParentBase):
             return ans
 
     def send(self, cmd, *args, **kwargs):
+        '''
+        Send arbitrary commands to the Master subprocess
+        :param cmd: method name of Master class
+        :param args: variable args matching the signature of the remote method
+        :param kwargs: variable keyword args matching the signature of the remote method
+        '''
         while self.poll():
             self.log.i('Remaining in buffer: %r' % self.recv())
         return super(Main, self).send(cmd, *args, **kwargs)
 
     def kill_child(self):
+        '''
+        Send a kill command to the Master subprocess.
+        If unable to gently die, we force killing Master subprocess.
+        '''
         answer = self.kill(block=True, timeout=3)
         self._force_kill(self._child_pids)
         self._slave = None
@@ -151,6 +205,9 @@ class Main(ParentBase):
                 os.kill(pid, signal.SIGKILL)
 
     def end_main(self):
+        '''
+        Function we call when leaving the main loop.
+        '''
         if self._level_mngr:
             self._level_mngr.leave_level()
             self._level_mngr = None

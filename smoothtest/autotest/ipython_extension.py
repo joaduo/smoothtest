@@ -105,6 +105,10 @@ class AutotestMagics(Magics):
     def reset(self, line):
         self.main.reset()
 
+    @line_magic
+    def test_config(self, line):
+        return self.main.test_config
+
 
 def load_extension(ipython, main):
     AutotestMagics.main = main
