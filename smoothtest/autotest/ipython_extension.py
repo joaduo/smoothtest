@@ -90,16 +90,20 @@ class AutotestMagics(Magics):
         self.main.new_browser(browser)
 
     @line_magic
-    def firefox(self):
+    def firefox(self, line):
         self._new_browser('Firefox')
 
     @line_magic
-    def chrome(self):
+    def chrome(self, line):
         self._new_browser('Chrome')
 
     @line_magic
-    def phantomjs(self):
+    def phantomjs(self, line):
         self._new_browser('PhantomJS')
+
+    @line_magic
+    def reset(self, line):
+        self.main.reset()
 
 
 def load_extension(ipython, main):

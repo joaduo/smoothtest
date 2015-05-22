@@ -51,6 +51,8 @@ class Main(ParentBase):
         IpythonEmbedder().embed(extension)
 
     def reset(self):
+        self.end_main()
+        self._wdriver_mngr.quit_all_webdrivers()
         self.kill_child()
         self.create_child()
 
@@ -69,7 +71,8 @@ class Main(ParentBase):
             browser = m.get(browser.lower()[0], m['f'])
             self.global_settings.set('webdriver_browser', browser)
         self._build_slave(force=True)
-        self.reset()
+        self.kill_child()
+        self.create_child()
 
     def _build_slave(self, force=False):
         if (not self._slave or force):
@@ -123,6 +126,7 @@ class Main(ParentBase):
     def kill_child(self):
         answer = self.kill(block=True, timeout=3)
         self._force_kill(self._child_pids)
+        self._slave = None
         self._child_pids = []
         return answer
 
@@ -149,6 +153,7 @@ class Main(ParentBase):
     def end_main(self):
         if self._level_mngr:
             self._level_mngr.leave_level()
+            self._level_mngr = None
 
 
 def smoke_test_module():
