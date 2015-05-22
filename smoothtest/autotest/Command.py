@@ -8,7 +8,7 @@ Code Licensed under MIT License. See LICENSE file.
 import rel_imp
 rel_imp.init()
 import os
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from .base import AutoTestBase
 from .Main import Main
 from .TestSearcher import TestSearcher
@@ -18,9 +18,37 @@ from smoothtest.base import CommandBase, is_valid_file, is_file_or_dir
 
 class Command(AutoTestBase, CommandBase):
 
+    def get_epilog(self, cmd_name='autotest'):
+        return '''
+== Autotest Guide
+
+For an detailed introduction in the usage of the autotest command, plase visit:
+https://github.com/joaduo/smoothtest/blob/master/smoothtest/autotest/AutotestGuide.md
+
+Or the bundled file smoothtest/autotest/AutotestGuide.md with this installation
+
+== Smoothtest configuration
+
+For the options that smoothtest accepts you can consult the file at:
+https://github.com/joaduo/smoothtest/blob/master/smoothtest/settings/default.py
+
+Or file smoothtest/settings/default.py bundled in this installation
+
+== Example commmands
+
+{cmd_name} # starts autotest CLI
+
+{cmd_name} -t <path to test_file.py> # autotest CLI with that test selected
+{cmd_name} -t <python.like.module.path.to.test> # same as above but using dot paths
+
+
+        '''.format(**locals())
+
     def get_parser(self):
         parser = ArgumentParser(description='Automatically runs (unit) '
-                                'tests upon code changes.')
+                                'tests upon code/file changes.',
+                                formatter_class=RawDescriptionHelpFormatter,
+                                epilog=self.get_epilog())
         parser.add_argument(
             '-t',
             '--tests',
@@ -115,7 +143,7 @@ class Command(AutoTestBase, CommandBase):
         self._process_common_args(args)
 
         # Run autotest Main loop (ipython UI + subprocesses)
-        main = Main(smoke=args.smoke)
+        main = Main()
         test_config = self.get_test_config(args, unkonwn)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 

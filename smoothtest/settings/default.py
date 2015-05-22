@@ -23,6 +23,11 @@ class DefaultSettings(object):
     webdriver_inmortal_pooling = False
     webdriver_keep_open = False
 
+    # Browsers profiles
+    # Eg: '/home/<user>/.mozilla/firefox/4iyhtofy.webdriver_autotest' on linux
+    # or: 'C:/Users/<user>/AppData/Roaming/Mozilla/Firefox/Profiles/c1r3g2wi.default' on windows
+    webdriver_firefox_profile = None
+
     screenshot_level = 0
     screenshot_exceptions_dir = './'
 

@@ -21,16 +21,15 @@ from smoothtest.IpythonEmbedder import IpythonEmbedder
 
 class Main(ParentBase):
 
-    def __init__(self, smoke=False):
+    def __init__(self):
         self._timeout = 1
-        self.smoke = smoke
         self.ishell = None
         self.test_config = {}
         self._slave = None
         self._child_pids = []
 
     def run(self, test_config, embed_ipython=False, block=False):
-        self.log.set_pre_post(pre='Main ')
+        self.log.set_pre_post(pre='Autotest CLI')
         self.test_config = test_config
         self.create_child()
         if embed_ipython:
@@ -81,8 +80,10 @@ class Main(ParentBase):
         if (not self._slave or force):
             settings = solve_settings()
             child_kwargs = {}
-            if settings.get('webdriver_inmortal_pooling') and not self.smoke:
-                wd = WebdriverManager().new_webdriver(browser)
+            if settings.get('webdriver_inmortal_pooling') and not self.test_config.get('smoke'):
+                mngr = WebdriverManager()
+                mngr.close_webdrivers()
+                wd = mngr.new_webdriver(browser)
                 child_kwargs.update(webdriver=wd)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave

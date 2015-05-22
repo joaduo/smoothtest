@@ -60,7 +60,12 @@ class WebdriverManager(SmoothTestBase):
         self.setup_display()
         if browser == 'PhantomJS':
             kwargs.update(service_args=['--ignore-ssl-errors=true'])
-        driver = getattr(webdriver, browser)(*args, **kwargs)
+        if browser == 'Firefox'\
+        and self.global_settings.get('webdriver_firefox_profile'):
+            fp = webdriver.FirefoxProfile(self.global_settings.get('webdriver_firefox_profile'))
+            driver = webdriver.Firefox(fp)
+        else:
+            driver = getattr(webdriver, browser)(*args, **kwargs)
         return driver
 
     def close_webdrivers(self):
@@ -69,7 +74,7 @@ class WebdriverManager(SmoothTestBase):
             try:
                 w.close()
             except Exception as e:
-                self.log.w('Ignoring' % e)
+                self.log.w('Ignoring %r:%s' % (e,e))
 
     def setup_display(self):
         '''
