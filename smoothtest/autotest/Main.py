@@ -71,18 +71,6 @@ class Main(ParentBase):
         self._build_slave(force=True)
         self.reset()
 
-    @property
-    def ffox(self):
-        self.new_browser('f')
-
-    @property
-    def chrome(self):
-        self.new_browser('c')
-
-    @property
-    def phantomjs(self):
-        self.new_browser('p')
-
     def _build_slave(self, force=False):
         if (not self._slave or force):
             child_kwargs = {}

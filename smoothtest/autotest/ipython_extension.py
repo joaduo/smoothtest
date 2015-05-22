@@ -85,6 +85,22 @@ class AutotestMagics(Magics):
         self._send(test_config)
         return 'Done sending new test_config=%r' % test_config
 
+    def _new_browser(self, browser):
+        self.log.i('Setting browser to: %s' % browser)
+        self.main.new_browser(browser)
+
+    @line_magic
+    def firefox(self):
+        self._new_browser('Firefox')
+
+    @line_magic
+    def chrome(self):
+        self._new_browser('Chrome')
+
+    @line_magic
+    def phantomjs(self):
+        self._new_browser('PhantomJS')
+
 
 def load_extension(ipython, main):
     AutotestMagics.main = main
