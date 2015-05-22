@@ -11,6 +11,7 @@ from smoothtest.Logger import Logger
 from smoothtest.webunittest.XpathBrowser import XpathBrowser
 import os
 from contextlib import contextmanager
+from smoothtest.settings.default import SINGLE_TEST_LIFE
 
 
 class WebUnitTestBase(unittest.TestCase):
@@ -56,16 +57,13 @@ class WebUnitTestBase(unittest.TestCase):
             os.remove(path)
 
     def setUp(self):
-        mngr = WebdriverManager()
-        mngr.setup_display()
-        webdriver = mngr.new_webdriver(mngr._get_full_name(None))
+        self.__level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
+        webdriver = self.__level_mngr.acquire_driver()
         logger = Logger(__name__)
         self.browser = XpathBrowser('', webdriver, logger, settings={})
-        self._webdriver = webdriver
 
     def tearDown(self):
-        mngr = WebdriverManager()
-        mngr.release_webdriver(self._webdriver)
+        self.__level_mngr.leave_level()
 
 
 def smoke_test_module():

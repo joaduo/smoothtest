@@ -10,7 +10,7 @@ from ..webunittest import unittest
 from smoothtest.settings.solve_settings import solve_settings
 from smoothtest.base import SmoothTestBase
 from .WebdriverUtils import WebdriverUtils
-from .WebdriverManager import new_webdriver, stop_display
+from .WebdriverManager import lock_driver, stop_display
 import logging
 
 
@@ -33,10 +33,10 @@ class TestBase(WebdriverUtils):
         browser = settings.get('webdriver_browser')
         if settings.get('webdriver_pooling'):
             if not TestBase._global_webdriver:
-                TestBase._global_webdriver = new_webdriver(browser)
+                TestBase._global_webdriver = lock_driver(browser)
             driver = TestBase._global_webdriver
         else:
-            driver = new_webdriver(browser)
+            driver = lock_driver(browser)
         return driver
 
     def init_webdriver(self, settings=None, webdriver=None):

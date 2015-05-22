@@ -6,13 +6,13 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+from smoothtest.settings.default import PROCESS_LIFE
 rel_imp.init()
 import os
 import signal
 import sys
 from .base import ParentBase
 from .Master import Master
-from smoothtest.settings.solve_settings import solve_settings
 from .Slave import Slave
 from .TestRunner import TestRunner
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
@@ -27,31 +27,37 @@ class Main(ParentBase):
         self.test_config = {}
         self._slave = None
         self._child_pids = []
+        self._wdriver_mngr = WebdriverManager()
+        self._level_mngr = None
 
     def run(self, test_config, embed_ipython=False, block=False):
         self.log.set_pre_post(pre='Autotest CLI')
         self.test_config = test_config
         self.create_child()
         if embed_ipython:
-            s = self  # nice alias
             from .ipython_extension import load_extension
             def extension(ipython):
                 return load_extension(ipython, self)
-            IpythonEmbedder().embed(extension)
-            self.kill_child
+            self._run_ipython(extension)
+            self.kill_child()
+            self.end_main()
             raise SystemExit(0)
         elif block:
             self.log.i(self.recv())
-        WebdriverManager().stop_display()
+        self._wdriver_mngr.stop_display()
 
-    @property
-    def new_child(self):
-        self.kill_child
+    def _run_ipython(self, extension):
+        test_config = self.test_config
+        IpythonEmbedder().embed(extension)
+
+    def reset(self):
+        self.kill_child()
         self.create_child()
 
     def send_test(self, **test_config):
-        self.send_recv('new_test', **test_config)
-        self.test_config = test_config
+        if self._healthy_webdriver():
+            self.send_recv('new_test', **test_config)
+            self.test_config = test_config
 
     def new_browser(self, browser=None):
         # Build the new slave
@@ -61,8 +67,9 @@ class Main(ParentBase):
                      p='PhantomJS',
                      )
             browser = m.get(browser.lower()[0], m['f'])
-        self._build_slave(force=True, browser=browser)
-        self.new_child
+            self.global_settings.set('webdriver_browser', browser)
+        self._build_slave(force=True)
+        self.reset()
 
     @property
     def ffox(self):
@@ -76,20 +83,25 @@ class Main(ParentBase):
     def phantomjs(self):
         self.new_browser('p')
 
-    def _build_slave(self, force=False, browser=None):
+    def _build_slave(self, force=False):
         if (not self._slave or force):
-            settings = solve_settings()
             child_kwargs = {}
-            if settings.get('webdriver_inmortal_pooling') and not self.test_config.get('smoke'):
-                mngr = WebdriverManager()
-                mngr.close_webdrivers()
-                wd = mngr.new_webdriver(browser)
-                # We release the webdriver since we are not going use it here
-                # we simply want to create the inmortal driver
-                mngr.release_webdriver(wd, keep=True)
-                child_kwargs.update(webdriver=wd)
+            # Release no longer used webdriver
+            if self._level_mngr:
+                self._level_mngr.release_driver()
+            # Quit those drivers not responding
+            self._wdriver_mngr.quit_all_failed_webdrivers()
+            # Enter the level again
+            self._level_mngr = self._wdriver_mngr.enter_level(level=PROCESS_LIFE)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
         return self._slave
+
+    def _healthy_webdriver(self):
+        if self._wdriver_mngr.quit_all_failed_webdrivers():
+            self.log.w('Webdriver failed. Restarting subprocesses...')
+            self.new_browser()
+            return False
+        return True
 
     def create_child(self):
         slave = self._build_slave()
@@ -108,19 +120,18 @@ class Main(ParentBase):
         self._child_pids.append(('slave_pid', slave_pid))
         self._child_pids.append(('master_pid', self.get_subprocess_pid()))
 
-    @property
     def test(self):
-        cmd = 'partial_callback'
-        ans = self.send_recv(cmd)
-        self.log.e(ans.error)
-        return ans
+        if self._healthy_webdriver():
+            cmd = 'partial_callback'
+            ans = self.send_recv(cmd)
+            self.log.e(ans.error)
+            return ans
 
     def send(self, cmd, *args, **kwargs):
         while self.poll():
             self.log.i('Remaining in buffer: %r' % self.recv())
         return super(Main, self).send(cmd, *args, **kwargs)
 
-    @property
     def kill_child(self):
         answer = self.kill(block=True, timeout=3)
         self._force_kill(self._child_pids)
@@ -146,6 +157,10 @@ class Main(ParentBase):
             if process_running(pid):
                 self.log.w('Pid (%r,%r) still up. Sending SIGKILL...' % (name, pid))
                 os.kill(pid, signal.SIGKILL)
+
+    def end_main(self):
+        if self._level_mngr:
+            self._level_mngr.leave_level()
 
 
 def smoke_test_module():

@@ -10,50 +10,103 @@ from smoothtest.singleton_decorator import singleton_decorator
 from contextlib import contextmanager
 from collections import defaultdict
 
-def new_webdriver(browser=None, *args, **kwargs):
-    return WebdriverManager().new_webdriver(browser, *args, **kwargs)
+
+def lock_driver(browser=None, *args, **kwargs):
+    return WebdriverManager().lock_driver(browser, *args, **kwargs)
 
 
 def stop_display():
     return WebdriverManager().stop_display()
 
 
+#TODO:locks
+
 @singleton_decorator
 class WebdriverManager(SmoothTestBase):
 
     def __init__(self):
-        self._locked = {}
-        self._released = defaultdict(list)
+        self._locked = set()
+        self._released = set()
+        self._wdriver_pool = {}
         self._virtual_display = None
-
-    @contextmanager
-    def get_webdriver(self, browser=None, keep=True):
-        wdriver = self._get_webdriver(browser)
-        try:
-            yield wdriver
-        except:
-            raise
-        finally:
-            self.release_webdriver(wdriver, keep)
-
-    def release_webdriver(self, wdriver, keep=True):
-        assert wdriver in self._locked, 'Webdriver %r was never locked' % wdriver
-        browser = self._locked[wdriver]
-        del self._locked[wdriver]
-        if keep:
-            self._released[browser].append(wdriver)
-        else:
-            wdriver.close()
+        self._level = None
     
-    def new_webdriver(self, browser):
-        if not self.global_settings.get('webdriver_pooling'):
-            self.close_webdrivers()
-        browser = self._get_full_name(browser)
-        if self._released.get(browser):
-            wdriver = self._released[browser].pop()
+    def release_driver(self, wdriver, level):
+        if not wdriver:
+            return
+        assert wdriver in self._locked, 'Webdriver %r was never locked' % wdriver
+        self._locked.remove(wdriver)
+        _, blevel = self._wdriver_pool[wdriver]
+        # Make sure webdriver is healthy and from the right level
+        # before reusing it
+        if blevel >= level and not self._quit_failed_webdriver(wdriver):
+            # Keep webdriver with higher level of life
+            self._released.add(wdriver)
         else:
+            # Remove no longer needed webdriver
+            self._quit_webdriver(wdriver)
+
+    def _quit_failed_webdriver(self, wdriver):
+        try:
+            wdriver.current_url
+            return False
+        except Exception as e:
+            self.log.e('Quitting webdriver %r due to exception %r:%s' %
+                       (wdriver, e, e))
+            return True
+
+    def _quit_webdriver(self, wdriver):
+        try:
+            wdriver.quit()
+        except Exception as e:
+            self.log.w('Ignoring %r:%s' % (e,e))
+
+    def get_browser_name(self):
+        return self._get_full_name(self.global_settings.get('webdriver_browser'))
+
+    def init_level(self, level):
+        # Set level and check consistency
+        assert level, 'No process level set'
+        # If its the right config level, then start the webdriver
+        config_level = self.global_settings.get('webdriver_browser_life')
+        if config_level != level:
+            return
+        browser = self.get_browser_name()
+        # Create webdriver if needed
+        if not self._get_released_set():
             wdriver = self._new_webdriver(browser)
-        self._locked[wdriver] = browser
+            self._wdriver_pool[wdriver] = browser, level
+            self._released.add(wdriver)
+
+    def _get_released_set(self):
+        browser = self.get_browser_name()
+        browser_set = set([wdriver
+                           for wdriver,(brws,_) in self._wdriver_pool.iteritems()
+                           if brws == browser])
+        return (self._released & browser_set)
+
+    def leave_level(self, level):
+        def common(wdriver, container):
+            _, blevel = self._wdriver_pool[wdriver]
+            if self._quit_failed_webdriver(wdriver):
+                container.remove(wdriver)
+                self._wdriver_pool.pop(wdriver)
+            elif blevel <= level:
+                container.remove(wdriver)
+                self._quit_webdriver(wdriver)
+                self._wdriver_pool.pop(wdriver)
+        # Make copies of sets, we are goig to modify them
+        for wdriver in self._released.copy():
+            common(wdriver, self._released)
+        for wdriver in self._locked.copy():
+            common(wdriver, self._locked)
+
+    def acquire_driver(self, level):
+        self.init_level(level)
+        wdriver = self._get_released_set().pop()
+        # Keep track of acquired webdrivers in case we need to close them
+        self._locked.add(wdriver)
+        self._released.remove(wdriver)
         return wdriver
 
     def _new_webdriver(self, browser=None, *args, **kwargs):
@@ -70,15 +123,23 @@ class WebdriverManager(SmoothTestBase):
             driver = getattr(webdriver, browser)(*args, **kwargs)
         return driver
 
-    def close_webdrivers(self):
-        all_wdrivers = self._locked.keys() + reduce(lambda x,y: y+x, self._released.values(), [])
-        for w in all_wdrivers:
-            try:
-                w.close()
-            except Exception as e:
-                self.log.w('Ignoring %r:%s' % (e,e))
+    def quit_all_webdrivers(self):
+        for wdriver in self._wdriver_pool:
+            self._quit_webdriver(wdriver)
+        self._wdriver_pool.clear()
         self._locked.clear()
         self._released.clear()
+
+    def quit_all_failed_webdrivers(self):
+        found_one = False
+        remove = lambda s,e: e in s and s.remove(e)
+        for wdriver in self._wdriver_pool.keys():
+            if self._quit_failed_webdriver(wdriver):
+                self._wdriver_pool.pop(wdriver)
+                remove(self._locked, wdriver)
+                remove(self._released, wdriver)
+                found_one = True
+        return found_one
 
     def setup_display(self):
         '''
@@ -127,11 +188,35 @@ class WebdriverManager(SmoothTestBase):
         char = browser.lower()[0]
         assert char in char_browser, 'Could not find browser %r' % browser
         return char_browser.get(char)
+    
+    def enter_level(self, level):
+        return WebdriverLevelManager(self, level)
+
+
+class WebdriverLevelManager(object):
+    def __init__(self, parent, level):
+        self.parent = parent
+        self.level = level
+        self.webdriver = None
+        self.parent.init_level(self.level)
+
+    def acquire_driver(self):
+        self.webdriver = self.parent.acquire_driver(self.level)
+        return self.webdriver
+
+    def leave_level(self):
+        self.release_driver()
+        self.parent.leave_level(self.level)
+
+    def release_driver(self):
+        if self.webdriver:
+            self.parent.release_driver(self.webdriver, self.level)
+            self.webdriver = None
 
 
 def smoke_test_module():
     mngr = WebdriverManager()
-    ffox = mngr.new_webdriver('Firefox')
+    ffox = mngr.lock_driver('Firefox')
     ffox.quit()
     mngr.stop_display()
     with mngr.get_webdriver('f') as ffox2:

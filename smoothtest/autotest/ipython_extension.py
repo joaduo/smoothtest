@@ -61,7 +61,7 @@ class AutotestMagics(Magics):
                 self._send(test_config)
             else:
                 # Simply invoque .test TODO
-                self.main.test
+                self.main.test()
         except SystemExit:
             pass
 

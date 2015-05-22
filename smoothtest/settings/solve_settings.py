@@ -25,6 +25,9 @@ class SettingsWrapper(object):
             return getattr(self._settings, name)
         return default
 
+    def set(self, name, value):
+        setattr(self._settings, name, value)
+
 
 global_settings = None
 

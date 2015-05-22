@@ -6,6 +6,14 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 
+# Webdriver life level
+#GOD_LIFE = 7 # Browser survives across universes (WIP)
+#AI_LIFE = 6 # Browser survives across reboots and becomes agent smith (WIP)
+INMORTAL_LIFE = 5 # Browser survives across processes
+PROCESS_LIFE = 4 # Browser is alive as long as the smoothtest process is running
+TEST_RUNNER_LIFE = 3 # Browser is alive as long as the TestRunner process is running (new test runner process means new browser) 
+TEST_ROUND_LIFE = 2 # Browser is alive for a single test round
+SINGLE_TEST_LIFE = 1 # Start 1 new browser per test ran
 
 class DefaultSettings(object):
     # Signal that we are working on production. To disable write tests
@@ -23,10 +31,9 @@ class DefaultSettings(object):
                                     # process finished (useful when we also keep the browser open for debugging) 
 
     webdriver_browser = 'PhantomJS' # Which browser we would like to use webdriver with: Firefox, Chrome, PhantomJs, etc...
-    webdriver_pooling = False # Reuse webdrivers across tests (WIP)
+    webdriver_browser_life = TEST_ROUND_LIFE # Level of life of the webdriver browser
     webdriver_pool_size = 1
-    webdriver_inmortal_pooling = False # Reuse webdrivers across tests rounds (WIP)
-    webdriver_keep_open = False # Keep the browser open after a smoothtest process finished (for debugging/testing)
+    webdriver_keep_open = False # Keep latest browser open after a smoothtest process finished (for debugging/testing)
 
     # Browsers profiles
     # Eg: '/home/<user>/.mozilla/firefox/4iyhtofy.webdriver_autotest' on linux
