@@ -23,9 +23,11 @@ def stop_display():
 
 
 def synchronized(lock):
-    """ Synchronization decorator. (for several methods with same lock, use
+    '''
+    Thread synchronization decorator. (for several methods with same lock, use
     re-entrant lock)
-    """
+    :param lock: lock object (from threading package for example)
+    '''
     def wrap_method(method):
         @wraps(method)
         def newFunction(*args, **kw):
@@ -33,6 +35,7 @@ def synchronized(lock):
                 return method(*args, **kw)
         return newFunction
     return wrap_method
+
 
 @singleton_decorator
 class WebdriverManager(SmoothTestBase):
@@ -216,6 +219,30 @@ class WebdriverManager(SmoothTestBase):
     def enter_level(self, level):
         return WebdriverLevelManager(self, level)
 
+    @synchronized(_methods_lock)
+    def list_webdrivers(self, which='all'):
+        '''
+        Make a report of all, released or locked webdrivers.
+        :param which: string specifiying the type of report. May be:'all', 'released', 'locked'
+        '''
+        wdrivers_report = {}
+        possible = ('all', 'released', 'locked')
+        assert which in possible, 'Which must be one of %r' % possible
+        # Choose the set to report
+        if which =='all':
+            in_report = self._wdriver_pool
+        elif which == 'released':
+            in_report = self._released
+        elif which == 'locked':
+            in_report = self._locked
+        # Build report
+        for wdriver in in_report:
+            browser, level = self._wdriver_pool[wdriver]
+            wdrivers_report[wdriver] = browser, level
+        # TODO: do not return webdriver in report, but the title,
+        # ip and port
+        return wdrivers_report
+
 
 class WebdriverLevelManager(object):
     def __init__(self, parent, level):
@@ -242,6 +269,7 @@ def smoke_test_module():
     mngr = WebdriverManager()
     lvl = mngr.enter_level(level=5)
     ffox = lvl.acquire_driver()
+    mngr.list_webdrivers()
     lvl.leave_level()
     mngr.stop_display()
     mngr.quit_all_webdrivers()

@@ -7,7 +7,6 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import unittest
 import rel_imp; rel_imp.init()
-from .base import WebUnitTestBase
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.Logger import Logger
 from smoothtest.webunittest.XpathBrowser import XpathBrowser
@@ -15,7 +14,7 @@ from smoothtest.settings.default import SINGLE_TEST_LIFE
 import os
 
 
-class TestXpathBrowser(WebUnitTestBase):
+class TestXpathBrowser(unittest.TestCase):
     def setUp(self):
         # We need to enter "single test level" of life for each test
         # It will initialize the webdriver if no webdriver is present from upper levels
