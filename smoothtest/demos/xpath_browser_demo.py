@@ -42,7 +42,8 @@ class TestXpathBrowser(unittest.TestCase):
 
     def get_local_page(self, file_name):
         # Auxiliary method
-        url = 'file://' + os.path.join(os.path.dirname(__file__), 'html', file_name)
+        root_dir = os.path.abspath(os.path.dirname(__file__))
+        url = 'file://' + os.path.join(root_dir, 'html', file_name)
         self.browser.get_url(url)
 
 
