@@ -70,62 +70,6 @@ class Main(ParentBase):
         elif block:
             self.log.i(self.recv())
 
-    def reset(self):
-        '''
-        Reset as if we were from a fresh start.
-        '''
-        self.end_main()
-        self._wdriver_mngr.quit_all_failed_webdrivers()
-        self.kill_child()
-        self.create_child()
-
-    def send_test(self, **test_config):
-        '''
-        Send tests parameters to the Master process. (which in turn will send to TestRunner)
-        '''
-        if self._healthy_webdriver():
-            self.send_recv('new_test', **test_config)
-            self.test_config = test_config
-
-    def new_browser(self, browser=None):
-        '''
-        Create or reuse a specific web browser in the tests.
-        :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
-        '''
-        self._set_browser(browser)
-        # Build the new slave
-        self._build_slave(force=True)
-        self.kill_child()
-        self.create_child()
-
-    def _set_browser(self, browser=None):
-        browser = browser or self.global_settings.get('webdriver_browser')
-        self._wdriver_mngr.set_browser(browser)
-
-    def _build_slave(self, force=False):
-        # Build the Slave instance (used to control how tests are ran)
-        if (not self._slave or force):
-            child_kwargs = {}
-            # Release no longer used webdriver
-            if self._level_mngr:
-                self._level_mngr.release_driver()
-            # Quit those drivers not responding
-            self._wdriver_mngr.quit_all_failed_webdrivers()
-            self._set_browser()
-            # Enter the level again
-            self._level_mngr = self._wdriver_mngr.enter_level(level=PROCESS_LIFE)
-            self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
-        return self._slave
-
-    def _healthy_webdriver(self):
-        # Check if used webdrivers are in healthy status
-        if self._wdriver_mngr.quit_all_failed_webdrivers():
-            self.log.w('Webdriver failed. Restarting subprocesses...')
-            # Restart browser if needed
-            self.new_browser()
-            return False
-        return True
-
     def create_child(self):
         '''
         Create Master role subprocess
@@ -146,6 +90,54 @@ class Main(ParentBase):
         self._child_pids.append(('slave_pid', slave_pid))
         self._child_pids.append(('master_pid', self.get_subprocess_pid()))
 
+    def _build_slave(self, force=False):
+        # Build the Slave instance (used to control how tests are ran)
+        if (not self._slave or force):
+            child_kwargs = {}
+            # Release no longer used webdriver
+            if self._level_mngr:
+                self._level_mngr.release_driver()
+            # Quit those drivers not responding
+            self._wdriver_mngr.quit_all_failed_webdrivers()
+            self._set_browser()
+            # Enter the level again
+            self._level_mngr = self._wdriver_mngr.enter_level(level=PROCESS_LIFE)
+            self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
+        return self._slave
+
+    def _set_browser(self, browser=None):
+        # Set the default browser to use from now on
+        browser = browser or self.global_settings.get('webdriver_browser')
+        self._wdriver_mngr.set_browser(browser)
+
+    def reset(self):
+        '''
+        Reset as if we were from a fresh start.
+        '''
+        self.end_main()
+        self._wdriver_mngr.quit_all_failed_webdrivers()
+        self.kill_child()
+        self.create_child()
+
+    def new_browser(self, browser=None):
+        '''
+        Create or reuse a specific web browser in the next tests round.
+        :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
+        '''
+        self._set_browser(browser)
+        # Build the new slave
+        self._build_slave(force=True)
+        self.kill_child()
+        self.create_child()
+
+    def send_test(self, **test_config):
+        '''
+        Send tests parameters to the Master process. (which in turn will send to TestRunner)
+        '''
+        if self._healthy_webdriver():
+            self.send_recv('new_test', **test_config)
+            self.test_config = test_config
+
     def test(self):
         '''
         Send light testing command.
@@ -157,9 +149,21 @@ class Main(ParentBase):
             self.log.e(ans.error)
             return ans
 
+    def _healthy_webdriver(self):
+        # Check if used webdrivers are in healthy status
+        if self._wdriver_mngr.quit_all_failed_webdrivers():
+            self.log.w('Webdriver failed. Restarting subprocesses...')
+            # Restart browser if needed
+            self.new_browser()
+            return False
+        return True
+
     def send(self, cmd, *args, **kwargs):
         '''
-        Send arbitrary commands to the Master subprocess
+        Send arbitrary commands to the Master subprocess.
+        Also make sure no remaining incoming data is in the pipe buffer
+        before sending.
+        
         :param cmd: method name of Master class
         :param args: variable args matching the signature of the remote method
         :param kwargs: variable keyword args matching the signature of the remote method
@@ -201,7 +205,8 @@ class Main(ParentBase):
 
     def end_main(self):
         '''
-        Function we call when leaving the main loop.
+        Function we call when leaving the main loop or when resetting 
+        the testing.
         '''
         if self._level_mngr:
             self._level_mngr.exit_level()
