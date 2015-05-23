@@ -96,12 +96,18 @@ class Master(ChildBase):
             self._io_blacklist.add(self.parent_conn)
 
     def parent_conn(self):
+        # Since self._parent_conn can change, we use a method to refer to
+        # it in set operations
         return self._parent_conn
 
     def slave_conn(self):
+        # Since self._slave.get_conn() can change, we use a method to refer to
+        # it in set operations
         return self._slave.get_conn()
 
     def m_w_conn(self):
+        # Since self._m_w_conn can change, we use a method to refer to
+        # it in set operations
         return self._m_w_conn
 
     def set_select_args(self, **select_args):

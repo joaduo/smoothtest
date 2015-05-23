@@ -13,8 +13,12 @@ import glob
 from argparse import ArgumentParser
 from smoothtest.Logger import Logger
 
+
 @magics_class
 class AutotestMagics(Magics):
+    '''
+    Mainly add some "magic" commands to the autotest's Ipython shell.
+    '''
     main = None
     log = Logger(name='Ipython Extension')
 
