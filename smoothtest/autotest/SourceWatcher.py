@@ -21,17 +21,17 @@ def realPath(path):
 
 
 class FileAction(FileSystemEventHandler):
-
     '''
-
+    Handles incoming events from watchdog observer and calls the
+    connected callback.
+    Also helps filtering and avoids firing callbacks too often (given a threshold) 
     '''
-
-    def __init__(self, path, event_type=None, time_treshold=1, log=None):
+    def __init__(self, path, event_type=None, time_threshold=1, log=None):
         self._event_type = event_type
         self._path = path
         self._event_callbacks = defaultdict(list)
         self._last_time = time.time()
-        self._time_treshold = time_treshold
+        self._time_threshold = time_threshold
         self.log = log
 
     def __call__(self, event, manager):
@@ -47,16 +47,19 @@ class FileAction(FileSystemEventHandler):
         self._call(event, manager)
 
     def _enough_time(self):
-        if not self._time_treshold:
+        # Decides if enough time passed since the last event
+        if not self._time_threshold:
             return True
         last = self._last_time
         now = self._last_time = time.time()
-        return now - last > self._time_treshold
+        return now - last > self._time_threshold
 
     def _call(self, event, manager):
+        # Handle callback calling if enough time passed since last event
         if not self._enough_time():
             return
         # call all the callbacks associated with this file
+        # Avoid calling 1 callback more than once per event
         called = set()
         for callback in self._event_callbacks[event.event_type]:
             if callback not in called:  # avoid calling twice
@@ -133,7 +136,9 @@ class FileAction(FileSystemEventHandler):
 
 
 class DirAction(FileAction):
-
+    '''
+    Does the same job as FileAction, but for directories 
+    '''
     def __init__(self, path, path_filter=None, event_type=None, log=None):
         self.path_filter = path_filter
         super(DirAction, self).__init__(path, event_type, log=log)
@@ -150,16 +155,40 @@ class DirAction(FileAction):
 
 
 class SourceWatcher(AutoTestBase):
-
     '''
     Responsible of watching files and directories changes.
     It triggers callbacks passed for each of these paths.
     '''
-
     def __init__(self):
-        self._file_actions = {}
-        self._dir_actions = {}
-        self._observer = None
+        self._file_actions = {} # Actions to be executed upon file changes events
+        self._dir_actions = {} # Actions to be executed upon directory changes events
+        self._observer = None # Watchdog observer instance
+
+    def start_observer(self):
+        '''
+        Creates a watchdog Observer instances and starts it.
+        Will connect watched files/dirs to respective actions for each file/dir.
+        '''
+        if not (self._file_actions or self._dir_actions):
+            self.log.d('No files or dirs to watch')
+            return
+        # Get rid of previous watching and stop previous observer thread
+        self.unwatch_all(clear=False)
+        observer = Observer()
+        # Connect file actions
+        for action in self._file_actions.values():
+            # We need to watch directories since watchdog doesn't support
+            # files??
+            observer.schedule(action, action.real_dir)
+        # Connect dir actions
+        for action in self._dir_actions.values():
+            observer.schedule(action, action.real_dir, recursive=True)
+        self.log.d('Starting observer for:\n  {files}\n  {dirs}'.
+                   format(files=pformat(self._file_actions.keys()),
+                          dirs=pformat(self._dir_actions.keys())))
+        self._observer = observer
+        # Start observer thread
+        self._observer.start()
 
     def watch_file(self, path, callback):
         self.log.d('Watching file {path!r}'.format(path=path))
@@ -170,38 +199,6 @@ class SourceWatcher(AutoTestBase):
         action = self._file_actions.setdefault(path,
                                                FileAction(path, log=self.log))
         action.append(callback_wrapper, 'modified')
-
-    def start_observer(self):
-        if not (self._file_actions or self._dir_actions):
-            self.log.d('No files or dirs to watch')
-            return
-        self.unwatch_all(clear=False)
-        observer = Observer()
-        for action in self._file_actions.values():
-            # We need to watch directories since watchdog doesn't support
-            # files??
-            observer.schedule(action, action.real_dir)
-
-        for action in self._dir_actions.values():
-            observer.schedule(action, action.real_dir, recursive=True)
-
-        self.log.d('Starting observer for:\n  {files}\n  {dirs}'.
-                   format(files=pformat(self._file_actions.keys()),
-                          dirs=pformat(self._dir_actions.keys())))
-        self._observer = observer
-        self._observer.start()
-
-    def unwatch_all(self, clear=False):
-        if self._observer:
-            self.log.d('Stopping observer for:\n  {files}\n  {dirs}'.
-                       format(files=pformat(self._file_actions.keys()),
-                              dirs=pformat(self._dir_actions.keys())))
-            self._observer.stop()
-            self._observer.join()
-            self._observer = None
-        if clear:
-            self._file_actions.clear()
-            self._dir_actions.clear()
 
     def watch_recursive(self, path, callback, path_filter=None):
         dir_path = realPath(path)
@@ -226,6 +223,19 @@ class SourceWatcher(AutoTestBase):
                 path_filter,
                 log=self.log))
         action.append(callback_wrapper, 'modified')
+
+    def unwatch_all(self, clear=False):
+        if self._observer:
+            self.log.d('Stopping observer for:\n  {files}\n  {dirs}'.
+                       format(files=pformat(self._file_actions.keys()),
+                              dirs=pformat(self._dir_actions.keys())))
+            self._observer.stop()
+            self._observer.join()
+            self._observer = None
+        if clear:
+            self._file_actions.clear()
+            self._dir_actions.clear()
+
 
 def smoke_test_module():
     sw = SourceWatcher()
