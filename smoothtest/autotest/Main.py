@@ -62,17 +62,13 @@ class Main(ParentBase):
             from .ipython_extension import load_extension
             def extension(ipython):
                 return load_extension(ipython, self)
-            self._run_ipython(extension)
+            self._ishell = IpythonEmbedder().embed(extension)
             self.kill_child()
             self.end_main()
             self._wdriver_mngr.stop_display()
             raise SystemExit(0)
         elif block:
             self.log.i(self.recv())
-
-    def _run_ipython(self, extension):
-        # Run embedded Ipython Shell
-        self._ishell = IpythonEmbedder().embed(extension)
 
     def reset(self):
         '''
@@ -96,12 +92,15 @@ class Main(ParentBase):
         Create or reuse a specific web browser in the tests.
         :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
         '''
+        self._set_browser(browser)
         # Build the new slave
-        if browser:
-            self._wdriver_mngr.set_browser(browser)
         self._build_slave(force=True)
         self.kill_child()
         self.create_child()
+
+    def _set_browser(self, browser=None):
+        browser = browser or self.global_settings.get('webdriver_browser')
+        self._wdriver_mngr.set_browser(browser)
 
     def _build_slave(self, force=False):
         # Build the Slave instance (used to control how tests are ran)
@@ -112,6 +111,7 @@ class Main(ParentBase):
                 self._level_mngr.release_driver()
             # Quit those drivers not responding
             self._wdriver_mngr.quit_all_failed_webdrivers()
+            self._set_browser()
             # Enter the level again
             self._level_mngr = self._wdriver_mngr.enter_level(level=PROCESS_LIFE)
             self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
