@@ -98,12 +98,7 @@ class Main(ParentBase):
         '''
         # Build the new slave
         if browser:
-            m = dict(f='Firefox',
-                     c='Chrome',
-                     p='PhantomJS',
-                     )
-            browser = m.get(browser.lower()[0], m['f'])
-            self.global_settings.set('webdriver_browser', browser)
+            self._wdriver_mngr.set_browser(browser)
         self._build_slave(force=True)
         self.kill_child()
         self.create_child()
@@ -209,7 +204,7 @@ class Main(ParentBase):
         Function we call when leaving the main loop.
         '''
         if self._level_mngr:
-            self._level_mngr.leave_level()
+            self._level_mngr.exit_level()
             self._level_mngr = None
 
 

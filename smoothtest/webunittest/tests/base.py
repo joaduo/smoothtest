@@ -63,7 +63,7 @@ class WebUnitTestBase(unittest.TestCase):
         self.browser = XpathBrowser('', webdriver, logger, settings={})
 
     def tearDown(self):
-        self.__level_mngr.leave_level()
+        self.__level_mngr.exit_level()
 
 
 def smoke_test_module():

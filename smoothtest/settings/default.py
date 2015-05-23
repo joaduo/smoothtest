@@ -19,6 +19,10 @@ class DefaultSettings(object):
     # Signal that we are working on production. To disable write tests
     production = False
 
+    @property
+    def base_url(self):
+        return self.web_server_url
+
     # Server to be tested URL eg: http://www.example.com 
     web_server_url = ''
 

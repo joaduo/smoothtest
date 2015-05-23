@@ -353,8 +353,14 @@ return eslist;
 
     def _extract_xpath(self, xpath, single):
         result = self._select_xpath(xpath, single)
-        if isinstance(result, WebElement):
-            result = result.text
+        def extract(result):
+            if isinstance(result, WebElement):
+                return result.text
+            return result
+        result = extract(result)
+        if isinstance(result, list):
+            result = [extract(e) for e in result]
+        # Check consistency (all must be basestring)
         if single:
             assert isinstance(result, basestring)
         else:

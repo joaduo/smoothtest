@@ -47,6 +47,7 @@ class WebdriverManager(SmoothTestBase):
         self._wdriver_pool = {}
         self._virtual_display = None
         self._level = None
+        self._browser = 'PhantomJS'
     
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
@@ -81,7 +82,7 @@ class WebdriverManager(SmoothTestBase):
             self.log.w('Ignoring %r:%s' % (e,e))
 
     def get_browser_name(self):
-        return self._get_full_name(self.global_settings.get('webdriver_browser'))
+        return self._get_full_name(self._browser)
 
     @synchronized(_methods_lock)
     def init_level(self, level):
@@ -112,7 +113,7 @@ class WebdriverManager(SmoothTestBase):
         return (self._released & browser_set)
 
     @synchronized(_methods_lock)
-    def leave_level(self, level):
+    def exit_level(self, level):
         def common(wdriver, container):
             _, blevel = self._wdriver_pool[wdriver]
             if self._quit_failed_webdriver(wdriver):
@@ -206,11 +207,6 @@ class WebdriverManager(SmoothTestBase):
             WebdriverManager._virtual_display = None
 
     def _get_full_name(self, browser=None):
-        # Solve name based on first character (easier to specify by the user)
-        browser = (
-            browser if browser else self.global_settings.get(
-                'webdriver_browser',
-                'Firefox'))
         # Select based in first letter
         # TODO: add IE and Opera
         char_browser = dict(f='Firefox',
@@ -222,8 +218,8 @@ class WebdriverManager(SmoothTestBase):
         return char_browser.get(char)
     
     @synchronized(_methods_lock)
-    def enter_level(self, level):
-        return WebdriverLevelManager(self, level)
+    def enter_level(self, level, base_url=None, name=''):
+        return WebdriverLevelManager(self, level, base_url, name)
 
     @synchronized(_methods_lock)
     def list_webdrivers(self, which='all'):
@@ -248,30 +244,47 @@ class WebdriverManager(SmoothTestBase):
         # TODO: do not return webdriver in report, but the title,
         # ip and port
         return wdrivers_report
+    
+    @synchronized(_methods_lock)
+    def set_browser(self, browser):
+        self._browser = browser
+    
+    def get_browser(self):
+        return self._browser
 
 
 class WebdriverLevelManager(object):
-    def __init__(self, parent, level):
+    def __init__(self, parent, level, base_url=None, name=''):
         self.parent = parent
         self.level = level
+        self.base_url = base_url
+        self.name = name
         self.webdriver = None
         self.parent.init_level(self.level)
+        
+    def __enter__(self):
+        return self.get_xpathbrowser()
+    
+    def __exit__(self, type, value, traceback):
+        self.exit_level()
 
     def acquire_driver(self):
         assert not self.webdriver, 'Webdriver already acquired'
         self.webdriver = self.parent.acquire_driver(self.level)
         return self.webdriver
 
-    def get_xpathbrowser(self, base_url=None, logger_name=''):
+    def get_xpathbrowser(self, base_url=None, name=''):
         from smoothtest.Logger import Logger
         from .XpathBrowser import XpathBrowser
+        base_url = base_url or self.base_url
+        name = name or self.name
         # Initialize the XpathBrowser class
         return XpathBrowser(base_url, self.acquire_driver(), 
-                            Logger(logger_name), settings={})
+                            Logger(name), settings={})
 
-    def leave_level(self):
+    def exit_level(self):
         self.release_driver()
-        self.parent.leave_level(self.level)
+        self.parent.exit_level(self.level)
 
     def release_driver(self):
         if self.webdriver:
@@ -284,7 +297,7 @@ def smoke_test_module():
     lvl = mngr.enter_level(level=5)
     ffox = lvl.acquire_driver()
     mngr.list_webdrivers()
-    lvl.leave_level()
+    lvl.exit_level()
     mngr.stop_display()
     mngr.quit_all_webdrivers()
 

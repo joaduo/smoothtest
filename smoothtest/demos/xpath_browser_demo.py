@@ -18,7 +18,7 @@ class TestXpathBrowser(unittest.TestCase):
         # It will initialize the webdriver if no webdriver is present from upper levels
         self.__level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
         # Get Xpath browser
-        self.browser = self.__level_mngr.get_xpathbrowser(logger_name=__name__)
+        self.browser = self.__level_mngr.get_xpathbrowser(name=__name__)
         # Line above is equivalent to doing:
         #    from smoothtest.Logger import Logger
         #    from smoothtest.webunittest.XpathBrowser import XpathBrowser
@@ -31,14 +31,21 @@ class TestXpathBrowser(unittest.TestCase):
 
     def tearDown(self):
         # Make sure we quit those webdrivers created in this specific level of life
-        self.__level_mngr.leave_level()
+        self.__level_mngr.exit_level()
 
-    def test_demo(self):
+    def test_select(self):
         # Load a local page for the demo
         self.get_local_page('xpath_browser_demo.html')
         # Do 2 type of selection
         self.browser.select_xpath('//div') # Xpath must be present, but no inner element may be returned
         self.browser.select_xsingle('//div') # Xpath must be present and at least 1 element must be present
+        
+    def test_extract(self):
+        # Load a local page for the demo
+        self.get_local_page('xpath_browser_demo.html')
+        # Do 2 type of selection
+        self.browser.select_xpath('//div') # Xpath must be present, but no inner element may be returned
+        self.browser.extract_xsingle('//div') # Xpath must be present and at least 1 element must be present        
 
     def get_local_page(self, file_name):
         # Auxiliary method

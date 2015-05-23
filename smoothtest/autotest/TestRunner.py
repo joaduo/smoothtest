@@ -46,7 +46,7 @@ class TestRunner(ChildBase, TestRunnerBase):
             else:
                 result = self._run_test(tpath, argv, class_)
                 results.append_result(tpath, result)
-        level_mngr.leave_level()
+        level_mngr.exit_level()
         return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
@@ -55,7 +55,7 @@ class TestRunner(ChildBase, TestRunnerBase):
 
     def _receive_kill(self, *args, **kwargs):
         self._tear_down_process()
-        self._level_mngr.leave_level()
+        self._level_mngr.exit_level()
 
     def _run_test(self, test_path, argv, class_):
         try:
