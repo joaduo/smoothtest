@@ -227,13 +227,6 @@ class SourceWatcher(AutoTestBase):
                 log=self.log))
         action.append(callback_wrapper, 'modified')
 
-    def dispatch(self, timeout=0.0):
-        pass
-
-    def get_fd(self):
-        return None
-
-
 def smoke_test_module():
     sw = SourceWatcher()
 
