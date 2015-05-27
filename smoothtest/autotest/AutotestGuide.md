@@ -16,7 +16,7 @@ PhantomJS
 	python -m smoothtest.autotest.Command --smoothtest-settings settings.py  -t smoothtest/demos/xpath_browser_demo.py
 	```
 	
-	If you are using Firefox as browser in configuration, a Firefox browser should be open with the demo page reading "Loren Ipsum". 
+	If you are using Firefox as browser in configuration, a Firefox browser should be open with the demo page display a "Loren Ipsum" text. 
 	Also, in the terminal, you will see something like the following output: 
 	```
 	[Master] 21:02:16: Closing stdin
