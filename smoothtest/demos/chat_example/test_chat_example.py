@@ -16,16 +16,26 @@ base_url = 'http://localhost:%s' % port
 class TestXpathBrowser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # We need to enter "single test level" of life for each test
         # It will initialize the webdriver if no webdriver is present from upper levels
-        cls._level_mngr = WebdriverManager().enter_level(level=TEST_ROUND_LIFE)
-        # Get Xpath browser
-        cls.browser = cls._level_mngr.get_xpathbrowser(name=__name__)
-        cls.browser.set_base_url(base_url)
-    
+        # Since we don't want to initialize a webdriver for each single test
+        # we create the webdriver 1 leve before SINGLE_TEST_LIFE
+        cls.cls_level_mngr = WebdriverManager().enter_level(level=TEST_ROUND_LIFE)
+
     @classmethod
     def tearDownClass(cls):
-        cls._level_mngr.exit_level()
+        cls.cls_level_mngr.exit_level()
+
+    def setUp(self):
+        # The webdriver is already initialized on previous level
+        # We simply manage it's context with this new _level_mngr
+        self._level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
+        # Lock webdriver and build XpathBrowser API
+        self.browser = self._level_mngr.get_xpathbrowser(name=__name__)
+        self.browser.set_base_url(base_url)
+
+    def tearDown(self):
+        # Release webdriver, we are not longer using it.
+        self._level_mngr.exit_level()
 
     def test_loaded(self):
         b = self.browser
