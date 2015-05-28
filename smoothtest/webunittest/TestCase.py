@@ -45,7 +45,8 @@ class TestCase(unittest.TestCase, SmoothTestBase):
 
     def _on_screenshot(self, name, exc, filename):
         '''
-        Keep track of taken screenshots. (for test reporting)
+        Exception screenshot callback definition.
+        Keeps track of taken screenshots. (for test reporting)
 
         :param name: Name of the exception screenshot
         :param exc: exception that fired the screenshot
@@ -96,6 +97,9 @@ class TestCase(unittest.TestCase, SmoothTestBase):
         self.assertEqual(extracted, value, msg)
 
     def setUp_webdriver(self, settings=None):
+        '''
+
+        '''
         # Solve settings
         settings = settings or self.global_settings
         # Enter single test level
@@ -120,6 +124,10 @@ class TestCase(unittest.TestCase, SmoothTestBase):
             LOGGER.setLevel(logging.INFO)
 
     def tearDown_webdriver(self):
+        '''
+        Common method to tearDown webdriver in case we called setUp_webdriver
+        on setup
+        '''
         # Make sure we leave webdriver clean
         self._level_mngr.exit_level()
 

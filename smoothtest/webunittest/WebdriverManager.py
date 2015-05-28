@@ -50,6 +50,12 @@ class WebdriverManager(SmoothTestBase):
 
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
+        '''
+        Release passed webdriver instance, so it becomes available to be used
+        by another test. (this function is not generally used directly)
+        :param wdriver: webdriver instance to be released
+        :param level: level at wich we are releasing the webdriver
+        '''
         if not wdriver:
             return
         assert wdriver in self._locked, 'Webdriver %r was never locked' % wdriver
@@ -65,6 +71,8 @@ class WebdriverManager(SmoothTestBase):
             self._quit_webdriver(wdriver)
 
     def _quit_failed_webdriver(self, wdriver):
+        # Test wether a webdriver is responding, if not quit it and
+        # unregister it to avoid further usage.
         try:
             wdriver.current_url
             return False
@@ -75,18 +83,31 @@ class WebdriverManager(SmoothTestBase):
             return True
 
     def _quit_webdriver(self, wdriver):
+        # quit a webdriver, catch any exception and report it
         try:
             wdriver.quit()
         except Exception as e:
             self.log.w('Ignoring %r:%s' % (e,e))
 
     def get_browser_name(self):
+        '''
+        Get the current browser name in usage
+        If not set, we use the one specified in global settings
+        or PhantomJS as the final default
+        '''
         browser = (self._current_browser
                    or self.global_settings.get('webdriver_browser', 'PhantomJS'))
         return self._get_full_name(browser)
 
     @synchronized(_methods_lock)
     def init_level(self, level):
+        '''
+        Initialize webdriver for a specific Life Level.
+        There are two possibilities:
+          1- no webdriver was initialized on previous level => init it 
+          2- there is a webdriver for the browser selected, no action is performed.
+        :param level: webdriver's level of life we are entering
+        '''
         # Set level and check consistency
         assert level, 'No process level set'
         # Get rid of non-responding browsers
