@@ -367,7 +367,7 @@ return eslist;
             assert not any(not isinstance(s, basestring) for s in result)
         return result
 
-    def fill_input(self, xpath, value):
+    def fill(self, xpath, value):
         '''
         Fill input field on page
 
@@ -411,6 +411,17 @@ return eslist;
             alert.accept()
         except TimeoutException:
             pass
+
+    _quick_sshot_count = 0
+
+    def quick_screenshot(self):
+        self._quick_sshot_count += 1
+        filename = '{count:03d}.quick_screenshot.png'.format(**locals())
+        self.log.i('Saving exception screenshot to: %r' % filename)
+        self.save_screenshot(filename)
+
+    def save_screenshot(self, filename):
+        self.get_driver().save_screenshot(filename)
 
 
 def smoke_test_module():

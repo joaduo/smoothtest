@@ -46,8 +46,8 @@ class WebdriverManager(SmoothTestBase):
         # Virtual display object where we start webdrivers
         self._virtual_display = None
         # Current selected browser
-        self._current_browser = 'PhantomJS'
-    
+        self._current_browser = None
+
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
         if not wdriver:
@@ -81,7 +81,9 @@ class WebdriverManager(SmoothTestBase):
             self.log.w('Ignoring %r:%s' % (e,e))
 
     def get_browser_name(self):
-        return self._get_full_name(self._current_browser)
+        browser = (self._current_browser
+                   or self.global_settings.get('webdriver_browser', 'PhantomJS'))
+        return self._get_full_name(browser)
 
     @synchronized(_methods_lock)
     def init_level(self, level):
@@ -246,13 +248,14 @@ class WebdriverManager(SmoothTestBase):
     
     @synchronized(_methods_lock)
     def set_browser(self, browser):
+        assert browser
         self._current_browser = browser
     
     def get_browser(self):
         return self._current_browser
 
 
-class WebdriverLevelManager(object):
+class WebdriverLevelManager(SmoothTestBase):
     def __init__(self, parent, level, base_url=None, name=''):
         self.parent = parent
         self.level = level
@@ -267,6 +270,9 @@ class WebdriverLevelManager(object):
     def __exit__(self, type, value, traceback):
         self.exit_level()
 
+    def get_locked_driver(self):
+        return self.webdriver
+
     def acquire_driver(self):
         assert not self.webdriver, 'Webdriver already acquired'
         self.webdriver = self.parent.acquire_driver(self.level)
@@ -275,7 +281,7 @@ class WebdriverLevelManager(object):
     def get_xpathbrowser(self, base_url=None, name=''):
         from smoothtest.Logger import Logger
         from .XpathBrowser import XpathBrowser
-        base_url = base_url or self.base_url
+        base_url = base_url or self.base_url or self.global_settings.get('base_url')
         name = name or self.name
         # Initialize the XpathBrowser class
         return XpathBrowser(base_url, self.acquire_driver(), 
