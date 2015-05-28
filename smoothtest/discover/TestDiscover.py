@@ -17,7 +17,7 @@ import importlib
 import inspect
 from smoothtest.autotest.base import ParentBase
 from smoothtest.base import CommandBase, is_valid_file, TestRunnerBase
-from smoothtest.webunittest.WebdriverManager import stop_display
+from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from fnmatch import fnmatch
 from smoothtest.TestResults import TestResults, SmoothTestResult
 from smoothtest.utils import is_pickable
@@ -167,7 +167,7 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
         '''
         Stop display if there is a virtual screen running
         '''
-        stop_display()
+        WebdriverManager().stop_display()
 
     def dispatch_cmds(self, conn):
         '''
