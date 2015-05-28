@@ -39,6 +39,8 @@ class Logger(object):
         hdlr.setFormatter(fmt)
 
     def set_pre_post(self, pre='', post=''):
+        if pre:
+            pre = '[%s] ' % pre.strip()
         self.set_fmt(fmt=pre + self.default_fmt + post)
 
     def critical(self, msg):

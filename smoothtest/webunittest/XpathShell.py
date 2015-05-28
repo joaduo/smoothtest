@@ -5,38 +5,39 @@ Copyright (c) 2015 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp
+import rel_imp; rel_imp.init()
+from smoothtest.webunittest.WebdriverManager import WebdriverManager
+from smoothtest.settings.default import PROCESS_LIFE
 import urlparse
-rel_imp.init()
 from argparse import ArgumentParser
 from smoothtest.base import CommandBase
 from smoothtest.IpythonEmbedder import IpythonEmbedder
 from smoothtest.Logger import Logger
-from .TestCase import TestBase
 
-class XpathShell(TestBase):
+class XpathShell(object):
     def __init__(self, logger=None):
-        self.log = logger or Logger('xpath shell')
+        self.log = logger or Logger('Xpath Shell')
 
     def get(self, url):
         u = urlparse.urlparse(url)
         if not u.scheme:
             u = ('http', u.netloc, u.path, u.params, u.query, u.fragment)
             url = urlparse.urlunparse(u)
-        self.get_url(url)
-        self.log.i('Current url: %r' % self.current_url())
+        self.browser.get_url(url)
+        self.log.i('Current url: %r' % self.browser.current_url())
 
     def run_shell(self, url=None):
-        self.init_webdriver()
-        self.set_base_url(None)
+        level_mngr = WebdriverManager().enter_level(level=PROCESS_LIFE)
+        browser = self.browser = level_mngr.get_xpathbrowser(name='Browser')
         #Aliases #TODO: add ipython extension
-        ex  = extract = self.extract_xpath
-        exs = xsingle = self.extract_xsingle
+        ex  = extract = browser.extract_xpath
+        exs = xsingle = browser.extract_xsingle
         get = self.get
         if url:
             self.get(url)
         IpythonEmbedder().embed()
-        self.shutdown_webdriver()
+        level_mngr.exit_level()
+        WebdriverManager().stop_display()
 
 class XpathShellCommand(CommandBase):
 

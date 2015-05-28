@@ -11,11 +11,16 @@ from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
 import glob
 from argparse import ArgumentParser
+from smoothtest.Logger import Logger
 
 
 @magics_class
 class AutotestMagics(Magics):
+    '''
+    Mainly add some "magic" commands to the autotest's Ipython shell.
+    '''
     main = None
+    log = Logger(name='Ipython Extension')
 
     def expand_files(self, tests):
         paths = []
@@ -27,12 +32,17 @@ class AutotestMagics(Magics):
         from .Command import Command
         command = Command()
         parser = command.get_extension_parser()
-        args, unknown = parser.parse_known_args(shlex.split(line))
-        args.tests = self.expand_files(args.tests)
-        args.full_reloads = self.expand_files(args.full_reloads)
-        test_config = command.get_test_config(args, unknown)
-        test_config.update(force=args.force)
-        return args, test_config
+        try:
+            args, unknown = parser.parse_known_args(shlex.split(line))
+            args.tests = self.expand_files(args.tests)
+            args.full_reloads = self.expand_files(args.full_reloads)
+            test_config = command.get_test_config(args, unknown)
+            test_config.update(force=args.force)
+            return args, test_config
+        except SystemExit:
+            # Ignore SystemExit exception since ipython will ignore it anyway
+            # (happens when passing --help or on error)
+            pass
 
     def _send(self, test_config):
         self.main.send_test(**test_config)
@@ -46,19 +56,25 @@ class AutotestMagics(Magics):
     @line_magic
     def test(self, line):
         parser = self._test_magic_cmd_parser()
-        args = parser.parse_args(shlex.split(line))
-        if args.force:
-            # Force full reload
-            test_config = self.main.test_config.copy()
-            test_config.update(force=True)
-            self._send(test_config)
-        else:
-            # Simply invoque .test TODO
-            self.main.test
+        try:
+            args = parser.parse_args(shlex.split(line))
+            if args.force:
+                # Force full reload
+                test_config = self.main.test_config.copy()
+                test_config.update(force=True)
+                self._send(test_config)
+            else:
+                # Simply invoque .test TODO
+                self.main.test()
+        except SystemExit:
+            pass
 
     @line_magic
     def autotest(self, line):
-        args, test_config = self.__common(line)
+        res = self.__common(line)
+        if not res:
+            return
+        args, test_config = res
         if args.update:
             # Update set values
             for k, v in self.main.test_config.iteritems():
@@ -69,8 +85,33 @@ class AutotestMagics(Magics):
             if args.nosmoke is not None:
                 test_config['smoke'] = False
             test_config.update(force=args.force)
+        self.log.i('Parsing arguments and sending new test config. Check children processes output below...')
         self._send(test_config)
-        return test_config
+        return 'Done sending new test_config=%r' % test_config
+
+    def _new_browser(self, browser):
+        self.log.i('Setting browser to: %s' % browser)
+        self.main.new_browser(browser)
+
+    @line_magic
+    def firefox(self, line):
+        self._new_browser('Firefox')
+
+    @line_magic
+    def chrome(self, line):
+        self._new_browser('Chrome')
+
+    @line_magic
+    def phantomjs(self, line):
+        self._new_browser('PhantomJS')
+
+    @line_magic
+    def reset(self, line):
+        self.main.reset()
+
+    @line_magic
+    def test_config(self, line):
+        return self.main.test_config
 
 
 def load_extension(ipython, main):

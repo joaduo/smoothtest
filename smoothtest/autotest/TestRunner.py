@@ -9,6 +9,8 @@ import importlib
 import unittest
 import rel_imp
 rel_imp.init()
+from smoothtest.webunittest.WebdriverManager import WebdriverManager
+from smoothtest.settings.default import TEST_RUNNER_LIFE, TEST_ROUND_LIFE
 from .base import ChildBase
 from smoothtest.TestResults import TestResults, TestException
 from smoothtest.base import TestRunnerBase
@@ -23,14 +25,9 @@ class TestRunner(ChildBase, TestRunnerBase):
         - Report any errors
     '''
 
-    def __init__(self, webdriver=None):
+    def __init__(self):
         super(TestRunner, self).__init__()
-        self._set_webdriver(webdriver)
-
-    def _set_webdriver(self, webdriver):
-        if webdriver:
-            from ..webunittest.TestCase import TestBase
-            TestBase.set_webdriver(webdriver)
+        self._level_mngr = WebdriverManager().enter_level(level=TEST_RUNNER_LIFE)
 
     def test(self, test_paths, argv=[], smoke=False):
         '''
@@ -41,6 +38,7 @@ class TestRunner(ChildBase, TestRunnerBase):
             self.log.i('Ignoring %r \n  (smoke mode or no tests found)' %
                        list(test_paths))
             return results
+        level_mngr = WebdriverManager().enter_level(level=TEST_ROUND_LIFE)
         for tpath in test_paths:
             class_ = self._import_test(tpath)
             if isinstance(class_, TestException):
@@ -48,6 +46,7 @@ class TestRunner(ChildBase, TestRunnerBase):
             else:
                 result = self._run_test(tpath, argv, class_)
                 results.append_result(tpath, result)
+        level_mngr.exit_level()
         return results
 
     def io_loop(self, conn, stdin=None, stdout=None, stderr=None):
@@ -56,6 +55,7 @@ class TestRunner(ChildBase, TestRunnerBase):
 
     def _receive_kill(self, *args, **kwargs):
         self._tear_down_process()
+        self._level_mngr.exit_level()
 
     def _run_test(self, test_path, argv, class_):
         try:

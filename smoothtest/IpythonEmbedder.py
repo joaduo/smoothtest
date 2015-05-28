@@ -42,11 +42,12 @@ class IpythonEmbedder(object):
             config.InteractiveShellEmbed = config.TerminalInteractiveShell
             kwargs['config'] = config
         kwargs.setdefault('display_banner', False)
-        self.ishell = InteractiveShellEmbed.instance(**kwargs)
+        self._ishell = InteractiveShellEmbed.instance(**kwargs)
         if load_extension:
-            load_extension(self.ishell)
+            load_extension(self._ishell)
         # Stack depth is 3 because we use self.embed first
-        self.ishell(header=header, stack_depth=3, compile_flags=compile_flags)
+        self._ishell(header=header, stack_depth=3, compile_flags=compile_flags)
+        return self._ishell
 
 
 def smoke_test_module():
