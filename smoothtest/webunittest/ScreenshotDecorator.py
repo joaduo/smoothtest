@@ -104,6 +104,7 @@ class ScreenshotDecorator(SmoothTestBase):
             # Capture sreenshot
             @wraps(method)
             def dec(*args, **kwargs):
+                self.log.i('-'*20 + 'entering %s' % method + '-'*20)
                 try:
                     return method(*args, **kwargs)
                 except Exception as e:

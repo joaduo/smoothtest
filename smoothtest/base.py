@@ -97,6 +97,7 @@ class CommandBase(SmoothTestBase):
 
     def _add_smoothtest_common_args(self, parser):
         parser.add_argument(
+            '-S',
             '--smoothtest-settings',
             type=is_valid_file,
             help='Specific smoothtest_settings module path '

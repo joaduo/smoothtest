@@ -4,10 +4,10 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+rel_imp.init()
 from smoothtest.webunittest.ScreenshotDecorator import ScreenshotDecorator
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.settings.default import SINGLE_TEST_LIFE
-rel_imp.init()
 from functools import wraps
 from ..webunittest import unittest
 from smoothtest.settings.solve_settings import solve_settings
@@ -96,15 +96,18 @@ class TestCase(unittest.TestCase, SmoothTestBase):
                format(**locals()))
         self.assertEqual(extracted, value, msg)
 
-    def setUp_webdriver(self, settings=None):
+    def setUp_browser(self, settings=None):
         '''
-
+        Common method to setup webdriver and return XpathBrower object.
+        :param settings: smoothtest setttings wrapper/dictionary
+        :returns: XpathBrower object.
         '''
         # Solve settings
         settings = settings or self.global_settings
         # Enter single test level
         self._level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
-        self.browser = self._level_mngr.get_xpathbrowser()
+        # Build browser instance
+        browser = self._level_mngr.get_xpathbrowser()
         # Setup webdriver parameters before doing the tets
         webdriver = self._level_mngr.get_locked_driver()
         # Setup some webdriver parameters specified in smoothtest settings 
@@ -114,6 +117,8 @@ class TestCase(unittest.TestCase, SmoothTestBase):
         and webdriver.get_window_size() != settings.get('webdriver_window_size')):
             webdriver.set_window_size(*settings.get('webdriver_window_size'))
         self.__set_webdriver_log_level(settings.get('webdriver_log_level'))
+        # Finally return the XpathBrowser instance
+        return browser
 
     def __set_webdriver_log_level(self, log_level):
         # Nicer method to setup webdriver's log level (too verbose by default)
@@ -123,9 +128,9 @@ class TestCase(unittest.TestCase, SmoothTestBase):
         else:
             LOGGER.setLevel(logging.INFO)
 
-    def tearDown_webdriver(self):
+    def tearDown_browser(self):
         '''
-        Common method to tearDown webdriver in case we called setUp_webdriver
+        Common method to tearDown webdriver in case we called setUp_browser
         on setup
         '''
         # Make sure we leave webdriver clean
