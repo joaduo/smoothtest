@@ -39,15 +39,25 @@ def synchronized(lock):
 
 @singleton_decorator
 class WebdriverManager(SmoothTestBase):
+    '''
+    This is a "Context Manager" for the Webdriver's instances available. (used
+    for running tests in general)
+    '''
+
+    # Thread lock for methods in this class
     _methods_lock = RLock()
 
     def __init__(self):
+        # Set of locked webdrivers
         self._locked = set()
+        # Set of released webdrivers
         self._released = set()
+        # Pool of drivers {wdriver:(browser_name, life_level)}
         self._wdriver_pool = {}
+        # Virtual display object where we start webdrivers
         self._virtual_display = None
-        self._level = None
-        self._browser = 'PhantomJS'
+        # Current selected browser
+        self._current_browser = 'PhantomJS'
     
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
@@ -82,7 +92,7 @@ class WebdriverManager(SmoothTestBase):
             self.log.w('Ignoring %r:%s' % (e,e))
 
     def get_browser_name(self):
-        return self._get_full_name(self._browser)
+        return self._get_full_name(self._current_browser)
 
     @synchronized(_methods_lock)
     def init_level(self, level):
@@ -247,10 +257,10 @@ class WebdriverManager(SmoothTestBase):
     
     @synchronized(_methods_lock)
     def set_browser(self, browser):
-        self._browser = browser
+        self._current_browser = browser
     
     def get_browser(self):
-        return self._browser
+        return self._current_browser
 
 
 class WebdriverLevelManager(object):

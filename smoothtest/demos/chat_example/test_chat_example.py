@@ -13,12 +13,12 @@ from .chat_example import port
 
 base_url = 'http://localhost:%s' % port
 
-class TestXpathBrowser(unittest.TestCase):
+class TestChat(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # It will initialize the webdriver if no webdriver is present from upper levels
         # Since we don't want to initialize a webdriver for each single test
-        # we create the webdriver 1 leve before SINGLE_TEST_LIFE
+        # we create the webdriver one level upper SINGLE_TEST_LIFE
         cls.cls_level_mngr = WebdriverManager().enter_level(level=TEST_ROUND_LIFE)
 
     @classmethod
