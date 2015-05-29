@@ -49,7 +49,7 @@ class ClientsManager(object):
 class TestResults(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
-        self.render('html/test_results.html')
+        self.render('html/tests.html')
 
         
 class SubmitTestHandler(tornado.web.RequestHandler):
