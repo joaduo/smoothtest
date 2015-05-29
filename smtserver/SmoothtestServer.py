@@ -10,6 +10,7 @@ import simplejson
 from smoothtest.singleton_decorator import singleton_decorator
 import tornado.httpserver
 from tornado.options import define, options
+import os
 
 #import logging
 #logging.disable(logging.INFO)
@@ -49,7 +50,7 @@ class ClientsManager(object):
 class TestResults(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
-        self.render('html/tests.html')
+        self.render('tests.html')
 
         
 class SubmitTestHandler(tornado.web.RequestHandler):
@@ -61,7 +62,7 @@ class SubmitTestHandler(tornado.web.RequestHandler):
             print test_result
 
     def get(self): #@NoSelf
-        self.render('html/submit.html')
+        self.render('submit.html')
 
     def _delist_args(self, arguments):
         '''
@@ -91,13 +92,23 @@ class WebSocketTestReport(tornado.websocket.WebSocketHandler):
         ClientsManager().remove(self)
 
 
+def getWebClientRoot():
+    return os.path.split(__file__)[0]
+
 def main():
-    app = tornado.web.Application([
-                                   (r'/', TestResults),
-                                   (r'/updates', WebSocketTestReport), 
-                                   (r'/submit', SubmitTestHandler),
-                                   ],
-                                   debug=True)
+    settings = dict(
+      template_path=os.path.join(getWebClientRoot(), "html"),
+      static_path=os.path.join(getWebClientRoot(), "static"),
+      debug=True, #TODO: configurable
+    )
+    handlers = [
+                   (r'/', TestResults),
+                   (r'/updates', WebSocketTestReport), 
+                   (r'/submit', SubmitTestHandler),
+               ]
+    print settings['static_path']
+    print settings['template_path']
+    app = tornado.web.Application(handlers, **settings)
     tornado.options.parse_command_line()
     http_server = tornado.httpserver.HTTPServer(app)
     http_server.listen(options.port)
