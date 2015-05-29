@@ -5,22 +5,12 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import urlparse
-import time
 import re
 import inspect
-from selenium.webdriver.remote.webelement import WebElement
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException,\
-    TimeoutException
 from functools import wraps
 from types import MethodType
 from threading import Lock
-from smoothtest.Logger import Logger
-import urllib
 import os
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions
 from smoothtest.base import SmoothTestBase
 
 

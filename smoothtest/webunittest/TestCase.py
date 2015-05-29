@@ -5,13 +5,13 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
 rel_imp.init()
-from smoothtest.webunittest.ScreenshotDecorator import ScreenshotDecorator
-from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.settings.default import SINGLE_TEST_LIFE
-from functools import wraps
-from ..webunittest import unittest
 from smoothtest.settings.solve_settings import solve_settings
 from smoothtest.base import SmoothTestBase
+from .ScreenshotDecorator import ScreenshotDecorator
+from .WebdriverManager import WebdriverManager
+from ..webunittest import unittest
+from functools import wraps
 import logging
 
 
