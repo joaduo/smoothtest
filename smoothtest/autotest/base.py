@@ -13,7 +13,6 @@ from collections import namedtuple
 import multiprocessing
 from types import MethodType, FunctionType
 import sys
-from smoothtest.singleton_decorator import singleton_decorator
 import signal
 
 
