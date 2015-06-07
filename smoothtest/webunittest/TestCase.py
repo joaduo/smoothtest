@@ -4,6 +4,10 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import os
+import tempfile
+from smoothtest.webunittest.ImagesComparator import ImagesComparator
+import shutil
 rel_imp.init()
 from smoothtest.settings.default import SINGLE_TEST_LIFE
 from smoothtest.settings.solve_settings import solve_settings
@@ -28,6 +32,8 @@ class TestCase(unittest.TestCase, SmoothTestBase):
         self._exc_screenshots = []
         # Decorate methods who can fire screenshots on exceptoins
         self._decorate_exc_sshot()
+        # Temporary assert screenshots (for comparison)
+        self._tmp_screenshots_dir = None
         # Init parent class (unittest.TestCase, the other classed don't need initialization
         super(TestCase, self).__init__(*args, **kwargs)
 
@@ -81,21 +87,6 @@ class TestCase(unittest.TestCase, SmoothTestBase):
                 setattr(cls, meth, no_op)
                 return no_op
 
-    def assert_text(self, xpath, value):
-        '''
-        Assert the text of the first node given by xpath is `value`
-        (if xpath retrieves multiple nodes, only first node will be taken 
-        in count)
-        This is a nicer alias to extract_xsingle + assertEqual.
-
-        :param xpath: xpath to extract text/html from
-        :param value: value of the extracted text
-        '''
-        extracted = self.browser.extract_xsingle(xpath)
-        msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
-               format(**locals()))
-        self.assertEqual(extracted, value, msg)
-
     def setUp_browser(self, settings=None):
         '''
         Common method to setup webdriver and return XpathBrower object.
@@ -135,6 +126,57 @@ class TestCase(unittest.TestCase, SmoothTestBase):
         '''
         # Make sure we leave webdriver clean
         self._level_mngr.exit_level()
+
+    def assert_text(self, xpath, value):
+        '''
+        Assert the text of the first node given by xpath is `value`
+        (if xpath retrieves multiple nodes, only first node will be taken 
+        in count)
+        This is a nicer alias to extract_xsingle + assertEqual.
+
+        :param xpath: xpath to extract text/html from
+        :param value: value of the extracted text
+        '''
+        extracted = self.browser.extract_xsingle(xpath)
+        msg = (u'Expecting {value!r}, got {extracted!r} at {xpath!r}.'.
+               format(**locals()))
+        self.assertEqual(extracted, value, msg)
+
+    def assert_screenshot(self, screenshot_id=None, threshold=100, crop_threshold=100):
+        assert_dir = self.global_settings.get('assert_screenshots_dir')
+        screenshot_id += '.png'
+        ok_file = os.path.join(assert_dir, screenshot_id) 
+        if not os.path.isfile(ok_file):
+            if self.global_settings.get('assert_screenshots_learning'):
+                self.log.d('Learning screenshot for %r' % screenshot_id)
+                self.browser.save_screenshot(ok_file)
+            else:
+                raise LookupError('No reference screenshot file %r for '
+                                  'screenshot id:%r' % (ok_file, screenshot_id))
+        else:
+            if not self._tmp_screenshots_dir:
+                self._tmp_screenshots_dir = tempfile.mkdtemp()
+            test_file = os.path.join(self._tmp_screenshots_dir, screenshot_id)
+            self.browser.save_screenshot(test_file)
+            assert os.path.isfile(test_file), ('The screenshot %r was not saved'
+                                               % screenshot_id)
+            comp = ImagesComparator()
+            equal = comp.compare(ok_file, test_file, threshold)
+            if not equal:
+                self._save_failed_screenshot(ok_file, test_file, screenshot_id, crop_threshold)
+            self.assert_(equal, 'Reference(%r) != Screenshot(%r), threshold=%s' % (ok_file, test_file, threshold))
+
+    def _save_failed_screenshot(self, ok_file, test_file, screenshot_id, crop_threshold):
+        save_dir = self.global_settings.get('assert_screenshots_failed_dir')
+        assert os.path.isdir(save_dir), 'Inexistent directory %r' % save_dir
+        failed = os.path.join(save_dir, 'failed_' + screenshot_id)
+        # Create the diff
+        diff = os.path.join(save_dir, 'failed_diff_' + screenshot_id)
+        ImagesComparator().create_diff(ok_file, test_file, diff, crop_threshold)
+        # Move the failing image
+        shutil.move(test_file, failed)
+        # Return the path to intercept them in reports
+        return failed, diff
 
 
 def smoke_test_module():

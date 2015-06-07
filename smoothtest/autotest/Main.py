@@ -22,7 +22,7 @@ from smoothtest.IpythonEmbedder import IpythonEmbedder
 class Main(ParentBase):
     '''
     This class contains the "main loop" logic of the autotest command
-    I will create 2 forked subprocess as:
+    It will create 2 forked subprocess as:
         Main Process (this one)
           Master Subprocess (Child)
             TestRunner Subprocess (Grand Child)
@@ -30,8 +30,8 @@ class Main(ParentBase):
     Roles are as:
         Main: where the CLI loop is done, sending commands to Master.
         Master: where file watching happens; events from Main and TestRunner are integrated
-            decides whether to trigger tests, kill TestRunner and recreate it.
-        TestRunner: where tests loaded and are ran. Results are sent back to Master.
+            decides whether to: trigger tests, kill TestRunner and recreate it.
+        TestRunner: where tests are loaded and ran, test results are sent back to Master.
     '''
 
     def __init__(self):
@@ -44,6 +44,7 @@ class Main(ParentBase):
         self._slave = None    # Slave instance (configures how tests are ran)
         self._child_pids = [] # Store pids of children, in case we need to kill them
         self._wdriver_mngr = WebdriverManager() # common WebdriverManager instance
+        self._browser_name = None # Current selected browser name
         self._level_mngr = None # WebdriverLevelManager for each time we enter/leave a "webdriver life level" 
 
     def run(self, test_config, embed_ipython=False, block=False):
@@ -51,9 +52,9 @@ class Main(ParentBase):
         Runs the main CLI loop.
         If ipython is not present it will fallback to gdb as CLI.
 
-        :param test_config: initial configuration parameters sent for each test round
-        :param embed_ipython: if True, it will embed a interactive shell. (if False no CLI is done)
-        :param block: block waiting for events (in case no CLI was enabled) In case we want to do some automation.
+        :param test_config: initial configuration parameters
+        :param embed_ipython: if True, it will embed a interactive shell.
+        :param block: block waiting for events (in case no shell was enabled)
         '''
         self.log.set_pre_post(pre='Autotest CLI')
         self.test_config = test_config
@@ -90,25 +91,26 @@ class Main(ParentBase):
         self._child_pids.append(('slave_pid', slave_pid))
         self._child_pids.append(('master_pid', self.get_subprocess_pid()))
 
-    def _build_slave(self, force=False):
-        # Build the Slave instance (used to control how tests are ran)
-        if (not self._slave or force):
-            child_kwargs = {}
+    def _build_slave(self):
+        # Build the Slave class instance (used to control how tests are ran)
+        if not self._slave:
             # Release no longer used webdriver
             if self._level_mngr:
                 self._level_mngr.release_driver()
             # Quit those drivers not responding
             self._wdriver_mngr.quit_all_failed_webdrivers()
-            self._set_browser()
+            self._wdriver_mngr.set_browser(self._get_browser_name())
             # Enter the level again
             self._level_mngr = self._wdriver_mngr.enter_level(level=PROCESS_LIFE)
-            self._slave = Slave(TestRunner, child_kwargs=child_kwargs)
+            self._slave = Slave(TestRunner)
         return self._slave
 
-    def _set_browser(self, browser=None):
+    def _set_browser_name(self, browser):
         # Set the default browser to use from now on
-        browser = browser or self.global_settings.get('webdriver_browser')
-        self._wdriver_mngr.set_browser(browser)
+        self._browser_name = browser or self._browser_name
+        
+    def _get_browser_name(self):
+        return self._browser_name or self.global_settings.get('webdriver_browser')
 
     def reset(self):
         '''
@@ -124,9 +126,7 @@ class Main(ParentBase):
         Create or reuse a specific web browser in the next tests round.
         :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
         '''
-        self._set_browser(browser)
-        # Build the new slave
-        self._build_slave(force=True)
+        self._set_browser_name(browser)
         self.kill_child()
         self.create_child()
 

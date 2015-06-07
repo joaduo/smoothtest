@@ -47,6 +47,10 @@ class DefaultSettings(object):
     screenshot_level = 0 # Like a text logging level, but doing screenshots (WIP) 
                         # Higher level-> more screenshots per action
     screenshot_exceptions_dir = './' # Were to save logged screenshot
+    
+    assert_screenshots_dir = '/tmp/'
+    assert_screenshots_learning = False
+    assert_screenshots_failed_dir = '/tmp/'
 
 
 def smoke_test_module():

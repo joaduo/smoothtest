@@ -244,15 +244,13 @@ function extract_elem(elem){
     return elem;
 }
         '''
-        if single:
-            script_single = '''
+        script_single = '''
 var xpath = %(xpath)r;
 //XPathResult.FIRST_ORDERED_NODE_TYPE = 9
 var e = document.evaluate(xpath, document, null,9, null).singleNodeValue;
 return extract_elem(e);
             '''
-        else:
-            script_list = '''
+        script_multiple = '''
 var xpath = %(xpath)r;
 //XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5
 var es = document.evaluate(xpath, document, null, 5, null);
@@ -264,7 +262,7 @@ while(r){
 }
 return eslist;
         '''
-        script = script_single if single else script_list
+        script = script_single if single else script_multiple
         return common_func + script % locals()
 
     def select_xpath(self, xpath):
@@ -417,11 +415,14 @@ return eslist;
     def quick_screenshot(self):
         self._quick_sshot_count += 1
         filename = '{count:03d}.quick_screenshot.png'.format(**locals())
-        self.log.i('Saving exception screenshot to: %r' % filename)
+        self.log.i('Saving screenshot to: %r' % filename)
         self.save_screenshot(filename)
 
     def save_screenshot(self, filename):
         self.get_driver().save_screenshot(filename)
+        
+    def execute_script(self, script, *args):
+        self.get_driver().execute_script(script, *args)
 
 
 def smoke_test_module():

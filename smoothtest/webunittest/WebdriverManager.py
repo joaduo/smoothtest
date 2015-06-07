@@ -9,6 +9,7 @@ from pyvirtualdisplay import Display
 from smoothtest.singleton_decorator import singleton_decorator
 from threading import RLock
 from functools import wraps
+from selenium.common.exceptions import UnexpectedAlertPresentException
 
 
 def synchronized(lock):
@@ -70,17 +71,22 @@ class WebdriverManager(SmoothTestBase):
             # Remove no longer needed webdriver
             self._quit_webdriver(wdriver)
 
-    def _quit_failed_webdriver(self, wdriver):
+    def _quit_failed_webdriver(self, wdriver, tested_once=False):
         # Test wether a webdriver is responding, if not quit it and
         # unregister it to avoid further usage.
         try:
             wdriver.current_url
             return False
+        except UnexpectedAlertPresentException as e:
+            alert = wdriver.switch_to_alert()
+            alert.accept()
+            if not tested_once:
+                return self._quit_failed_webdriver(wdriver, tested_once=True)
         except Exception as e:
             self.log.e('Quitting webdriver %r due to exception %r:%s' %
                        (wdriver, e, e))
-            self._quit_webdriver(wdriver)
-            return True
+        self._quit_webdriver(wdriver)
+        return True
 
     def _quit_webdriver(self, wdriver):
         # quit a webdriver, catch any exception and report it
@@ -96,7 +102,7 @@ class WebdriverManager(SmoothTestBase):
         or PhantomJS as the final default
         '''
         browser = (self._current_browser
-                   or self.global_settings.get('webdriver_browser', 'PhantomJS'))
+                   or self.global_settings.get('webdriver_browser'))
         return self._get_full_name(browser)
 
     @synchronized(_methods_lock)
@@ -271,9 +277,9 @@ class WebdriverManager(SmoothTestBase):
     def set_browser(self, browser):
         assert browser
         self._current_browser = browser
-    
-    def get_browser(self):
-        return self._current_browser
+
+    def get_bypassed_browser(self, browser):
+        pass
 
 
 class WebdriverLevelManager(SmoothTestBase):
