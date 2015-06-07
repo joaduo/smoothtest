@@ -47,7 +47,7 @@ class WebdriverManager(SmoothTestBase):
         # Virtual display object where we start webdrivers
         self._virtual_display = None
         # Current selected browser
-        self._current_browser = None
+        self._browser_name = None
 
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
@@ -94,16 +94,6 @@ class WebdriverManager(SmoothTestBase):
             wdriver.quit()
         except Exception as e:
             self.log.w('Ignoring %r:%s' % (e,e))
-
-    def get_browser_name(self):
-        '''
-        Get the current browser name in usage
-        If not set, we use the one specified in global settings
-        or PhantomJS as the final default
-        '''
-        browser = (self._current_browser
-                   or self.global_settings.get('webdriver_browser'))
-        return self._get_full_name(browser)
 
     @synchronized(_methods_lock)
     def init_level(self, level):
@@ -167,7 +157,7 @@ class WebdriverManager(SmoothTestBase):
         return wdriver
 
     def _new_webdriver(self, browser=None, *args, **kwargs):
-        browser = self._get_full_name(browser)
+        browser = self.expand_browser_name(browser)
         # Setup display before creating the browser
         self.setup_display()
         if browser == 'PhantomJS':
@@ -233,17 +223,6 @@ class WebdriverManager(SmoothTestBase):
             self.log.d('Stopping virtual display %r' % display)
             display.stop()
             WebdriverManager._virtual_display = None
-
-    def _get_full_name(self, browser=None):
-        # Select based in first letter
-        # TODO: add IE and Opera
-        char_browser = dict(f='Firefox',
-                            c='Chrome',
-                            p='PhantomJS',
-                            )
-        char = browser.lower()[0]
-        assert char in char_browser, 'Could not find browser %r' % browser
-        return char_browser.get(char)
     
     @synchronized(_methods_lock)
     def enter_level(self, level, base_url=None, name=''):
@@ -269,14 +248,36 @@ class WebdriverManager(SmoothTestBase):
         for wdriver in in_report:
             browser, level = self._wdriver_pool[wdriver]
             wdrivers_report[wdriver] = browser, level
-        # TODO: do not return webdriver in report, but the title,
-        # ip and port
         return wdrivers_report
-    
+
     @synchronized(_methods_lock)
     def set_browser(self, browser):
+        '''
+        :param browser: browser's name string
+        '''
         assert browser
-        self._current_browser = browser
+        self._browser_name = browser
+
+    def get_browser_name(self):
+        '''
+        Get the current browser name in usage
+        If not set, we use the one specified in global settings
+        or PhantomJS as the final default
+        '''
+        browser = (self._browser_name
+                   or self.global_settings.get('webdriver_browser'))
+        return self.expand_browser_name(browser)
+
+    def expand_browser_name(self, browser=None):
+        # Select based in first letter
+        # TODO: add IE and Opera
+        char_browser = dict(f='Firefox',
+                            c='Chrome',
+                            p='PhantomJS',
+                            )
+        char = browser.lower()[0]
+        assert char in char_browser, 'Could not find browser %r' % browser
+        return char_browser.get(char)
 
 
 class WebdriverLevelManager(SmoothTestBase):

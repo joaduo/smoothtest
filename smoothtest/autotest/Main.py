@@ -6,9 +6,9 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+rel_imp.init()
 from smoothtest.settings.default import PROCESS_LIFE, INMORTAL_LIFE
 from smoothtest.webunittest.XpathBrowser import XpathBrowser
-rel_imp.init()
 import os
 import signal
 import sys
@@ -111,6 +111,7 @@ class Main(ParentBase):
         self._browser_name = browser or self._browser_name
         
     def _get_browser_name(self):
+        # Get the name of the current browser in use
         return self._browser_name or self.global_settings.get('webdriver_browser')
 
     def reset(self):
@@ -124,7 +125,7 @@ class Main(ParentBase):
 
     def new_browser(self, browser=None):
         '''
-        Create or reuse a specific web browser in the next tests round.
+        Select a new current browser to run tests with. (will create if missing else reuse)
         :param browser: browser's name string. Eg:'Firefox', 'Chrome', 'PhantomJS'
         '''
         self._set_browser_name(browser)
@@ -133,7 +134,8 @@ class Main(ParentBase):
 
     def send_test(self, **test_config):
         '''
-        Send tests parameters to the Master process. (which in turn will send to TestRunner)
+        Send tests config parameters to the Master process.
+        (which in turn will send to TestRunner)
         '''
         if self._healthy_webdriver():
             self.send_recv('new_test', **test_config)
@@ -141,7 +143,7 @@ class Main(ParentBase):
 
     def test(self):
         '''
-        Send light testing command.
+        Send parcial reload testing command.
         Means testing without recreating TestRunner subprocess
         '''
         if self._healthy_webdriver():
@@ -214,7 +216,11 @@ class Main(ParentBase):
             self._level_mngr = None
 
     def steal_xpathbrowser(self, browser):
-        browser = self._wdriver_mngr._get_full_name(browser)
+        '''
+        Get an XpathBrowser instance bypassing any locking mechanism. (debugging purposes)
+        :param browser: browser's name string
+        '''
+        browser = self._wdriver_mngr.expand_browser_name(browser)
         webdrivers = self._wdriver_mngr.list_webdrivers(which='all')
         for wd, (brwsr, _) in webdrivers.iteritems():
             if browser == brwsr:

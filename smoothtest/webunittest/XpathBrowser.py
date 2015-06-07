@@ -413,16 +413,29 @@ return eslist;
     _quick_sshot_count = 0
 
     def quick_screenshot(self):
+        '''
+        Take a quick screenshot saving the file to the current dir.
+        It will autonumerate screenshots. 001.quick_screenshot.png ...etc
+        '''
         self._quick_sshot_count += 1
         filename = '{count:03d}.quick_screenshot.png'.format(**locals())
         self.log.i('Saving screenshot to: %r' % filename)
         self.save_screenshot(filename)
 
     def save_screenshot(self, filename):
+        '''
+        Take a screenshot and save it to the path specified in filename
+        :param filename: path to save the screenshot file to
+        '''
         self.get_driver().save_screenshot(filename)
         
     def execute_script(self, script, *args):
-        self.get_driver().execute_script(script, *args)
+        '''
+        Execute javascript in the Browser.
+        Will return a value if the specified script returns a value.
+        :param script: javascript script to be executed. 
+        '''
+        return self.get_driver().execute_script(script, *args)
 
 
 def smoke_test_module():
