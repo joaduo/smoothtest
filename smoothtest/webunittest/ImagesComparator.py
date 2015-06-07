@@ -22,10 +22,10 @@ class ImagesComparator(SmoothTestBase):
         assert not p.returncode, 'Command %r failed output: %s err: %s' % (cmd, out, err)
         return out
     
-    def create_diff(self, a_file, b_file, diff, crop_threshold):
+    def create_diff(self, a_file, b_file, diff, crop_threshold=100):
         if not (0 <= crop_threshold <= 100):
             raise ValueError('crop_threshold outside range: 0 <= crop_threshold <= 100.')
-        tempdir = None
+        atempdir = btempdir = None
         aimg = Image.open(a_file)
         bimg = Image.open(b_file)
         if aimg.size != bimg.size:
@@ -37,14 +37,16 @@ class ImagesComparator(SmoothTestBase):
             if wratio < crop_threshold or hratio < crop_threshold:
                 raise ValueError('Cropping ratios %r are smaller than '
                                  'crop_threshold=%r.' % ((wratio, hratio), crop_threshold))
-            tempdir = tempfile.mkdtemp()
             if aimg.size != (w,h):
-                a_file = self.crop_image(tempdir, a_file, w, h)
+                atempdir = tempfile.mkdtemp()
+                a_file = self.crop_image(atempdir, a_file, w, h)
             if bimg.size != (w,h):
-                b_file =self.crop_image(tempdir, b_file, w, h)
+                btempdir = tempfile.mkdtemp()
+                b_file =self.crop_image(btempdir, b_file, w, h)
         self.exec_cmd('compare %s %s %s'%(a_file,b_file,diff))
-#        if tempdir:
-#            shutil.rmtree(tempdir)
+        for tempdir in [atempdir, btempdir]:
+            if tempdir:
+                shutil.rmtree(tempdir)
 
     def crop_image(self, tempdir, img_file, w, h):
         new_file = os.path.join(tempdir, os.path.basename(img_file))
@@ -64,10 +66,8 @@ def smoke_test_module():
     diff = 'tests/img/diff.jpg'
     assert ic.compare(a_file, b_file, treshold=100) == False
     assert ic.compare(a_file, b_file, treshold=50) == True
-    ic.create_diff(a_file, b_file, diff)
-    a = '/home/jduo/000-JujuUnencrypted/EclipseProjects/smoothtest/smoothtest/ref/python_search.png'
-    b = '/tmp/tmpfAHDpt/python_search.png'
-    ic.create_diff(a, b, '/tmp/diff.png', crop_threshold=90)
+    ic.create_diff(a_file, b_file, diff, crop_threshold=100)
+
 
 if __name__ == "__main__":
     smoke_test_module()
