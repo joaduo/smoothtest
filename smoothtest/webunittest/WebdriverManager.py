@@ -269,7 +269,13 @@ class WebdriverManager(SmoothTestBase):
         return self.expand_browser_name(browser)
 
     def expand_browser_name(self, browser=None):
-        # Select based in first letter
+        '''
+        Expand a partial or lower case Browser's name into its full name.
+        Eg:
+            firefo -> Firefox
+            chrom -> Chrome
+        :param browser: partial browser's name string
+        '''
         # TODO: add IE and Opera
         char_browser = dict(f='Firefox',
                             c='Chrome',
