@@ -7,6 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
 from smoothtest.settings.default import PROCESS_LIFE, INMORTAL_LIFE
+from smoothtest.webunittest.XpathBrowser import XpathBrowser
 rel_imp.init()
 import os
 import signal
@@ -211,6 +212,13 @@ class Main(ParentBase):
         if self._level_mngr:
             self._level_mngr.exit_level()
             self._level_mngr = None
+
+    def steal_xpathbrowser(self, browser):
+        browser = self._wdriver_mngr._get_full_name(browser)
+        webdrivers = self._wdriver_mngr.list_webdrivers(which='all')
+        for wd, (brwsr, _) in webdrivers.iteritems():
+            if browser == brwsr:
+                return XpathBrowser(None, wd)
 
 
 def smoke_test_module():

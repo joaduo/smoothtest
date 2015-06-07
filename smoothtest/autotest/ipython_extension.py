@@ -6,6 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import urlparse
 rel_imp.init()
 from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
@@ -88,6 +89,44 @@ class AutotestMagics(Magics):
         self.log.i('Parsing arguments and sending new test config. Check children processes output below...')
         self._send(test_config)
         return 'Done sending new test_config=%r' % test_config
+
+    @line_magic
+    def steal_xpathbrowser(self, line):
+        parser = ArgumentParser(prog='Steal XpathBrowser', 
+                       description='Get an XpathBrowser instance bypassing any locking mechanism. (debugging purposes)')
+        parser.add_argument('browser', type=str, default=self.main._get_browser_name(), nargs='?',
+                            help='The browser we want the XpathBrowser object from.')
+        try:
+            args = parser.parse_args(shlex.split(line))
+        except SystemExit:
+            return
+        xbrowser = self.main.steal_xpathbrowser(args.browser)
+        if not xbrowser:
+            self.log.w('No webdriver for browser %r' % args.browser)
+        return xbrowser
+    
+    @line_magic
+    def get(self, line):
+        parser = ArgumentParser(prog='Get URL page', 
+                       description='Fetch a URL using the current selected browser.')
+        parser.add_argument('url', type=str,
+                            help='Url we would like to open.')
+        parser.add_argument('browser', type=str, default=self.main._get_browser_name(), nargs='?',
+                            help='The browser name we want to open the Url with.')
+        try:
+            args = parser.parse_args(shlex.split(line))
+        except SystemExit:
+            return
+        xbrowser = self.main.steal_xpathbrowser(args.browser)
+        if not xbrowser:
+            return
+        u = urlparse.urlparse(args.url)
+        if not u.scheme:
+            u = ('http', u.netloc, u.path, u.params, u.query, u.fragment)
+            url = urlparse.urlunparse(u)
+        xbrowser.get_url(url)
+        self.log.i('Current url: %r' % xbrowser.current_url())
+        return xbrowser
 
     def _new_browser(self, browser):
         self.log.i('Setting browser to: %s' % browser)

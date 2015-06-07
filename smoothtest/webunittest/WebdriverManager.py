@@ -278,9 +278,6 @@ class WebdriverManager(SmoothTestBase):
         assert browser
         self._current_browser = browser
 
-    def get_bypassed_browser(self, browser):
-        pass
-
 
 class WebdriverLevelManager(SmoothTestBase):
     def __init__(self, parent, level, base_url=None, name=''):
