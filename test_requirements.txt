@@ -5,6 +5,7 @@ watchdog
 selenium
 importlib
 pyvirtualdisplay
+Pillow
 
 #Optional
 ipython
