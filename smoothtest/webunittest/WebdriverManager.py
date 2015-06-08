@@ -78,6 +78,7 @@ class WebdriverManager(SmoothTestBase):
             wdriver.current_url
             return False
         except UnexpectedAlertPresentException as e:
+            # An alert window will cause an exception, handle it only once
             alert = wdriver.switch_to_alert()
             alert.accept()
             if not tested_once:
@@ -223,7 +224,7 @@ class WebdriverManager(SmoothTestBase):
             self.log.d('Stopping virtual display %r' % display)
             display.stop()
             WebdriverManager._virtual_display = None
-    
+
     @synchronized(_methods_lock)
     def enter_level(self, level, base_url=None, name=''):
         return WebdriverLevelManager(self, level, base_url, name)
