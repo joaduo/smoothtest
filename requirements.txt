@@ -3,5 +3,7 @@ watchdog
 selenium
 importlib
 pyvirtualdisplay
-#windows
+Pillow
+
+##windows
 #read_directory_changes
