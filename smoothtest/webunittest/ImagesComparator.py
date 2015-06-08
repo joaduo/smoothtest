@@ -18,7 +18,7 @@ class ImagesComparator(SmoothTestBase):
     def exec_cmd(self, cmd):
         '''
         Exec a shell command. Returns its stdout output
-        Command's return value must 0.
+        Command's return value must be 0.
         :param cmd: command line as written in OS shell
         '''
         logging.debug('Getting output of: %r' % cmd)

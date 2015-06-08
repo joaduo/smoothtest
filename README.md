@@ -14,13 +14,13 @@ class Home(TestCaseBase):
     _tested_page = '/'
 
     def test_home(self):
-        self.get_page(self._tested_page)
+        self.browser.get_page(self._tested_page)
         self.assert_text('//p[@id="msg"]', u'Sign up to request beta access.')
         
     def test_empty_email(self):
-        self.get_page(self._tested_page)
-        self.click('//a[@class="new_job tab_link"]')
-        class_ = self.extract_xpath('//input[@name="email"]/@class')
+        self.browser.get_page(self._tested_page)
+        self.browser.click('//a[@class="new_job tab_link"]')
+        class_ = self.browser.extract_xpath('//input[@name="email"]/@class')
         self.assertTrue('error' in class_.split(), 'No error style applied')
 
 ```
@@ -48,6 +48,13 @@ Inside Ipython you you have to commands
 ```
 %autotest
 %test
+%reset
+%test_config
+%get
+%chrome
+%firefox
+%phantonjs
+%steal_xpathbrowser
 ``` 
 Where `%autotest` has same parameters as the `python -m smoothtest.autotest.Command` command but adds `-u` for updating test parameters and `-f` for forcing a reloading.
 
@@ -65,10 +72,7 @@ class Settings(DefaultSettings):
     web_server_url = 'http://localhost:8011/'
 
     webdriver_browser = 'Firefox' #'Chrome' 'PhantomJS'
-    webdriver_pooling = True
-    webdriver_inmortal_pooling = True
-    webdriver_keep_open = False
-    webdriver_log_level = logging.WARNING
+    ...
 ``` 
 
 ## Installing

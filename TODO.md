@@ -1,4 +1,7 @@
 ## High priority
+1. Support screenshots comparison
+1. Keyboard interrupt kills webdriver. Why?
+1. Perhaps we should kill the testrunner too?
 1. Xpath: 
 	Passing web browser
 	Using scrapy's hxs selector
