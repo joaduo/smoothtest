@@ -6,7 +6,8 @@ name = 'smoothtest'
 reqs = '''rel_imp
 watchdog
 selenium
-importlib'''.splitlines()
+importlib
+Pillow'''.splitlines()
 
 def long_description():
     with open('README', 'r') as f:
