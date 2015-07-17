@@ -467,7 +467,7 @@ return eslist;
         :param filename: path to save the screenshot file to
         '''
         self.get_driver().save_screenshot(filename)
-        
+
     def execute_script(self, script, *args):
         '''
         Execute javascript in the Browser.
@@ -475,6 +475,43 @@ return eslist;
         :param script: javascript script to be executed. 
         '''
         return self.get_driver().execute_script(script, *args)
+
+    def fill_form(self, **inputs):
+        '''
+        Fill a form given a {<input/textarea name>:<value>} dictionary
+        Example:
+            browser.fill_form(name='John', surname='Doe', email='john.doe@gmail.com')
+        Is equivalent to doing:
+            browser.fill_form_xpath({'//input[@name="name"] | //textarea[@name="name"]':'John', ...})
+        :param inputs: kwargs dictionary of <form's field name>=<value>
+        '''
+        self.fill_form_by_attr('name', inputs)
+
+    def _fill_form_attr(self, attr, inputs):
+        '''
+        :param attr: attribute name to solve xpaths with
+        :param inputs: dictionary of {<form's field attr value>:<value to enter>}
+        '''
+        xpath = '//input[@{0}={1!r}] | //textarea[@{0}={1!r}]'
+        inputs = {(xpath.format(attr,name),value)
+                  for name, value in inputs.iteritems()}
+        self.fill_form_xpath(inputs)
+
+    def fill_form_xpath(self, inputs):
+        '''
+        :param inputs: dictionary of {<form's field xpath>:<value to enter>}
+        '''
+        for xpath, value in inputs.iteritems():
+            self.fill(xpath, value)
+
+    def fill_form_ordered(self, items):
+        '''
+        Fill a form given a [(<input/textarea name>,<value>),...] list
+        :param items: list of [(name, value), ...]
+        '''
+        for name, value in items:
+            self.browser.fill('//input[@name={0!r}] | //textarea[@name={0!r}]'.format(name),
+                              value)
 
 
 def smoke_test_module():
