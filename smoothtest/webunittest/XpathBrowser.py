@@ -72,28 +72,16 @@ class XpathBrowser(object):
 
     def __init__(self, base_url, webdriver, logger=None, settings=None):
         '''
-        If you don't ignore __init__, arguments 
-        :param base_url: like in _init_webdriver method
-        :param webdriver: like in _init_webdriver method
-        :param logger: You can optionally pass a smoothtest.Logger instance (or a child class's instance) 
-        :param settings: like in _init_webdriver method
-        '''
-        self._init_webdriver(base_url, webdriver, settings=settings or {})
-        self.log = logger or Logger(self.__class__.__name__)
-
-    def _init_webdriver(self, base_url, webdriver, settings={}):
-        '''
-        Use this method when you want to ignore __init__ and call this method
-        when when setting up a test (in setUp method on unittest class for example)
-        
         :param base_url: common base url (e.g: http://example.com, http://example.com/some/common/path) 
             Used to build URL for all methods accepting the "path" argument. 
-        :param webdriver: selenium's webdriver object (connected to Firefox, Chrome, etc...)  
+        :param webdriver: selenium's webdriver object (connected to Firefox, Chrome, etc...)
+        :param logger: You can optionally pass a smoothtest.Logger instance (or a child class's instance)  
         :param settings: smoothtest settings object.
         '''
+        self.log = logger or Logger(self.__class__.__name__)
         assert webdriver, 'You must provide a webdriver'
         self._driver = webdriver
-        self.settings = settings
+        self.settings = settings or {}
         # Initialize values
         self._base_url = base_url
         self._wait_timeout = self.settings.get('wait_timeout', 2)
@@ -179,6 +167,8 @@ class XpathBrowser(object):
         '''
         Open a page only once in the browser controlled by webdriver.
         If the page is already opened, then no reloading is performed.
+        Beware: if a page implies redirection, it will be reloaded anyway.
+        (becaus URL changes and it does not match the value of `path`)
         
         :param path: path and on eg:"/blog/123?param=1" to get the page from
         :param condition: condition script or functor passed to the `wait_condition` method
@@ -194,30 +184,61 @@ class XpathBrowser(object):
     def wait_condition(self, condition=None, max_wait=None, print_msg=True):
         '''
         Active wait (polling) function, for a specific condition inside a page.
+        
+        Condition may be:
+          - a functor: a function receiving this xbrowser object as argument
+            returns True if condition was met, eg:
+
+            def condition(xbrowser):
+               # We want to know if the email was loaded
+               return xbrowser.extract_xsingle('//a[@id="EmailSubject"]') == u'Welcome to our service'
+
+          - a string javascript function, eg:
+            """
+            return "complete" == document.readyState;
+            """
+
+            The javascript must have the return statement at the end,
+            which must be True if the condition is met
+            
+        If you don't supply any condition, then this default javascript condition
+        will be used:
+            return "complete" == document.readyState;
+            
+        Sometimes that condition is not good enough, so you may use a python
+        function or a javascript condition to be sure you got the page/result
+        loaded.
+
+        :param condition: functor or javascript string of condition checking logic.
+        :param max_wait: Max amount of time to wait for condition to be true.
+        :param print_msg: print debug message (debugging purpose)
         '''
         condition = condition if condition else self._default_condition
         if isinstance(condition, basestring):
             # Its a javascript script
-            def condition_func(driver):
-                return driver.execute_script(condition)
+            def condition_func(xbrowser):
+                return xbrowser.get_driver().execute_script(condition)
             condtn = condition_func
         else:
             condtn = condition
         # first start waiting a tenth of the max time
+        # then increase time adding a tenth until getting the 100% of wait time
         parts = 10
         max_wait = max_wait or self._max_wait
         top = int(parts * max_wait)
         for i in range(1, top + 1):
-            loaded = condtn(self.get_driver())
+            loaded = condtn(self)
             if loaded:
                 self.log.d('Condition "%s" is True.' % condition)
                 break
             self.log.d('Waiting condition "%s" to be True.' % condition)
             time.sleep(float(i) / parts)
+        # If condition was not satisfied print debug message
         if not loaded and print_msg:
             msg = ('Page took too long to load. Increase max_wait (secs) class'
                    ' attr. Or override _wait_script method.')
             self.log.d(msg)
+        # Return whether condition was satisfied
         return loaded
 
     def _get_xpath_script(self, xpath, single=True):
@@ -267,20 +288,24 @@ return eslist;
 
     def select_xpath(self, xpath):
         '''
-        Select multiple based on the xpath.
+        Select HTML nodes given an xpath.
         May return:
             - webdriver's web element
-            - strings (if xpath specifies attribute or text) 
+            - strings (if xpath specifies @attribute or text()) 
         
-        :param xpath:
+        :param xpath: xpath's string eg:"/div[@id='example']/text()"
+        :returns: list of selected Webelements or strings
+        
         '''
         return self._select_xpath(xpath, single=False)
 
     def select_xsingle(self, xpath):
         '''
         Select first node specified by xpath.
+        If xpath is empty, it will raise an exception
 
-        :param xpath:
+        :param xpath: xpath's string eg:"/div[@id='example']/text()"
+        :returns: Webelement or string (depeding on the passed xpath)
         '''
         return self._select_xpath(xpath, single=True)
 
@@ -312,8 +337,8 @@ return eslist;
 
     def has_xsingle(self, xpath):
         '''
-        Returns True if xpath is present AND there is at least 1 element in the
-        selection.
+        Returns True if xpath is present AND there is at least 1 
+        node in the resulting selection.
 
         :param xpath: xpath's string eg:"/div[@id='example']/text()"
         '''
@@ -335,21 +360,31 @@ return eslist;
 
     def extract_xpath(self, xpath):
         '''
-        Extract text inside xpath. No need to pass '../text()'
+        DEPRECATED: prefer select_xpath + /text() instead
+        
+        Extract text inside xpath result.
+        No need to pass '../text()'
         
         :param xpath: xpath's string eg:"/div[@id='example']"
+        :returns: list of extracted strings
         '''
         return self._extract_xpath(xpath, single=False)
 
     def extract_xsingle(self, xpath):
         '''
-        Extract text of the first node inside xpath. No need to pass '../text()'
+        DEPRECATED: prefer select_xsingle + /text() instead
+
+        Extract text of the first node inside xpath.
+        No need to pass '../text()'
         
         :param xpath: xpath's string eg:"/div[@id='example']"
+        :returns: extracted string
         '''
         return self._extract_xpath(xpath, single=True)
 
     def _extract_xpath(self, xpath, single):
+        self.log.w('This method is deprecated. Use instead select_xpath or'
+                   ' select_xsingle + "/text()" in the xpath')
         result = self._select_xpath(xpath, single)
         def extract(result):
             if isinstance(result, WebElement):
@@ -367,7 +402,9 @@ return eslist;
 
     def fill(self, xpath, value):
         '''
-        Fill input field on page
+        Fill input field on page:
+          - selects Webelement
+          - sends keystroke to it
 
         :param xpath: xpath's string eg:"./input[@id='example']"
         :param value: string to fill the input with
@@ -378,7 +415,9 @@ return eslist;
 
     def click(self, xpath):
         '''
-        Click element in xpath
+        Click element in xpath:
+          - selects Webelement
+          - sends click to it
 
         :param xpath: xpath's string eg:"./button[@id='send_form']"
         '''
@@ -399,7 +438,7 @@ return eslist;
         Wipe browser's alert dialogs. Useful for unblocking webdriver. 
         (Although using alert dialogs in a webpage is not recommended)
 
-        :param timeout: wait for alert in second (default=0.5)
+        :param timeout: max wait for alert in second (default=0.5)
         '''
         try:
             WebDriverWait(self.get_driver(), timeout
