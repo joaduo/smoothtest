@@ -27,16 +27,19 @@ class XpathShell(object):
         self.log.i('Current url: %r' % self.browser.current_url())
 
     def run_shell(self, url=None):
-        level_mngr = WebdriverManager().enter_level(level=PROCESS_LIFE)
-        browser = self.browser = level_mngr.get_xpathbrowser(name='Browser')
+        self.level_mngr = WebdriverManager().enter_level(level=PROCESS_LIFE)
+        browser = self.browser = self.level_mngr.get_xpathbrowser(name='Browser')
         #Aliases #TODO: add ipython extension
         ex  = extract = browser.extract_xpath
         exs = xsingle = browser.extract_xsingle
         get = self.get
+        def reset_browser():
+            self.level_mngr.exit_level()
+            self.level_mngr = WebdriverManager().enter_level(level=PROCESS_LIFE)
         if url:
             self.get(url)
         IpythonEmbedder().embed()
-        level_mngr.exit_level()
+        self.level_mngr.exit_level()
         WebdriverManager().stop_display()
 
 class XpathShellCommand(CommandBase):
