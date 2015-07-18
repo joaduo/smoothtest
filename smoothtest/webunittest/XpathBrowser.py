@@ -173,10 +173,19 @@ class XpathBrowser(object):
         :param path: path and on eg:"/blog/123?param=1" to get the page from
         :param condition: condition script or functor passed to the `wait_condition` method
         '''
-        if not self.Url.are_equal(self.build_url(path), self.current_url()):
+        # Remove user credentials (they are not shown in browser)
+        url = self.build_url(path)
+        parts = urlparse.urlparse(self.build_url(path))
+        if '@' in parts.netloc:
+            netloc = parts.netloc.split('@')[1]
+            url = urlparse.urlunparse(parts._replace(netloc=netloc))
+        # Check if page was already loaded
+        if not self.Url.are_equal(url, self.current_url()):
+            # Url is different, load new page
             self.get_page(path, condition)
         else:
-            self.log.d('Pare already loaded once: %r' % self.build_url(path))
+            # Page already loaded
+            self.log.d('Page already loaded once: %r' % url)
 
     _max_wait = 2
     _default_condition = 'return "complete" == document.readyState;'
