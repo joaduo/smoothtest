@@ -6,28 +6,108 @@ Copyright (c) 2015 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import unittest
+import os
+
 from selenium.common.exceptions import UnexpectedAlertPresentException
-from smoothtest.webunittest.tests.base import WebUnitTestBase
+from smoothtest.webunittest.WebdriverManager import WebdriverManager
+from smoothtest.Logger import Logger
+from smoothtest.webunittest.XpathBrowser import XpathBrowser
+from contextlib import contextmanager
+from smoothtest.settings.default import SINGLE_TEST_LIFE
+from selenium.webdriver.remote.webdriver import WebDriver
+
+
+class WebUnitTestBase(unittest.TestCase):
+
+    def _get_local_html_path(self, name):
+        return os.path.join(os.path.dirname(__file__), 'html', name)
+
+    def _local_path_to_url(self, path):
+        return 'file://' + path
+
+    def get_local_page(self, path):
+        self.browser.get_url(self._local_path_to_url(path))
+
+    @contextmanager
+    def create_html(self, name, body, jquery=True, **kwargs):
+        templ = '''
+<!DOCTYPE html>
+<html>
+<head>
+  {jquery}
+  <title>{name}</title>
+</head>
+<body>
+      {body}
+</body>
+</html>
+        '''
+        if jquery:
+            jquery = ''
+        else:
+            jquery = ''
+        
+        kwargs.update(locals())
+        html = templ.format(**kwargs)
+        path = self._get_local_html_path(name + '.html')
+        with open(path, 'w') as fh:
+            fh.write(html)
+        try:
+            yield  path
+        except:
+            raise
+        finally:
+            os.remove(path)
+
+    def setUp(self):
+        self.__level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
+        webdriver = self.__level_mngr.acquire_driver()
+        logger = Logger(__name__)
+        self.browser = XpathBrowser('', webdriver, logger, settings={})
+
+    def tearDown(self):
+        self.__level_mngr.exit_level()
 
 
 class TestXpathBrowser(WebUnitTestBase):
     '''
     TODO:
-    - test fill
     - test select/has/extract 
     - get_url (with condition)
     - get_path (with condition)
     - test wait
     '''
 
-    def test_dismiss_alert(self):
+    def test_fill(self):
+        body = '''
+        <form>
+          First name:<br>
+          <input id=1 type="text" name="firstname">
+          <br>
+          Last name:<br>
+          <input id=2 type="text" name="lastname">
+        </form> 
+        '''
+        self.browser.set_base_url('http://mepinta.com/')
+        self.assertEqual(self.browser.build_url('example'), 'http://mepinta.com/example')
+        with self.create_html('test_fill', body) as path:
+            self.get_local_page(path)
+            self.assertTrue(self.browser.current_path().endswith('.html'))
+            self.assertTrue(self.browser.current_url().endswith('.html'))
+            self.assertIsInstance(self.browser.get_driver(), WebDriver)
+            self.browser.fill_form(firstname='John1', lastname='Doe1')
+            self.browser.fill_form_attr('id', {1:'John2', 2:'Doe2'})
+            self.browser.fill_form_ordered([('firstname','John3'), ('lastname','Doe3')])
+            self.browser.fill_form_xpath({'//form/input[1]':'John4','//form/input[2]':'Doe4'})
+
+    def test_wipe_alerts(self):
         body = '''
           <script type="text/javascript">
             alert('Example alert');
           </script>
         '''
         try:
-            with self.create_html('test_dismiss_alert', body) as path:
+            with self.create_html('test_wipe_alerts', body) as path:
                 self.get_local_page(path)
         except UnexpectedAlertPresentException:
             self.browser.wipe_alerts()
