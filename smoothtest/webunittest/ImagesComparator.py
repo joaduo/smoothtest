@@ -103,14 +103,8 @@ class ImagesComparator(SmoothTestBase):
 
 
 def smoke_test_module():
-    ic = ImagesComparator()
-    this_dir = os.path.dirname(__file__)
-    a_file = os.path.join(this_dir, 'tests/img/street.jpg') 
-    b_file = os.path.join(this_dir, 'tests/img/street_diff.jpg')
-    diff = os.path.join(this_dir, 'tests/img/diff.jpg')
-    assert ic.compare(a_file, b_file, treshold=100) == False
-    assert ic.compare(a_file, b_file, treshold=50) == True
-    ic.create_diff(a_file, b_file, diff, crop_threshold=100)
+    # There is a unit test
+    pass
 
 
 if __name__ == "__main__":
