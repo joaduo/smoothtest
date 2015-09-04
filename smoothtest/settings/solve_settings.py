@@ -49,6 +49,7 @@ def solve_settings():
     Main function for getting smoothtest global settings.
     #TODO: this goes against any Encapsulated Environment Pattern (context)
     '''
+    global global_settings
     if global_settings:
         return global_settings
     else:
@@ -56,7 +57,6 @@ def solve_settings():
             from smoothtest_settings import Settings
         except ImportError:
             from smoothtest.settings.default import DefaultSettings as Settings
-        global global_settings
         global_settings = SettingsWrapper(Settings())
         return global_settings
 
