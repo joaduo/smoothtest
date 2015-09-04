@@ -1,3 +1,33 @@
+## Test failing and not reported
+
+```
+[Discover Runner] 06:31:21: Testing <function smoke_test_module at 0x7f4247728050> at smoothtest.webunittest.WebdriverManager
+[Discover Runner] 06:31:21: Answering [AutotestAnswer(sent_cmd=AutotestCmd(cmd='_run_test', args=(<smoothtest.discover.TestDiscover.TestsContainer object at 0x7f42498724d0>,), kwargs={}), result=<SmoothTestResult run=1 errors=0 failures=1>, error=None)]
+Process Process-20:
+Traceback (most recent call last):
+File "/usr/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+self.run()
+File "/usr/lib/python2.7/multiprocessing/process.py", line 114, in run
+self._target(*self._args, **self._kwargs)
+File "smoothtest/autotest/base.py", line 98, in __call__
+self.callback(self.child_conn, *args, **kwargs)
+File "smoothtest/discover/TestDiscover.py", line 178, in dispatch_cmds
+self._dispatch_cmds(conn)
+File "smoothtest/autotest/base.py", line 51, in _dispatch_cmds
+send(answers)
+File "smoothtest/autotest/base.py", line 33, in <lambda>
+send = lambda msg: duplex and io_conn.send(msg)
+PicklingError: Can't pickle <type 'thread.lock'>: attribute lookup thread.lock failed
+Traceback (most recent call last):
+File "smoothtest/discover/TestDiscover.py", line 158, in _prepare_and_run
+answer = self.send_recv(self._run_test, tests)
+File "smoothtest/autotest/base.py", line 173, in send_recv
+return self._get_answer(self.recv(), cmd)
+File "smoothtest/autotest/base.py", line 162, in recv
+return self._subprocess_conn.recv()
+EOFError
+```
+
 ## High priority
 1. install autotest command
 1. Support screenshots comparison X

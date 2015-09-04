@@ -9,19 +9,33 @@ General purpose Testing Utilities and also special testing tools for Web Applica
 With smoothtest you can write nicer tests for web sites.
 
 ```python
-class Home(TestCaseBase):
+class SearchEnginesDemo(unittest.TestCase):
+    def setUp(self):
+        # We need to enter "single test level" of life for each test
+        # It will initialize the webdriver if no webdriver is present from upper levels
+        self._level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
+        # Get Xpath browser
+        self.browser = self._level_mngr.get_xpathbrowser(name=__name__)
 
-    _tested_page = '/'
+    def tearDown(self):
+        # Make sure we quit those webdrivers created in this specific level of life
+        self._level_mngr.exit_level()
 
-    def test_home(self):
-        self.browser.get_page(self._tested_page)
-        self.assert_text('//p[@id="msg"]', u'Sign up to request beta access.')
-        
-    def test_empty_email(self):
-        self.browser.get_page(self._tested_page)
-        self.browser.click('//a[@class="new_job tab_link"]')
-        class_ = self.browser.extract_xpath('//input[@name="email"]/@class')
-        self.assertTrue('error' in class_.split(), 'No error style applied')
+    def test_duckduckgo(self):
+        # Load a local page for the demo
+        self.browser.get_url('https://duckduckgo.com/')
+        # Type smoothtest and press enter
+        self.browser.fill(".//*[@id='search_form_input_homepage']", 'smoothtest\n')
+        result_link = './/a[@title="smoothtest "]'
+        # Wait for the result to be available
+        self.browser.wait_condition(lambda brw: brw.select_xpath(result_link))
+        # Click on result
+        self.browser.click(result_link)
+        # First result should point to github
+        expected_url = 'https://github.com/joaduo/smoothtest'
+        wait_url = lambda brw: brw.current_url() == expected_url
+        # Make sure we end up in the right url
+        self.assertTrue(self.browser.wait_condition(wait_url))
 
 ```
 
@@ -41,7 +55,7 @@ To enter the Ipython UI without specifying any initial test.
 
 If you want to start with a specific test, run this to get possible arguments.
 ```
-python -m smoothtest.autotest.Command --help
+smoothtest --help
 ```
 
 Inside Ipython you you have to commands
@@ -80,6 +94,7 @@ You can use pip to install it:
 ```
 pip install smoothtest 
 ``` 
+
 Or uninstall it:
 ```
 pip uninstall smoothtest 
