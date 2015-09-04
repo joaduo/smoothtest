@@ -1,9 +1,10 @@
-rel_imp
-watchdog
-selenium
 importlib
-pyvirtualdisplay
+ipython
 Pillow
+pyvirtualdisplay
+selenium
+watchdog
+rel_imp
 
 ##windows
 #read_directory_changes

@@ -3,11 +3,13 @@ from setuptools import setup, find_packages
 
 name = 'smoothtest'
 
-reqs = '''rel_imp
-watchdog
+reqs = '''importlib
+ipython
+Pillow
+pyvirtualdisplay
 selenium
-importlib
-Pillow'''.splitlines()
+watchdog
+rel_imp'''.splitlines()
 
 def long_description():
     with open('README', 'r') as f:
@@ -16,7 +18,7 @@ def long_description():
 setup(
   name = name,
   packages = find_packages(),
-  version = '0.1.9',
+  version = '0.2',
   description = 'General purpose Testing Utilities and also special testing tools for for Web Applications',
   long_description=long_description(),
   author = 'Joaquin Duo',
@@ -25,4 +27,5 @@ setup(
   url = 'https://github.com/joaduo/'+name,
   keywords = ['testing', 'automation', 'web', 'unittest'],
   install_requires=reqs,
+  scripts=['smoothtest/commands/autotest'],
 )
