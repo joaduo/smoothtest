@@ -10,6 +10,7 @@ from smoothtest.singleton_decorator import singleton_decorator
 from threading import RLock
 from functools import wraps
 from selenium.common.exceptions import UnexpectedAlertPresentException
+from smoothtest.settings.default import INMORTAL_LIFE
 
 
 def synchronized(lock):
@@ -105,8 +106,8 @@ class WebdriverManager(SmoothTestBase):
           2- there is a webdriver for the browser selected, no action is performed.
         :param level: webdriver's level of life we are entering
         '''
-        # Set level and check consistency
-        assert level, 'No process level set'
+        # level is mandatory
+        assert 0 < level < INMORTAL_LIFE, 'No process level set'
         # Get rid of non-responding browsers
         self.quit_all_failed_webdrivers()
         # Get the set of released webdrivers for the selected browser
@@ -142,7 +143,7 @@ class WebdriverManager(SmoothTestBase):
                 container.remove(wdriver)
                 self._quit_webdriver(wdriver)
                 self._wdriver_pool.pop(wdriver)
-        # Make copies of sets, we are goig to modify them
+        # Make copies of sets, we are going to modify them
         for wdriver in self._released.copy():
             common(wdriver, self._released)
         for wdriver in self._locked.copy():
