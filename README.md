@@ -29,13 +29,13 @@ The API is very XPath oriented, so you can test your XPath with Firefox's extens
 
 ## How to use smoothtest
 
-The main utility is the `autotest` command. This command monitors your project's files and you unittest files for changes, it will trigger reloading and rerunning tests when a file changes. This means you can work in your code and see how tests are affected automatically. You can select a group of tests files to be monitored - that trigger partial reloads of those same modules -  and an group of files or directories to trigger full reloads of the project.
+The main utility is the `smoothtest` command. This command monitors your project's files and your unittest files for changes, it will trigger reloading and rerunning tests when a file changes. This means you can work in your code and see how tests are affected automatically. You can select a group of tests files to be monitored - that trigger partial reloads of those same modules -  and an group of files or directories to trigger full reloads of the project.
 
 It also provides a ipython UI interface to modify certain values and re-test.
 
 Do
 ```
-python -m smoothtest.autotest.Command
+smoothtest
 ```
 To enter the Ipython UI without specifying any initial test.
 
@@ -46,7 +46,7 @@ python -m smoothtest.autotest.Command --help
 
 Inside Ipython you you have to commands
 ```
-%autotest
+%smoothtest
 %test
 %reset
 %test_config
@@ -56,9 +56,9 @@ Inside Ipython you you have to commands
 %phantonjs
 %steal_xpathbrowser
 ``` 
-Where `%autotest` has same parameters as the `python -m smoothtest.autotest.Command` command but adds `-u` for updating test parameters and `-f` for forcing a reloading.
+Where `%smoothtest` has same parameters as the `smoothtest` command but adds `-u` for updating test parameters and `-f` for forcing a reloading.
 
-Autotest command is still in beta stage, so some functionality won't be as reliable as expected. (but still useful for developing tests) You may need to restart the autotest command from time to time.
+`smoothtest` command is still in beta stage, so some functionality won't be as reliable as expected. (but still useful for developing tests) You may need to restart the `smoothtest` command from time to time.
 
 ## Configuration
 
