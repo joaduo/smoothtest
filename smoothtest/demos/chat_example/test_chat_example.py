@@ -9,9 +9,7 @@ import unittest
 import rel_imp; rel_imp.init()
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.settings.default import TEST_ROUND_LIFE, SINGLE_TEST_LIFE
-from .chat_example import port
-
-base_url = 'http://localhost:%s' % port
+from .chat_example import default_port
 
 class TestChat(unittest.TestCase):
     @classmethod
@@ -31,17 +29,18 @@ class TestChat(unittest.TestCase):
         self._level_mngr = WebdriverManager().enter_level(level=SINGLE_TEST_LIFE)
         # Lock webdriver and build XpathBrowser API
         self.browser = self._level_mngr.get_xpathbrowser(name=__name__)
-        self.browser.set_base_url(base_url)
+        self.base_url = 'http://localhost:%s' % default_port
+        self.browser.set_base_url(self.base_url)
 
     def tearDown(self):
         # Release webdriver, we are not longer using it.
         self._level_mngr.exit_level()
 
-    def test_loaded(self):
-        b = self.browser
-        b.get_page('/')
-        # Make sure there is at least 1 element
-        b.select_xsingle(".//*[@id='input_area']")
+#    def test_loaded(self):
+#        b = self.browser
+#        b.get_page('/')
+#        # Make sure there is at least 1 element
+#        b.select_xsingle(".//*[@id='input_area']")
 
     def test_send_msg(self):
         browser1 = self.browser
@@ -49,17 +48,18 @@ class TestChat(unittest.TestCase):
         with WebdriverManager().enter_level(level=SINGLE_TEST_LIFE, name='Browser2') \
         as browser2:
             browser1.get_page(path)
-            browser2.set_base_url(base_url)
+            browser2.set_base_url(self.base_url)
             browser2.get_page(path)
             username = 'my name'
             message = 'my message'
-            browser1.fill_input(".//*[@id='username']", username)
-            browser1.fill_input(".//*[@id='message']", message)
+            browser1.fill(".//*[@id='username']", username)
+            browser1.fill(".//*[@id='message']", message)
             browser1.click(".//*[@id='input_area']/button")
-            msgs_xpath = ".//*[@id='chat']/div"
-            msg_recv = browser1.extract_xpath(msgs_xpath)[-1]
+            msgs_xpath = ".//*[@id='chat']/div[3]/*/text()"
+            browser1.wait(1)
+            msg_recv = ''.join(browser1.select_xpath(msgs_xpath))
             self.assertEqual(msg_recv, '%s: %s' % (username, message))
-            msg_recv2 = browser2.extract_xpath(msgs_xpath)[-1]
+            msg_recv2 = ''.join(browser2.select_xpath(msgs_xpath))
             self.assertEqual(msg_recv, msg_recv2)
 
 

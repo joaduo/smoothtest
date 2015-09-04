@@ -23,7 +23,7 @@
       }
       
       function openWS(messageContainer) {
-        ws = new WebSocket("ws://localhost:8080/chat");
+        ws = new WebSocket("ws://localhost:{{server_port}}/chat");
         ws.onmessage = function(e) {
           var data = JSON.parse(e.data);
           messageContainer.appendChild(createChatEntry(data.author, data.message));
