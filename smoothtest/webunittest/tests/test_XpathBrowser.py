@@ -5,9 +5,6 @@ Copyright (c) 2015 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import unittest
-import os
-
 from selenium.common.exceptions import UnexpectedAlertPresentException
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.Logger import Logger
@@ -15,21 +12,22 @@ from smoothtest.webunittest.XpathBrowser import XpathBrowser
 from contextlib import contextmanager
 from smoothtest.settings.default import SINGLE_TEST_LIFE
 from selenium.webdriver.remote.webdriver import WebDriver
+import tempfile
+import shutil
+import unittest
+import os
 
 
 class WebUnitTestBase(unittest.TestCase):
 
-    def _get_local_html_path(self, name):
-        return os.path.join(os.path.dirname(__file__), 'html', name)
-
-    def _local_path_to_url(self, path):
+    def _path_to_url(self, path):
         return 'file://' + path
 
     def get_local_page(self, path):
-        self.browser.get_url(self._local_path_to_url(path))
+        self.browser.get_url(self._path_to_url(path))
 
     @contextmanager
-    def create_html(self, name, body, jquery=True, **kwargs):
+    def create_html(self, name, body, **kwargs):
         templ = '''
 <!DOCTYPE html>
 <html>
@@ -42,14 +40,13 @@ class WebUnitTestBase(unittest.TestCase):
 </body>
 </html>
         '''
-        if jquery:
-            jquery = ''
-        else:
-            jquery = ''
-        
+        jquery = ''
         kwargs.update(locals())
         html = templ.format(**kwargs)
-        path = self._get_local_html_path(name + '.html')
+        if not self._tempdir:
+            self._tempdir = tempfile.mkdtemp(prefix='smoothtest')
+        path = os.path.join(self._tempdir, name + '.html')
+        # Create html page in temporary dir
         with open(path, 'w') as fh:
             fh.write(html)
         try:
@@ -64,9 +61,14 @@ class WebUnitTestBase(unittest.TestCase):
         webdriver = self.__level_mngr.acquire_driver()
         logger = Logger(__name__)
         self.browser = XpathBrowser('', webdriver, logger, settings={})
+        # Temp dir to save pages
+        self._tempdir = None
 
     def tearDown(self):
         self.__level_mngr.exit_level()
+        if self._tempdir:
+            shutil.rmtree(self._tempdir, ignore_errors=True)
+            self._tempdir = None
 
 
 class TestXpathBrowser(WebUnitTestBase):
