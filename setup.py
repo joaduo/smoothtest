@@ -18,7 +18,7 @@ def long_description():
 setup(
   name = name,
   packages = find_packages(),
-  version = '0.2',
+  version = '0.2.1',
   description = 'General purpose Testing Utilities and also special testing tools for for Web Applications',
   long_description=long_description(),
   author = 'Joaquin Duo',
@@ -27,5 +27,5 @@ setup(
   url = 'https://github.com/joaduo/'+name,
   keywords = ['testing', 'automation', 'web', 'unittest'],
   install_requires=reqs,
-  scripts=['smoothtest/commands/autotest'],
+  scripts=['smoothtest/commands/smoothtest'],
 )

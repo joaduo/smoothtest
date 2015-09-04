@@ -71,7 +71,15 @@ class AutotestMagics(Magics):
             pass
 
     @line_magic
+    def smoothtest(self, line):
+        return self._autotest(line)
+
+    @line_magic
     def autotest(self, line):
+        self.log.w('Deprecated autotest command, use smoothtest instead')
+        return self._autotest(line)
+
+    def _autotest(self, line):
         res = self.__common(line)
         if not res:
             return
