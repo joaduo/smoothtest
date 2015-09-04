@@ -1,12 +1,13 @@
 ## High priority
-1. Support screenshots comparison
+1. install autotest command
+1. Support screenshots comparison X
 1. Keyboard interrupt kills webdriver. Why?
 1. Perhaps we should kill the testrunner too?
 1. Xpath: 
 	Passing web browser
-	Using scrapy's hxs selector
-	Using scrapy's shell directly
-	Doing selections both, in scrapy and in webdriver
+	NO:Using scrapy's hxs selector
+	NO:Using scrapy's shell directly
+	NO:Doing selections both, in scrapy and in webdriver
 1. check /ticket/15403
    i. specify screenshot format function
    i. specify screenshot dir (by command line?)
