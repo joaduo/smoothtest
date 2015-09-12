@@ -58,7 +58,7 @@ If you want to start with a specific test, run this to get possible arguments.
 smoothtest --help
 ```
 
-Inside Ipython you you have to commands
+Inside Ipython you have commands:
 ```
 %smoothtest
 %test

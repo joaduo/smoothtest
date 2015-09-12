@@ -29,7 +29,7 @@ EOFError
 ```
 
 ## High priority
-1. install autotest command
+1. install smoothtest(autotest) command X (smtest?)
 1. Support screenshots comparison X
 1. Keyboard interrupt kills webdriver. Why?
 1. Perhaps we should kill the testrunner too?
@@ -42,8 +42,8 @@ EOFError
    i. specify screenshot format function
    i. specify screenshot dir (by command line?)
 1. fix current_path() to get all data
-1. Rename WebdriverUtils to SmoothTestBrowser
-1. Extract xpath from WebdriverUtils.py into XpathWebdriver
+1. Rename WebdriverUtils to SmoothTestBrowser X
+1. Extract xpath from WebdriverUtils.py into XpathWebdriver X
 1. Extract also screenshots?
 1. Identify child process
 	i. return both to main at fork Main<-Master<-Slave
@@ -62,10 +62,10 @@ EOFError
 ## TODO tests
 1. test screenshots on test reports (w/wo)
 1. test API with selenium
-1. I will ignore autotest for a while, since many tools already do the same
 
 ## TODO
 
+1. check configglue and others for configuration
 1. add support for .cfg configs
 	1. passing config by command line?
 1. Rename smoke to dry-run
