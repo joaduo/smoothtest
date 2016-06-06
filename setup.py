@@ -18,7 +18,7 @@ def long_description():
 setup(
   name = name,
   packages = find_packages(),
-  version = '0.2.2',
+  version = '0.3',
   description = 'General purpose Testing Utilities and also special testing tools for for Web Applications',
   long_description=long_description(),
   author = 'Joaquin Duo',
