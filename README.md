@@ -102,4 +102,11 @@ pip uninstall smoothtest
 
 ## Windows and Mac OSX
 
-I tested Smoothtest under Linux, although it was designed to be multiplatform I still haven't fully tested outside Linux.
+### Windows
+
+On windows, the `smoothtest` shell does not work (due to partial support of unix's fork()) , although running test cases directly will work.
+
+### Mac OSX
+
+Inside Mac OS fork() should work, although I haven't had the chance to test it there.
+Let me know if you do.
