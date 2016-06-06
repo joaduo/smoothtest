@@ -132,20 +132,17 @@ class TestResults(object):
                             total=total))
         return counters
 
-    def __str__(self):
+    def get_detail_dict(self):
         detail_dict = dict(
             exceptions=list(
                 tpath for tpath, _ in self.filter_results('exception')),
             failures=list(self.get_details('failures')),
             errors=list(self.get_details('errors')),
         )
-        detail_str = ''
-        if any(val for val in detail_dict.values()):
-            detail_str = 'Details:'
-            for name, val in detail_dict.iteritems():
-                name = name[0].upper() + name[1:]
-                detail_str += '\n  {name}={val}'.format(name=name, val=val)
-        return self._get_counters(**detail_dict) + '\n' + detail_str
+        return detail_dict
+
+    def __str__(self):
+        return self._get_counters(**self.get_detail_dict())
 
     def get_return_value(self):
         details = lambda detail_type: list(self.get_details(detail_type))

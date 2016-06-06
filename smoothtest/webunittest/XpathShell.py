@@ -38,6 +38,7 @@ class XpathShell(object):
             self.level_mngr = WebdriverManager().enter_level(level=PROCESS_LIFE)
         if url:
             self.get(url)
+        print('Available objects/commands %s' % sorted(locals()))
         IpythonEmbedder().embed()
         self.level_mngr.exit_level()
         WebdriverManager().stop_display()

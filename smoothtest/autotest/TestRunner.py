@@ -35,8 +35,10 @@ class TestRunner(ChildBase, TestRunnerBase):
         '''
         results = TestResults()
         if smoke or not test_paths:
-            self.log.i('Ignoring %r \n  (smoke mode or no tests found)' %
-                       list(test_paths))
+            if not test_paths:
+                self.log.i('Empty tests')
+            else:
+                self.log.i('Smoke mode. No test ran.')
             return results
         level_mngr = WebdriverManager().enter_level(level=TEST_ROUND_LIFE)
         for tpath in test_paths:

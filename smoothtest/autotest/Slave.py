@@ -55,16 +55,33 @@ class Slave(ParentBase):
     def _collect_stats(self, ans):
         return str(ans.result)
 
-    def _fmt_answer(self, ans):
-        if ans.sent_cmd.cmd == self._get_cmd_str(self._child_cls.test):
-            if ans.error:
-                return 'Exception importing initializing test: %r' % ans.error
-            return self._collect_stats(ans)
+    def print_results(self, test_results):
+        from smoothtest.Logger import Logger
+        fmt = '%(message)s'
+        color = Logger(name='print_results_color', color=True)
+        color.set_fmt(fmt)
+        normal = Logger(name='print_results')
+        normal.set_fmt(fmt)
+        detail_dict = test_results.get_detail_dict()
+        normal.i('-'*70)
+        if any(val for val in detail_dict.values()):
+            normal.i('Details:')
+            count = 0
+            for name, val in detail_dict.iteritems():
+                name = name[0].upper() + name[1:]
+                count += len(val)
+                normal.i('  {name}={val}'.format(name=name, val=val))
+            normal.i(test_results)
+            color.e('FOUND %s ERROR%s', count, 'S' if count > 1 else '')
         else:
-            return super(Slave, self)._fmt_answer(ans)
+            normal.i(test_results)
+            color.i('ALL %s OK', test_results.get_total())
 
     def recv_answer(self):
         answers = self.recv()
+        tans = self._get_answer(answers, self._child_cls.test)
+        if tans:
+            self.print_results(tans.result)
         self.log.d('Received TestRunner\'s answer: ' +
                    self.fmt_answers(answers))
         kans = self._get_answer(answers, self._kill_command)

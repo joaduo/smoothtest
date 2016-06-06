@@ -6,6 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import os
 rel_imp.init()
 from .base import ChildBase
 from .Slave import Slave
@@ -151,21 +152,21 @@ class Master(ChildBase):
 
         @partial_decorator
         def partial_callback(path=None):
-            self.log.i('Partial reload for: %r. Triggered by %r' %
-                       (list(test_paths), path))
-            test_callback()
+            self.print_reload(path, test_paths, smoke, reload_type='Partial')
+            if test_paths or smoke:
+                test_callback()
 
         @full_decorator
         def full_callback(path=None):
-            self.log.i('Full reload for: %r. Triggered by %r' %
-                       (list(test_paths), path))
-            # to force reloading all modules we directly kill and restart
-            # the process
-            with self._restart_lock:  # locking is just in case of being bombed
-                self._watcher.unwatch_all()
-                self.restart_subprocess()
-                self._watcher.start_observer()
-                test_callback()
+            self.print_reload(path, test_paths, smoke, reload_type='Full')
+            if test_paths or smoke:
+                # to force reloading all modules we directly kill and restart
+                # the process
+                with self._restart_lock:  # locking is just in case of being bombed
+                    self._watcher.unwatch_all()
+                    self.restart_subprocess()
+                    self._watcher.start_observer()
+                    test_callback()
 
         # save for future dispatching
         self.partial_callback = partial_callback
@@ -205,6 +206,20 @@ class Master(ChildBase):
 
         # Start inotify observer:
         self._watcher.start_observer()
+
+    def print_reload(self, path, test_paths, smoke, reload_type):
+        path = path if path else 'user'
+        if len(test_paths) > 1:
+            prefix = os.path.commonprefix([tp.split('.') for tp in test_paths])
+            prefix = '.'.join(prefix)
+            paths = [tp[len(prefix):].strip('.') for tp in test_paths]
+        else:
+            paths = [tp.split('.')[-1] for tp in test_paths]
+        if test_paths or smoke:
+            self.log.i('{reload_type} reload for: {paths}. '
+                    'Triggered by {path}'.format(**locals()))
+        else:
+            self.log.i('No tests')
 
     def _build_path_filter(self, partial_reloads, path_filter):
         path_filter = path_filter if path_filter else lambda _: True

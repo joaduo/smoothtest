@@ -5,6 +5,7 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
+import logging
 
 # Webdriver life level
 #GOD_LIFE = 7 # Browser survives across universes (WIP)
@@ -30,6 +31,7 @@ class DefaultSettings(object):
     # avoiding the browser to pop-up abover other windows (with alerts for example)
     virtual_display_enable = False # Use virtual display
     virtual_display_visible = False # Show the virtual display or may be hidden (for headless testing)
+    virtual_display_backend = None # 'xvfb', 'xvnc' or 'xephyr', ignores ``virtual_display_visible``
     virtual_display_size = (800, 600) # Dimensions of the virtual display
     virtual_display_keep_open = False   # Keep the virtual display after a smoothtest 
                                     # process finished (useful when we also keep the browser open for debugging) 
@@ -51,6 +53,9 @@ class DefaultSettings(object):
     assert_screenshots_dir = '/tmp/'
     assert_screenshots_learning = False
     assert_screenshots_failed_dir = '/tmp/'
+
+    log_level_default = logging.INFO
+    log_level_root_handler = logging.DEBUG
 
 
 def smoke_test_module():

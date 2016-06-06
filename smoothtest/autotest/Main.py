@@ -57,7 +57,7 @@ class Main(ParentBase):
         :param embed_ipython: if True, it will embed a interactive shell.
         :param block: block waiting for events (in case no shell was enabled)
         '''
-        self.log.set_pre_post(pre='Autotest CLI')
+        self.log.set_pre_post(pre='Shell UI')
         self.test_config = test_config
         self.create_child()
         if embed_ipython:
@@ -149,7 +149,8 @@ class Main(ParentBase):
         if self._healthy_webdriver():
             cmd = 'partial_callback'
             ans = self.send_recv(cmd)
-            self.log.e(ans.error)
+            if ans.error:
+                self.log.e(ans.error)
             return ans
 
     def _healthy_webdriver(self):

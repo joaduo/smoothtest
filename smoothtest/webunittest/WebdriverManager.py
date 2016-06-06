@@ -164,12 +164,13 @@ class WebdriverManager(SmoothTestBase):
         self.setup_display()
         if browser == 'PhantomJS':
             kwargs.update(service_args=['--ignore-ssl-errors=true'])
-        if browser == 'Firefox'\
-        and self.global_settings.get('webdriver_firefox_profile'):
+        if (browser == 'Firefox'
+        and self.global_settings.get('webdriver_firefox_profile')
+        and not args and not kwargs.has_key('firefox_profile')):
+            # Update with profile specified from config
             fp = webdriver.FirefoxProfile(self.global_settings.get('webdriver_firefox_profile'))
-            driver = webdriver.Firefox(fp)
-        else:
-            driver = getattr(webdriver, browser)(*args, **kwargs)
+            kwargs['firefox_profile'] = fp
+        driver = getattr(webdriver, browser)(*args, **kwargs)
         return driver
 
     @synchronized(_methods_lock)
@@ -208,7 +209,8 @@ class WebdriverManager(SmoothTestBase):
             # There is a display configured
             return
         # We need to setup a new virtual display
-        d = Display(size=get('size', (800, 600)), visible=get('visible'))
+        d = Display(backend=get('backend'), size=get('size', (800, 600)),
+                visible=get('visible'))
         d.start()
         self._virtual_display = d
 

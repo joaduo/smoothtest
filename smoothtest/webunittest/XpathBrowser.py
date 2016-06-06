@@ -48,15 +48,22 @@ class Url(object):
         '''
         return urlparse.urlunparse(self._orig._replace(scheme='', netloc=''))
 
+    def cmp_path(self, url):
+        url = self._convert(url)
+        return self.get_path_and_on() == url.get_path_and_on()
+
     @staticmethod
     def are_equal(url_a, url_b):
         return Url(url_a) == Url(url_b)
 
     def __eq__(self, other):
-        if not isinstance(other, Url):
-            raise ValueError('Cannot compare %r against %r. Wrong type:%r' %
-                             (self, other, type(other)))
+        other = self._convert(other)
         return self.parts == other.parts
+
+    def _convert(self, url):
+        if isinstance(url, basestring):
+            url = Url(url)
+        return url
 
     def __hash__(self):
         return hash(self.parts)
