@@ -6,6 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import imp
+from smoothtest.Logger import Logger
 
 
 # TODO: support .cfg files
@@ -42,6 +43,11 @@ def register_settings(settings_path):
     mod = imp.load_source('specific_smoothtest_settings', settings_path)
     global global_settings
     global_settings = SettingsWrapper(mod.Settings())
+    # Set the level of the root logger
+    # import here due chicke-egg problem
+    from smoothtest.base import SmoothTestBase
+    Logger.default_level = global_settings.get('log_level_default')
+    SmoothTestBase.log.setLevel(global_settings.get('log_level_default'))
 
 
 def solve_settings():

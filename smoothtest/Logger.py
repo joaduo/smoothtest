@@ -3,36 +3,43 @@ Copyright (c) 2014, Juju Inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 '''
 import logging
+from smoothtest.ColorStreamHandler import ColorStreamHandler
 
 
 class Logger(object):
-    default_level = logging.DEBUG
+    default_level = logging.INFO
     handler_level = logging.DEBUG
-    default_fmt = '%(asctime)s: %(message)s'
+    default_fmt = '%(levelname)s %(asctime)s: %(message)s'
     default_datefmt = '%H:%M:%S'
 
-    def __init__(self, name, output=None, level=None):
+    def __init__(self, name=None, output=None, level=None, color=False):
         if not level:
             level = self.default_level
         if not output:
-            if not logging.root.handlers:
-                output = self._config_output(name, level)
+            if not name:
+                output = logging.getLogger()
             else:
                 output = logging.getLogger(name)
         self.output = output
-        self.setLevel(level)
+        self.color = color
+        if not logging.root.handlers or name:
+            self._config_handler()
+            self.set_fmt()
+            self.setLevel(level)
 
-    def _config_output(self, name, level):
-        hdlr = logging.StreamHandler()
-        hdlr.setLevel(self.handler_level)
-        logging.root.addHandler(hdlr)
-        self.set_fmt()
-        return logging.getLogger(name)
+    def _config_handler(self):
+        if not self.output.handlers:
+            if self.color:
+                hdlr = ColorStreamHandler()
+            else:
+                hdlr = logging.StreamHandler()
+            hdlr.setLevel(self.handler_level)
+            self.output.addHandler(hdlr)
 
     def set_fmt(self, fmt=None, datefmt=None):
         datefmt = datefmt or self.default_datefmt
         fmt = fmt or self.default_fmt
-        hdlr = logging.root.handlers[0]
+        hdlr = self.output.handlers[0]
         fmt = logging.Formatter(fmt=fmt,
                                 datefmt=datefmt
                                 )
@@ -43,44 +50,50 @@ class Logger(object):
             pre = '[%s] ' % pre.strip()
         self.set_fmt(fmt=pre + self.default_fmt + post)
 
-    def critical(self, msg):
-        self.output.critical(str(msg))
+    def _log(self, method, msg, args):
+        getattr(self.output, method)(msg, *args)
 
-    def error(self, msg):
-        self.output.error(str(msg))
+    def critical(self, msg, *args):
+        self._log('critical', msg, args)
 
-    def warning(self, msg):
-        self.output.warning(str(msg))
+    def error(self, msg, *args):
+        self._log('error', msg, args)
 
-    def info(self, msg):
-        self.output.info(str(msg))
+    def warning(self, msg, *args):
+        self._log('warning', msg, args)
 
-    def debug(self, msg):
-        self.output.debug(str(msg))
+    def info(self, msg, *args):
+        self._log('info', msg, args)
+
+    def debug(self, msg, *args):
+        self._log('debug', msg, args)
+
+    def exception(self, msg, *args):
+        self._log('exception', msg, args)
+
+    def c(self, msg, *args):
+        self.critical(msg, *args)
+
+    def e(self, msg, *args):
+        self.error(msg, *args)
+
+    def exc(self, msg, *args):
+        self.exception(msg, *args)
+
+    def w(self, msg, *args):
+        self.warning(msg, *args)
+
+    def i(self, msg, *args):
+        self.info(msg, *args)
+
+    def d(self, msg, *args):
+        self.debug(msg, *args)
 
     def verbose(self, msg):
         self.output.debug(str(msg))
 
-    def exception(self, msg):
-        self.output.exception(str(msg))
-
-    def c(self, msg):
-        self.critical(msg)
-
-    def e(self, msg):
-        self.error(msg)
-
-    def w(self, msg):
-        self.warning(msg)
-
-    def i(self, msg):
-        self.info(msg)
-
-    def d(self, msg):
-        self.debug(msg)
-
-    def v(self, msg):
-        self.verbose(msg)
+    def v(self, msg, *args):
+        self.debug(msg, *args)
 
     def printFilePath(self, file_path, line=None, error=False):
         if error:
@@ -106,7 +119,7 @@ def smoke_test_module():
     ''' Simple self-contained test for the module '''
     logger = Logger('a.logger')
     logger.setLevel(logging.DEBUG)
-    logger.set_pre_post(pre='Master ')
+    logger.set_pre_post(pre='A.Prefix ')
     # logger.set_fmt('')
     logger.critical('critical')
     logger.debug('debug')
