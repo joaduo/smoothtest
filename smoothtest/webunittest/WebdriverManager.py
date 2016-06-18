@@ -333,8 +333,9 @@ class WebdriverLevelManager(SmoothTestBase):
 
 
 def smoke_test_module():
+    from smoothtest.settings.default import TEST_ROUND_LIFE
     mngr = WebdriverManager()
-    lvl = mngr.enter_level(level=5)
+    lvl = mngr.enter_level(level=TEST_ROUND_LIFE)
     ffox = lvl.acquire_driver()
     mngr.list_webdrivers()
     lvl.exit_level()

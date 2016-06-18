@@ -39,9 +39,9 @@ class SmokeTestDiscover(TestDiscoverBase):
     Then create a test for each module and run it.
     '''
 
-    def __init__(self, func_regex, func_filter):
+    def __init__(self, func_regex, *args, **kwargs):
         self._func_regex = func_regex
-        super(SmokeTestDiscover, self).__init__(func_filter)
+        super(SmokeTestDiscover, self).__init__( *args, **kwargs)
 
     def get_missing(self, package):
         filter_ = lambda attr, _: isinstance(attr, (FunctionType, TypeType))
@@ -86,7 +86,7 @@ class SmokeCommand(DiscoverCommandBase):
                     and hasattr(attr, '__name__')
                     and func_regex.match(attr.__name__)
                     and fnmatch(name, pattern))
-        self.test_discover = SmokeTestDiscover(func_regex, filter_func)
+        self.test_discover = SmokeTestDiscover(func_regex, filter_func, quiet=args.quiet)
 
 
 # dummy function to avoid warnings inspecting this module

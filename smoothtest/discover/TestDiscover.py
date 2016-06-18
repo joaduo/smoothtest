@@ -7,6 +7,7 @@ Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
 import sys
+from StringIO import StringIO
 rel_imp.init()
 from .ModuleAttrIterator import ModuleAttrIterator
 from smoothtest.import_unittest import unittest
@@ -57,8 +58,9 @@ class TestsContainer(object):
 
 class TestDiscoverBase(ParentBase, TestRunnerBase):
 
-    def __init__(self, filter_func):
+    def __init__(self, filter_func, quiet=False):
         self.filter_func = filter_func
+        self.quiet = quiet
         self.inspector = ModuleAttrIterator()
 
     def _gather(self, package):
@@ -199,15 +201,22 @@ class TestDiscoverBase(ParentBase, TestRunnerBase):
             test = TestFunction(test_path, func_cls, modstr, log)
             suite = unittest.TestSuite([test])
         else:
+            import ipdb; ipdb.set_trace()
             raise TypeError('Tested object %r must be subclass of TestCase or'
                             ' a callable.' % func_cls)
         return suite
 
     def _run_test(self, tests):
         self.log.d('Running %r' % tests)
+        if self.quiet:
+            out, err = sys.stdout, sys.stderr
+            sys.stdout = StringIO()
+            sys.stderr = StringIO()
         result = tests.run(get_test=self._get_test_suite)
         self._tear_down_process()
         result = SmoothTestResult(result)
+        if self.quiet:
+            sys.stdout, sys.stderr = out, err
         return result
 
 
@@ -265,6 +274,14 @@ class DiscoverCommandBase(CommandBase):
             help='Run all tests inside 1 single process.',
             default=defaults.get(
                 'one_process',
+                False),
+            action='store_true')
+        parser.add_argument(
+            '-q',
+            '--quiet',
+            help='Quiet tests output to stdout and stderr.',
+            default=defaults.get(
+                'quiet',
                 False),
             action='store_true')
         if self.print_missing:
@@ -359,7 +376,8 @@ class DiscoverCommand(DiscoverCommandBase):
             return (isinstance(attr, TypeType)
                     and issubclass(attr, unittest.TestCase)
                     and fnmatch(name, pattern))
-        self.test_discover = TestDiscoverBase(filter_func=unittest_filter_func)
+        self.test_discover = TestDiscoverBase(filter_func=unittest_filter_func,
+                                              quiet=args.quiet)
 
 
 def smoke_test_module():
