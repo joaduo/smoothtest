@@ -18,7 +18,7 @@ from .TestResults import TestException
 
 
 class SmoothTestBase(object):
-    log = Logger('autotest root')
+    log = Logger('autotest root', color=solve_settings().get('log_color'))
 
     @property
     def global_settings(self):

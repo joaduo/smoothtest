@@ -56,6 +56,7 @@ class DefaultSettings(object):
 
     log_level_default = logging.INFO
     log_level_root_handler = logging.DEBUG
+    log_color = False
 
 
 def smoke_test_module():
