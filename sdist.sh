@@ -1,5 +1,8 @@
 #!/bin/bash
-pandoc --from=markdown --to=rst --output=README README.md
+if ! pandoc --from=markdown --to=rst --output=README README.md ; then
+    echo "pandoc command failed. Probably it is not installed. Aborting."
+    exit 1
+fi
 
 app="smoothtest"
 
