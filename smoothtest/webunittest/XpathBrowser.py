@@ -416,7 +416,7 @@ return eslist;
             assert not any(not isinstance(s, basestring) for s in result)
         return result
 
-    def fill(self, xpath, value):
+    def fill(self, xpath, value, clear=True):
         '''
         Fill input field on page:
           - selects Webelement
@@ -426,7 +426,8 @@ return eslist;
         :param value: string to fill the input with
         '''
         e = self.select_xsingle(xpath)
-        e.clear()
+        if clear:
+            e.clear()
         e.send_keys(value)
 
     def click(self, xpath):

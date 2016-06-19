@@ -36,6 +36,7 @@ class DefaultSettings(object):
     virtual_display_keep_open = False   # Keep the virtual display after a smoothtest 
                                     # process finished (useful when we also keep the browser open for debugging) 
 
+    webdriver_enabled = True # Whether or not automatically create the browser
     webdriver_browser = 'PhantomJS' # Which browser we would like to use webdriver with: Firefox, Chrome, PhantomJs, etc...
     webdriver_browser_life = TEST_ROUND_LIFE # Level of life of the webdriver browser
     webdriver_pool_size = 1

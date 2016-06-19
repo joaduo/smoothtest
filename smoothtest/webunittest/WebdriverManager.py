@@ -11,6 +11,7 @@ from threading import RLock
 from functools import wraps
 from selenium.common.exceptions import UnexpectedAlertPresentException
 from smoothtest.settings.default import INMORTAL_LIFE
+from smoothtest.settings.solve_settings import solve_settings
 
 
 def synchronized(lock):
@@ -49,6 +50,10 @@ class WebdriverManager(SmoothTestBase):
         self._virtual_display = None
         # Current selected browser
         self._browser_name = None
+
+    @property
+    def enabled(self):
+        return solve_settings().get('webdriver_enabled')
 
     @synchronized(_methods_lock)
     def release_driver(self, wdriver, level):
@@ -106,6 +111,8 @@ class WebdriverManager(SmoothTestBase):
           2- there is a webdriver for the browser selected, no action is performed.
         :param level: webdriver's level of life we are entering
         '''
+        if not self.enabled:
+            return
         # level is mandatory
         assert 0 < level < INMORTAL_LIFE, 'No process level set'
         # Get rid of non-responding browsers
@@ -151,6 +158,8 @@ class WebdriverManager(SmoothTestBase):
 
     @synchronized(_methods_lock)
     def acquire_driver(self, level):
+        if not self.enabled:
+            return None
         self.init_level(level)
         wdriver = self.get_available_set().pop()
         # Keep track of acquired webdrivers in case we need to close them

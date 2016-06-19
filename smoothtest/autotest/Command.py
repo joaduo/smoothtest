@@ -5,15 +5,16 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
+import os
+import sys
 import rel_imp
 rel_imp.init()
-import os
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from argparse import ArgumentParser
 from .base import AutoTestBase
 from .Main import Main
 from .TestSearcher import TestSearcher
-import sys
 from smoothtest.base import CommandBase, is_valid_file, is_file_or_dir
+from smoothtest.settings.solve_settings import solve_settings
 
 
 class Command(AutoTestBase, CommandBase):
@@ -46,9 +47,7 @@ Or file smoothtest/settings/default.py bundled in this installation
 
     def get_parser(self):
         parser = ArgumentParser(description='Automatically runs (unit) '
-                                'tests upon code/file changes.',
-                                formatter_class=RawDescriptionHelpFormatter,
-                                epilog=self.get_epilog())
+                                'tests upon code/file changes.')
         parser.add_argument(
             '-t',
             '--tests',
@@ -69,6 +68,12 @@ Or file smoothtest/settings/default.py bundled in this installation
             '--no-ipython',
             help='Do not embed ipython'
             ' interactive shell as UI.',
+            default=False,
+            action='store_true')
+        parser.add_argument(
+            '-B',
+            '--no-browser',
+            help='Do not start webdriver\'s browser',
             default=False,
             action='store_true')
         parser.add_argument(
@@ -144,6 +149,8 @@ Or file smoothtest/settings/default.py bundled in this installation
 
         # Run autotest Main loop (ipython UI + subprocesses)
         main = Main()
+        if args.no_browser:
+            solve_settings().set('webdriver_enabled', False)
         test_config = self.get_test_config(args, unkonwn)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
