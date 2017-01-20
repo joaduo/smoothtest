@@ -98,7 +98,14 @@ pip install smoothtest
 Or uninstall it:
 ```
 pip uninstall smoothtest 
-``` 
+```
+
+### Installing virtual screen dependencies
+
+In ubuntu you may need to install
+```
+sudo apt-get install xserver-xephyr xvfb
+```
 
 ## Windows and Mac OSX
 
