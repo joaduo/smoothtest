@@ -54,6 +54,10 @@ class AutotestMagics(Magics):
                             default=False, action='store_true')
         return parser
 
+#    @line_magic
+#    def help(self, line):
+#        pass
+
     @line_magic
     def test(self, line):
         parser = self._test_magic_cmd_parser()
