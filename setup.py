@@ -9,7 +9,8 @@ Pillow
 pyvirtualdisplay
 selenium
 watchdog
-rel_imp'''.splitlines()
+rel_imp
+xpathwebdriver'''.splitlines()
 
 def long_description():
     with open('README', 'r') as f:
@@ -29,6 +30,5 @@ setup(
   install_requires=reqs,
   scripts=['smoothtest/commands/smoothtest',
            'smoothtest/commands/smtest',
-           'smoothtest/commands/smtest-xpathshell',
            ],
 )
