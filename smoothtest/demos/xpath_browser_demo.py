@@ -35,7 +35,7 @@ class TestXpathBrowser(unittest.TestCase):
         self.get_local_page('xpath_browser_demo.html')
         # Do 2 type of selection
         self.browser.select_xpath('//div') # Xpath must be present, but no inner element may be returned
-        self.browser.extract_xsingle('//div') # Xpath must be present and at least 1 element must be present        
+        self.browser.select_xsingle('//div') # Xpath must be present and at least 1 element must be present
 
     def get_local_page(self, file_name):
         # Auxiliary method

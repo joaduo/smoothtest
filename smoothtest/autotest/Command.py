@@ -8,6 +8,8 @@ Code Licensed under MIT License. See LICENSE file.
 import os
 import sys
 import rel_imp
+from xpathwebdriver.base import module_regex
+import glob
 rel_imp.init()
 from argparse import ArgumentParser
 from .base import AutoTestBase
@@ -39,8 +41,8 @@ Or file smoothtest/settings/default.py bundled in this installation
 
 {cmd_name} # starts autotest CLI
 
-{cmd_name} -t <path to test_file.py> # autotest CLI with that test selected
-{cmd_name} -t <python.like.module.path.to.test> # same as above but using dot paths
+{cmd_name} <path to test_file.py> # autotest CLI with that test selected
+{cmd_name} <python.like.module.path.to.test> # same as above but using dot paths
 
 
         '''.format(**locals())
@@ -49,8 +51,7 @@ Or file smoothtest/settings/default.py bundled in this installation
         parser = ArgumentParser(description='Automatically runs (unit) '
                                 'tests upon code/file changes.')
         parser.add_argument(
-            '-t',
-            '--tests',
+            'tests',
             type=is_valid_file,
             help='Tests\' files or modules path to  to be monitored.'
             ' Changes on these files trigger a reload of those same modules '
@@ -116,20 +117,29 @@ Or file smoothtest/settings/default.py bundled in this installation
                             ' updating', default=None, action='store_true')
         return parser
 
+    def expand_paths(self, paths):
+        new_paths = []
+        for tst in paths:
+            if module_regex.match(tst):
+                new_paths.append(tst)
+            else:
+                new_paths += glob.glob(tst)
+        return new_paths
+
     def get_test_config(self, args, argv):
         searcher = TestSearcher()
         test_paths = set()
         partial_reloads = set()
-        for tst in args.tests:
-            tst = self._path_to_modstr(tst)
-            paths, partial = searcher.solve_paths((tst, args.methods_regex))
+        for path in self.expand_paths(args.tests):
+            path = self._path_to_modstr(path)
+            paths, partial = searcher.solve_paths((path, args.methods_regex))
             if paths:
                 test_paths.update(paths)
                 partial_reloads.update(partial)
 
         test_config = dict(test_paths=test_paths,
                            partial_reloads=partial_reloads,
-                           full_reloads=args.full_reloads,
+                           full_reloads=self.expand_paths(args.full_reloads),
                            full_filter=args.fnmatch,
                            smoke=args.smoke,
                            argv=argv,

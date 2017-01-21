@@ -6,12 +6,12 @@ Copyright (c) 2014, Juju inc.
 Copyright (c) 2011-2013, Joaquin G. Duo
 
 '''
-import rel_imp
-rel_imp.init()
+import rel_imp; rel_imp.init()
 import re
 import os
 import logging
 import traceback
+from xpathwebdriver.base import is_valid_file, module_regex
 from .Logger import Logger
 from .settings.solve_settings import solve_settings, register_settings
 from .TestResults import TestException
@@ -56,29 +56,6 @@ class SmoothTestBase(object):
         return TestException(str(e), repr(e), traceback.format_exc())
 
 
-def get_module_regex():
-    def rpl(str_, local_vars):
-        # replace locals vars in the string
-        return str_.format(**local_vars)
-    mod = r'(?:[a-zA-Z_][a-zA-Z_0-9]*)'
-    mod_path = rpl(r'^{mod}(?:\.{mod})*$', locals())
-    return mod_path
-
-
-def is_valid_file(path):
-    '''
-    Validate if a passed argument is a existing file (used by argsparse)
-    or its a python module namespace path (example.foo.bar.baz)
-    '''
-    # TODO: should it always validate module string?
-    abspath = os.path.abspath(path)
-    if not (os.path.exists(abspath)
-            and os.path.isfile(abspath)
-            or re.match(get_module_regex(), path)):
-        logging.warn('File %r does not exist.' % path)
-    return path
-
-
 def is_file_or_dir(path):
     '''
     Validate if a passed argument is a existing file (used by argsparse)
@@ -87,7 +64,7 @@ def is_file_or_dir(path):
     abspath = os.path.abspath(path)
     if not (os.path.exists(abspath)
             and (os.path.isfile(abspath) or os.path.isdir(abspath))
-            or re.match(get_module_regex(), path)
+            or module_regex.match(path)
             ):
         logging.warn('File or dir %r does not exist.' % path)
     return path

@@ -142,7 +142,7 @@ class Master(ChildBase):
         # We need to kill the child
         self._receive_kill()
 
-    def new_test(self, test_paths=[], partial_reloads=[], full_reloads=[],
+    def new_test(self, test_paths=tuple(), partial_reloads=tuple(), full_reloads=tuple(),
                  partial_decorator=lambda x: x, full_decorator=lambda x: x,
                  full_filter=None,
                  smoke=False, force=False, argv=[]):

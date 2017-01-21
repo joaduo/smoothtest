@@ -5,12 +5,10 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp
+import rel_imp; rel_imp.init()
 import urlparse
-rel_imp.init()
 from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
-import glob
 from argparse import ArgumentParser
 from smoothtest.Logger import Logger
 
@@ -23,11 +21,8 @@ class AutotestMagics(Magics):
     main = None
     log = Logger(name='Ipython Extension')
 
-    def expand_files(self, tests):
-        paths = []
-        for tst in tests:
-            paths += glob.glob(tst)
-        return paths
+    def get_test_config(self):
+        return self.main.test_config
 
     def __common(self, line):
         from .Command import Command
@@ -35,8 +30,6 @@ class AutotestMagics(Magics):
         parser = command.get_extension_parser()
         try:
             args, unknown = parser.parse_known_args(shlex.split(line))
-            args.tests = self.expand_files(args.tests)
-            args.full_reloads = self.expand_files(args.full_reloads)
             test_config = command.get_test_config(args, unknown)
             test_config.update(force=args.force)
             return args, test_config
@@ -54,9 +47,14 @@ class AutotestMagics(Magics):
                             default=False, action='store_true')
         return parser
 
-#    @line_magic
-#    def help(self, line):
-#        pass
+    @line_magic
+    def help(self, line):
+        print('Check https://github.com/joaduo/smoothtest/blob/master/smoothtest/autotest/AutotestGuide.md')
+
+    @line_magic
+    def test_m(self, line):
+        line = ' -r {regex} -u'.format(regex=line)
+        self._autotest(line)
 
     @line_magic
     def test(self, line):
@@ -65,7 +63,7 @@ class AutotestMagics(Magics):
             args = parser.parse_args(shlex.split(line))
             if args.force:
                 # Force full reload
-                test_config = self.main.test_config.copy()
+                test_config = self.get_test_config().copy()
                 test_config.update(force=True)
                 self._send(test_config)
             else:
@@ -94,7 +92,7 @@ class AutotestMagics(Magics):
         args, test_config = res
         if args.update:
             # Update set values
-            for k, v in self.main.test_config.iteritems():
+            for k, v in self.get_test_config().iteritems():
                 if not test_config.get(k):
                     test_config[k] = v
             if args.smoke is not None:
@@ -123,7 +121,7 @@ class AutotestMagics(Magics):
     
     @line_magic
     def get(self, line):
-        parser = ArgumentParser(prog='Get URL page', 
+        parser = ArgumentParser(prog='Get page at URL',
                        description='Fetch a URL using the current selected browser.')
         parser.add_argument('url', type=str,
                             help='Url we would like to open.')
@@ -166,7 +164,7 @@ class AutotestMagics(Magics):
 
     @line_magic
     def test_config(self, line):
-        return self.main.test_config
+        return self.get_test_config()
 
 
 def load_extension(ipython, main):
@@ -187,8 +185,6 @@ def unload_ipython_extension(ipython):
 
 def smoke_test_module():
     am = AutotestMagics(None)
-    from pprint import pprint
-    pprint(am.expand_files(['./*.py']))
 
 
 if __name__ == "__main__":
