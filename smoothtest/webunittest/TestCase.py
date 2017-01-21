@@ -3,12 +3,11 @@ Copyright (c) 2014 Juju. Inc
 
 Code Licensed under MIT License. See LICENSE file.
 '''
-import rel_imp
+import rel_imp; rel_imp.init()
 import os
 import tempfile
 from smoothtest.webunittest.ImagesComparator import ImagesComparator
 import shutil
-rel_imp.init()
 from smoothtest.settings.default import SINGLE_TEST_LIFE
 from smoothtest.settings.solve_settings import solve_settings
 from smoothtest.base import SmoothTestBase
