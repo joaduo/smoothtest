@@ -13,7 +13,7 @@ PhantomJS
 
  1. In a terminal, start an autotest shell with the bundled demo like:
 	```
-	python -m smoothtest.autotest.Command --smoothtest-settings settings.py  -t smoothtest/demos/xpath_browser_demo.py
+	python -m smoothtest.autotest.Command smoothtest/demos/xpath_browser_demo.py --smoothtest-settings settings.py
 	```
 	
 	If you are using Firefox as browser in configuration, a Firefox browser should be open with the demo page display a "Loren Ipsum" text. 
@@ -44,7 +44,7 @@ PhantomJS
 	
 	Most important line is **[Master] 21:02:17: Received TestRunner's answer: EXCEPTIONS=0 FAILURES=0 ERRORS=0 from TOTAL=1** saying the tests were successful. 
 	
-	_**Note**: Since there are three processes attached to the terminal (named Main, Master and TestRunner) they will overlap the ipython shell output. So press enter once and you will get a_ 
+	_**Note**: Since there are three processes attached to the terminal (named Main, Master and TestRunner) they will overlap the ipython shell output. So press enter once and you will get a command prompt again.
 
  2. You can trigger a new test round executing in the shell: `%test`
  
@@ -61,7 +61,7 @@ PhantomJS
  
  6. We will specify the tested module from the shell, also we will make autotest to watch the `.html` file, so each time we change it, a test round is triggered.
  ```
- %autotest -t smoothtest/demos/xpath_browser_demo.py -F smoothtest/demos/html/xpath_browser_demo.html
+ %smtest smoothtest/demos/xpath_browser_demo.py -F smoothtest/demos/html/xpath_browser_demo.html
  ```
  You will have an output similar the shown in point __1__. You mostly will care about the last line __[Master] 21:25:23: Received TestRunner's answer: EXCEPTIONS=0 FAILURES=0 ERRORS=0 from TOTAL=1__.
   
