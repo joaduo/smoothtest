@@ -6,7 +6,7 @@ selenium
 importlib
 pyvirtualdisplay
 Pillow
-xpathwebdriver
+xpathwebdriver >= 0.1.6
 
 #Optional
 ipython
