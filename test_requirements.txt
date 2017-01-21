@@ -6,6 +6,7 @@ selenium
 importlib
 pyvirtualdisplay
 Pillow
+xpathwebdriver
 
 #Optional
 ipython
