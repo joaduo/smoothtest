@@ -132,14 +132,15 @@ class Main(ParentBase):
         self.kill_child()
         self.create_child()
 
-    def send_test(self, **test_config):
+    def send_test(self, test_config, temp=False):
         '''
         Send tests config parameters to the Master process.
         (which in turn will send to TestRunner)
         '''
         if self._healthy_webdriver():
             self.send_recv('new_test', **test_config)
-            self.test_config = test_config
+            if not temp:
+                self.test_config = test_config
 
     def test(self):
         '''

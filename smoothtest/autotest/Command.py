@@ -56,7 +56,7 @@ Or file smoothtest/settings/default.py bundled in this installation
             help='Tests\' files or modules path to  to be monitored.'
             ' Changes on these files trigger a reload of those same modules '
             'and rerunning the tests they contain.',
-            default=[],
+            default=tuple(),
             nargs='*')
         parser.add_argument(
             '-r',
@@ -89,7 +89,7 @@ Or file smoothtest/settings/default.py bundled in this installation
             type=is_file_or_dir,
             help='Files or directories to be monitored. They will trigger '
             'reloading all files involved and rerunning tests.',
-            default=[],
+            default=tuple(),
             nargs='+')
         parser.add_argument(
             '-m',

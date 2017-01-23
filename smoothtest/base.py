@@ -11,7 +11,7 @@ import re
 import os
 import logging
 import traceback
-from xpathwebdriver.base import is_valid_file, module_regex
+from xpathwebdriver.base import is_valid_file, module_regex, CommandMixin
 from .Logger import Logger
 from .settings.solve_settings import solve_settings, register_settings
 from .TestResults import TestException
@@ -70,23 +70,8 @@ def is_file_or_dir(path):
     return path
 
 
-class CommandBase(SmoothTestBase):
-
-    def _add_smoothtest_common_args(self, parser):
-        parser.add_argument(
-            '-S',
-            '--smoothtest-settings',
-            type=is_valid_file,
-            help='Specific smoothtest_settings module path '
-            '(useful if smoothtest_settings module is not in PYTHONPATH).',
-            default=None,
-            nargs=1)
-
-    def _process_common_args(self, args):
-        # Specific settings
-        if args.smoothtest_settings:
-            register_settings(args.smoothtest_settings.pop())
-
+class CommandBase(SmoothTestBase, CommandMixin):
+    pass
 
 class TestRunnerBase(object):
 

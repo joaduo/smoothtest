@@ -11,6 +11,8 @@ from IPython.core.magic import Magics, magics_class, line_magic
 import shlex
 from argparse import ArgumentParser
 from smoothtest.Logger import Logger
+import re
+import sys
 
 
 @magics_class
@@ -38,12 +40,16 @@ class AutotestMagics(Magics):
             # (happens when passing --help or on error)
             pass
 
-    def _send(self, test_config):
-        self.main.send_test(**test_config)
+    def _send(self, test_config, temp=False):
+        self.main.send_test(test_config, temp)
 
     def _test_magic_cmd_parser(self):
         parser = ArgumentParser(description='Manually trigger a test.')
-        parser.add_argument('-f', '--force', help='Trigger full reload.',
+        parser.add_argument('method', help='Test case method regex',
+                            default='', type=str, nargs='?')
+        parser.add_argument('-l', '--list', help='Display test cases list',
+                            default=False, action='store_true')
+        parser.add_argument('-f', '--force', help='Trigger full reload',
                             default=False, action='store_true')
         return parser
 
@@ -60,15 +66,20 @@ class AutotestMagics(Magics):
     def test(self, line):
         parser = self._test_magic_cmd_parser()
         try:
-            args = parser.parse_args(shlex.split(line))
-            if args.force:
-                # Force full reload
-                test_config = self.get_test_config().copy()
-                test_config.update(force=True)
-                self._send(test_config)
-            else:
-                # Simply invoque .test TODO
-                self.main.test()
+            test_config = self.get_test_config().copy()
+            if line.strip():
+                args = parser.parse_args(shlex.split(line))
+                paths = test_config['test_paths']
+                if args.list:
+                    sys.stdout.write('\n'.join(paths) + '\n')
+                    return
+                if args.force:
+                    # Force full reload
+                    test_config.update(force=True)
+                if args.method:
+                    paths = [p for p in paths if re.search(args.method, p.split('.')[-1])]
+                test_config['test_paths'] = paths
+            self._send(test_config, temp=True)
         except SystemExit:
             pass
 
