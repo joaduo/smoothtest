@@ -17,8 +17,8 @@ class TestImagesComparator(unittest.TestCase):
         a_file = os.path.join(base, 'street.jpg') 
         b_file = os.path.join(base, 'street_diff.jpg')
         diff = os.path.join(base, 'diff.jpg')
-        self.assertFalse(ic.compare(a_file, b_file, treshold=100))
-        self.assertTrue(ic.compare(a_file, b_file, treshold=50))
+        self.assertFalse(ic.compare(a_file, b_file, threshold=100))
+        self.assertTrue(ic.compare(a_file, b_file, threshold=50))
         ic.create_diff(a_file, b_file, diff, crop_threshold=100)
         os.remove(diff)
 

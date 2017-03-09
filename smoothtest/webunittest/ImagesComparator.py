@@ -90,15 +90,15 @@ class ImagesComparator(SmoothTestBase):
         self.exec_cmd(cmd)
         return new_file
 
-    def compare(self, ref_img, new_img, treshold=100):
+    def compare(self, ref_img, new_img, threshold=100):
         '''
         Compare two images using the 'findimagedupes' command.
         Return true if both images match.
         :param ref_img: path to the reference image. (correct one)
         :param new_img: path to the current image. (new one)
-        :param treshold: threshold value in percent to tolerate in comparison
+        :param threshold: threshold value in percent to tolerate in comparison
         '''
-        command = 'findimagedupes -t=%s %s %s' % (treshold, ref_img, new_img)
+        command = 'findimagedupes -t=%s %s %s' % (threshold, ref_img, new_img)
         return bool(self.exec_cmd(command))
 
 
