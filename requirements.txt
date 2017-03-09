@@ -5,7 +5,7 @@ pyvirtualdisplay
 selenium
 watchdog
 rel_imp
-xpathwebdriver
+xpathwebdriver>=0.1.8
 
 ##windows
 #read_directory_changes
