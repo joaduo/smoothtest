@@ -73,6 +73,7 @@ def is_file_or_dir(path):
 class CommandBase(SmoothTestBase, CommandMixin):
     pass
 
+
 class TestRunnerBase(object):
 
     def __init_values(self):
