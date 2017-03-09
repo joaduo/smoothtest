@@ -226,7 +226,7 @@ class Main(ParentBase):
         webdrivers = self._wdriver_mngr.list_webdrivers(which='all')
         for wd, (brwsr, _) in webdrivers.iteritems():
             if browser == brwsr:
-                return XpathBrowser(None, wd)
+                return XpathBrowser(wd)
 
 
 def smoke_test_module():
