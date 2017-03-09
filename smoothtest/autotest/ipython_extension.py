@@ -13,6 +13,8 @@ from argparse import ArgumentParser
 from smoothtest.Logger import Logger
 import re
 import sys
+from smoothtest.settings.solve_settings import solve_settings
+from xpathwebdriver.webdriver_manager import WebdriverManager
 
 
 @magics_class
@@ -176,6 +178,12 @@ class AutotestMagics(Magics):
     @line_magic
     def test_config(self, line):
         return self.get_test_config()
+
+    @line_magic
+    def enable_browser(self, line):
+        if not solve_settings().get('webdriver_enabled'):
+            solve_settings().set('webdriver_enabled', True)
+            #WebdriverManager().init_level(level)
 
 
 def load_extension(ipython, main):
