@@ -10,7 +10,7 @@ pyvirtualdisplay
 selenium
 watchdog
 rel_imp
-xpathwebdriver'''.splitlines()
+xpathwebdriver >= 0.1.7'''.splitlines()
 
 def long_description():
     with open('README', 'r') as f:
