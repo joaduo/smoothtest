@@ -10,7 +10,7 @@ pyvirtualdisplay
 selenium
 watchdog
 rel_imp
-xpathwebdriver >= 0.1.8'''.splitlines()
+xpathwebdriver >= 0.1.9'''.splitlines()
 
 def long_description():
     with open('README', 'r') as f:
@@ -19,7 +19,7 @@ def long_description():
 setup(
   name = name,
   packages = find_packages(),
-  version = '0.3.4',
+  version = '0.3.5',
   description = 'General purpose Testing Utilities and also special testing tools for for Web Applications',
   long_description=long_description(),
   author = 'Joaquin Duo',

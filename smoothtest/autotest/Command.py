@@ -99,7 +99,7 @@ Or file smoothtest/settings/default.py bundled in this installation
             'pattern to filter files in full reloads directories.'
             ' (default=*.py)',
             default='*.py')
-        self._add_smoothtest_common_args(parser)
+        self._add_common_args(parser)
         return parser
 
     def get_extension_parser(self):
