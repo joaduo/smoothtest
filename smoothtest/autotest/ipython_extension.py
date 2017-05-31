@@ -49,6 +49,9 @@ class AutotestMagics(Magics):
         parser = ArgumentParser(description='Manually trigger a test.')
         parser.add_argument('method', help='Test case method regex',
                             default='', type=str, nargs='?')
+        parser.add_argument('-P', '--full-path', help='use full method path'
+                            ' when matching regex or printing list',
+                            default=False, action='store_true')
         parser.add_argument('-l', '--list', help='Display test cases list',
                             default=False, action='store_true')
         parser.add_argument('-f', '--force', help='Trigger full reload',
@@ -61,6 +64,7 @@ class AutotestMagics(Magics):
 
     @line_magic
     def test_m(self, line):
+        self.log.w('Deprecated test_m command, use test [<method regex>] instead')
         line = ' -r {regex} -u'.format(regex=line)
         self._autotest(line)
 
@@ -71,15 +75,16 @@ class AutotestMagics(Magics):
             test_config = self.get_test_config().copy()
             if line.strip():
                 args = parser.parse_args(shlex.split(line))
+                split = lambda path: path if args.full_path else path.split('.')[-1]
                 paths = test_config['test_paths']
                 if args.list:
-                    sys.stdout.write('\n'.join(paths) + '\n')
+                    sys.stdout.write('\n'.join(split(p) for p in paths) + '\n')
                     return
                 if args.force:
                     # Force full reload
                     test_config.update(force=True)
                 if args.method:
-                    paths = [p for p in paths if re.search(args.method, p.split('.')[-1])]
+                    paths = [p for p in paths if re.search(args.method, split(p))]
                 test_config['test_paths'] = paths
             self._send(test_config, temp=True)
         except SystemExit:
@@ -95,7 +100,7 @@ class AutotestMagics(Magics):
 
     @line_magic
     def autotest(self, line):
-        self.log.w('Deprecated autotest command, use smoothtest instead')
+        self.log.w('Deprecated autotest command, use smoothtest or smtest instead')
         return self._autotest(line)
 
     def _autotest(self, line):
