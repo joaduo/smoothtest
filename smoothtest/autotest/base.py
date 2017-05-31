@@ -63,11 +63,7 @@ class ChildBase(AutoTestBase):
 
     def cmd(self, cmd, *args, **kwargs):
         # Make it ready for sending
-        return [self._cmd(self._get_cmd_str(cmd), *args, **kwargs)]
-
-    def _cmd(self, cmd, *args, **kwargs):
-        # use when queying several commands
-        return AutotestCmd(cmd, args, kwargs)
+        return [AutotestCmd(self._get_cmd_str(cmd), args, kwargs)]
 
 
 class TargetFunction(SmoothTestBase):
