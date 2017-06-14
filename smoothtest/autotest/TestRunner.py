@@ -8,6 +8,7 @@ Code Licensed under MIT License. See LICENSE file.
 import importlib
 import unittest
 import rel_imp
+import os
 rel_imp.init()
 from smoothtest.webunittest.WebdriverManager import WebdriverManager
 from smoothtest.settings.default import TEST_RUNNER_LIFE, TEST_ROUND_LIFE
@@ -28,6 +29,7 @@ class TestRunner(ChildBase, TestRunnerBase):
     def __init__(self):
         super(TestRunner, self).__init__()
         self._level_mngr = WebdriverManager().enter_level(level=TEST_RUNNER_LIFE)
+        self._module_mtime = {}
 
     def test(self, test_paths, argv=[], smoke=False):
         '''
@@ -77,11 +79,21 @@ class TestRunner(ChildBase, TestRunnerBase):
         modstr, clsstr, _ = self._split_path(test_path)
         try:
             module = importlib.import_module(modstr)
-            module = reload(module)
+            module = self._reload_module(module)
             class_ = getattr(module, clsstr)
             return class_
         except Exception as e:
             return self.reprex(e)
+
+    def _reload_module(self, module):
+        # only reload module if file changed
+        mtime = os.path.getmtime(module.__file__.replace('.pyc','.py'))
+        if (module.__name__ not in self._module_mtime
+            or self._module_mtime[module.__name__] != mtime):
+            self.log.d('Reloading %s', module)
+            module = reload(module)
+        self._module_mtime[module.__name__] = mtime
+        return module
 
 
 def smoke_test_module():
