@@ -126,27 +126,35 @@ Or file smoothtest/settings/default.py bundled in this installation
                 new_paths += glob.glob(tst)
         return new_paths
 
-    def get_test_config(self, args, argv):
+    def get_test_config(self, args, argv, unknown):
+        return  self.build_test_config(args.tests, args.methods_regex,
+                args.full_reloads, args.fnmatch, args.smoke, argv, unknown)
+
+    def build_test_config(self, tests, methods_regex, full_reloads, fnmatch, smoke, full_argv, unknown_argv):
         searcher = TestSearcher()
         test_paths = set()
         partial_reloads = set()
-        for path in self.expand_paths(args.tests):
+        for path in self.expand_paths(tests):
             path = self._path_to_modstr(path)
-            paths, partial = searcher.solve_paths((path, args.methods_regex))
+            paths, partial = searcher.solve_paths((path, methods_regex))
             if paths:
                 test_paths.update(paths)
                 partial_reloads.update(partial)
 
         test_config = dict(test_paths=test_paths,
                            partial_reloads=partial_reloads,
-                           full_reloads=self.expand_paths(args.full_reloads),
-                           full_filter=args.fnmatch,
-                           smoke=args.smoke,
-                           argv=argv,
+                           full_reloads=self.expand_paths(full_reloads),
+                           full_filter=fnmatch,
+                           smoke=smoke,
+                           argv=unknown_argv,
+                           argv_tests=tests,
+                           full_argv=full_argv,
+                           methods_regex=methods_regex,
                            )
         return test_config
 
     def main(self, argv=None):
+        argv = argv or sys.argv[1:]
         curdir = os.path.abspath(os.curdir)
         filedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -154,14 +162,14 @@ Or file smoothtest/settings/default.py bundled in this installation
         if curdir != filedir and filedir in sys.path:
             sys.path.remove(filedir)
 
-        args, unkonwn = self.get_parser().parse_known_args(argv)
+        args, unknown = self.get_parser().parse_known_args(argv)
         self._process_common_args(args)
 
         # Run autotest Main loop (ipython UI + subprocesses)
         main = Main()
         if args.no_browser:
             solve_settings().set('webdriver_enabled', False)
-        test_config = self.get_test_config(args, unkonwn)
+        test_config = self.get_test_config(args, argv, unknown)
         main.run(embed_ipython=not args.no_ipython, test_config=test_config)
 
 
