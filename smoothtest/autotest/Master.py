@@ -145,7 +145,7 @@ class Master(ChildBase):
     def new_test(self, test_paths=tuple(), partial_reloads=tuple(), full_reloads=tuple(),
                  partial_decorator=lambda x: x, full_decorator=lambda x: x,
                  full_filter=None,
-                 smoke=False, force=False, argv=tuple()):
+                 smoke=False, force=False, argv=tuple(), **kwargs):
         # create callback for re-testing on changes/msgs
         def test_callback():
             self._slave.test(test_paths, argv, smoke=smoke)
