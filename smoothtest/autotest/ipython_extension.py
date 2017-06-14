@@ -14,7 +14,6 @@ from smoothtest.Logger import Logger
 import re
 import sys
 from smoothtest.settings.solve_settings import solve_settings
-from xpathwebdriver.webdriver_manager import WebdriverManager
 
 
 @magics_class
@@ -28,13 +27,14 @@ class AutotestMagics(Magics):
     def get_test_config(self):
         return self.main.test_config
 
-    def __common(self, line):
+    def _parse_smtest_cmd(self, line):
         from .Command import Command
         command = Command()
         parser = command.get_extension_parser()
         try:
-            args, unknown = parser.parse_known_args(shlex.split(line))
-            test_config = command.get_test_config(args, unknown)
+            argv = shlex.split(line)
+            args, unknown = parser.parse_known_args(argv)
+            test_config = command.get_test_config(args, argv, unknown)
             test_config.update(force=args.force)
             return args, test_config
         except SystemExit:
@@ -104,7 +104,7 @@ class AutotestMagics(Magics):
         return self._autotest(line)
 
     def _autotest(self, line):
-        res = self.__common(line)
+        res = self._parse_smtest_cmd(line)
         if not res:
             return
         args, test_config = res
