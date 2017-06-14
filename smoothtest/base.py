@@ -82,14 +82,15 @@ class TestRunnerBase(object):
 
     def _setup_process(self, test, test_path, argv):
         self.__init_values()
+        cls = test.__class__
         if (hasattr(test, 'setUpProcess')
-                and test_path not in self._already_setup):
+                and cls not in self._already_setup):
             test.setUpProcess(argv)
-            self._already_setup[test_path] = (test, argv)
+            self._already_setup[cls] = (test, test_path, argv)
 
     def _tear_down_process(self):
         self.__init_values()
-        for test, argv in self._already_setup.values():
+        for test, _, argv in self._already_setup.itervalues():
             if hasattr(test, 'tearDownProcess'):
                 self.log.d('Tearing down process for %r' % test)
                 test.tearDownProcess(argv)
