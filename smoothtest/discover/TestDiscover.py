@@ -293,7 +293,7 @@ class DiscoverCommandBase(CommandBase):
                     'ignore_missing',
                     False),
                 action='store_true')
-        self._add_smoothtest_common_args(parser)
+        self._add_common_args(parser)
         return parser
 
     def _import(self, path):
