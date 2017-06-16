@@ -6,6 +6,7 @@ Copyright (c) 2014 Juju. Inc
 Code Licensed under MIT License. See LICENSE file.
 '''
 import rel_imp
+import inspect
 rel_imp.init()
 from multiprocessing import Process, Pipe
 from inspect import isclass
@@ -70,10 +71,10 @@ class TestSearcher(AutoTestBase):
 
     def append_methods(self, test_paths, partial_reloads, mod, cls, regex,
                        valid, modstr, clsstr):
-        for mthstr, _ in vars(cls).iteritems():
-            if (mthstr.startswith('test')
-                    and (not regex or valid(regex, mthstr))):
-                path = '.'.join([modstr, clsstr, mthstr])
+        for methodname, _ in inspect.getmembers(cls, predicate=inspect.ismethod):
+            if (methodname.startswith('test')
+                    and (not regex or valid(regex, methodname))):
+                path = '.'.join([modstr, clsstr, methodname])
                 test_paths.add(path)
                 partial_reloads.add(self.get_module_file(mod))
 
