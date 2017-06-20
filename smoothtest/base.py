@@ -11,9 +11,9 @@ import re
 import os
 import logging
 import traceback
-from xpathwebdriver.base import is_valid_file, module_regex, CommandMixin
+from xpathwebdriver.base import module_regex, CommandMixin
 from .Logger import Logger
-from .settings.solve_settings import solve_settings, register_settings
+from .settings.solve_settings import solve_settings
 from .TestResults import TestException
 
 
