@@ -10,21 +10,12 @@ rel_imp.init()
 from .base import ParentBase
 import sys
 
-
-def slave_callback(conn, post_callback, child_cls, child_args, child_kwargs):
-    if post_callback:
-        post_callback()
-    child = child_cls(*child_args, **child_kwargs)
-    # wait for io
-    child.io_loop(conn, stdin=None, stdout=None, stderr=None)
-
-
 class Slave(ParentBase):
 
-    def __init__(self, child_cls, child_args=(), child_kwargs={}, timeout=3):
+    def __init__(self, child_cls, child_args=(), child_kwargs=None, timeout=3):
         self._timeout = timeout
         self._child_args = child_args
-        self._child_kwargs = child_kwargs
+        self._child_kwargs = child_kwargs or {}
         self._child_cls = child_cls
         self._subprocess = None
         self._subprocess_conn = None
@@ -39,7 +30,13 @@ class Slave(ParentBase):
         '''
         args = (post_callback, self._child_cls, self._child_args,
                 self._child_kwargs)
-        super(Slave, self).start_subprocess(slave_callback, pre='TestRunner',
+        def callback(conn, post_callback, child_cls, child_args, child_kwargs):
+            if post_callback:
+                post_callback()
+            child = child_cls(*child_args, **child_kwargs)
+            # wait for io
+            child.io_loop(conn, stdin=None, stdout=None, stderr=None)
+        super(Slave, self).start_subprocess(callback, pre='TestRunner',
                                             args=args)
 
     def restart_subprocess(self, post_callback):
