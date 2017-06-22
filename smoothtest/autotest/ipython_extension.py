@@ -14,7 +14,8 @@ from smoothtest.Logger import Logger
 import re
 import sys
 from smoothtest.settings.solve_settings import solve_settings
-
+import os
+from .Command import Command
 
 @magics_class
 class AutotestMagics(Magics):
@@ -28,7 +29,6 @@ class AutotestMagics(Magics):
         return self.main.test_config
 
     def _parse_smtest_cmd(self, line):
-        from .Command import Command
         command = Command()
         parser = command.get_extension_parser()
         try:
@@ -56,15 +56,20 @@ class AutotestMagics(Magics):
                             default=False, action='store_true')
         parser.add_argument('-f', '--force', help='Trigger full reload',
                             default=False, action='store_true')
+        parser.add_argument('-r', '--refresh', help='Refresh test paths '
+                            'inspecting methods in tested modules. '
+                            'Done implicitely when passing -f',
+                            default=False, action='store_true')
         return parser
 
     @line_magic
     def help(self, line):
-        print('Check https://github.com/joaduo/smoothtest/blob/master/smoothtest/autotest/AutotestGuide.md')
+        print('''Available commands:
+  smtest test reset get firefox chrome phantomjs steal_xpathbrowser test_config enable_browser''')
 
     @line_magic
     def test_m(self, line):
-        self.log.w('Deprecated test_m command, use test [<method regex>] instead')
+        self.log.w('Deprecated "test_m" command, use "test [<method regex>]" instead')
         line = ' -r {regex} -u'.format(regex=line)
         self._autotest(line)
 
@@ -75,20 +80,39 @@ class AutotestMagics(Magics):
             test_config = self.get_test_config().copy()
             if line.strip():
                 args = parser.parse_args(shlex.split(line))
-                split = lambda path: path if args.full_path else path.split('.')[-1]
+                if args.force or args.refresh:
+                    test_config = self._refresh_tests(test_config).copy()
                 paths = test_config['test_paths']
+                prefix = self.get_common_prefix(paths)
+                clean = lambda path: path if args.full_path else path[len(prefix):].strip('.')
                 if args.list:
-                    sys.stdout.write('\n'.join(split(p) for p in paths) + '\n')
+                    sys.stdout.write('\n'.join(clean(p) for p in sorted(paths)) + '\n')
                     return
                 if args.force:
                     # Force full reload
                     test_config.update(force=True)
                 if args.method:
-                    paths = [p for p in paths if re.search(args.method, split(p))]
+                    paths = [p for p in paths if re.search(args.method, clean(p))]
                 test_config['test_paths'] = paths
             self._send(test_config, temp=True)
         except SystemExit:
             pass
+
+    def _refresh_tests(self, test_config):
+        test_config = Command().build_test_config(test_config['argv_tests'], 
+                                    test_config['methods_regex'],
+                                    test_config['full_reloads'],
+                                    test_config['full_filter'],
+                                    test_config['smoke'],
+                                    test_config['full_argv'],
+                                    test_config['argv'])
+        self.main.test_config.clear()
+        self.main.test_config.update(test_config)
+        return self.get_test_config()
+
+    def get_common_prefix(self, test_paths):
+        prefix = os.path.commonprefix([tp.split('.') for tp in test_paths])
+        return '.'.join(prefix)
 
     @line_magic
     def smoothtest(self, line):
