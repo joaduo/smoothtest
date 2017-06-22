@@ -8,14 +8,14 @@ Code Licensed under MIT License. See LICENSE file.
 import os
 import sys
 import rel_imp
-from xpathwebdriver.base import module_regex
+from xpathwebdriver.base import module_regex, is_valid_file
 import glob
 rel_imp.init()
 from argparse import ArgumentParser
 from .base import AutoTestBase
 from .Main import Main
 from .TestSearcher import TestSearcher
-from smoothtest.base import CommandBase, is_valid_file, is_file_or_dir
+from smoothtest.base import CommandBase, is_file_or_dir
 from smoothtest.settings.solve_settings import solve_settings
 
 
