@@ -85,14 +85,14 @@ class AutotestMagics(Magics):
                 paths = test_config['test_paths']
                 prefix = self.get_common_prefix(paths)
                 clean = lambda path: path if args.full_path else path[len(prefix):].strip('.')
-                if args.list:
-                    sys.stdout.write('\n'.join(clean(p) for p in sorted(paths)) + '\n')
-                    return
                 if args.force:
                     # Force full reload
                     test_config.update(force=True)
                 if args.method:
                     paths = [p for p in paths if re.search(args.method, clean(p))]
+                if args.list:
+                    sys.stdout.write('\n'.join(clean(p) for p in sorted(paths)) + '\n')
+                    return
                 test_config['test_paths'] = paths
             self._send(test_config, temp=True)
         except SystemExit:
