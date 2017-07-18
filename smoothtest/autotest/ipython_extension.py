@@ -56,10 +56,6 @@ class AutotestMagics(Magics):
                             default=False, action='store_true')
         parser.add_argument('-f', '--force', help='Trigger full reload',
                             default=False, action='store_true')
-        parser.add_argument('-r', '--refresh', help='Refresh test paths '
-                            'inspecting methods in tested modules. '
-                            'Done implicitely when passing -f',
-                            default=False, action='store_true')
         return parser
 
     @line_magic
@@ -77,11 +73,10 @@ class AutotestMagics(Magics):
     def test(self, line):
         parser = self._test_magic_cmd_parser()
         try:
-            test_config = self.get_test_config().copy()
+            # generate temporary test_config
+            test_config = self._refresh_tests().copy()
             if line.strip():
                 args = parser.parse_args(shlex.split(line))
-                if args.force or args.refresh:
-                    test_config = self._refresh_tests(test_config).copy()
                 paths = test_config['test_paths']
                 prefix = self.get_common_prefix(paths)
                 clean = lambda path: path if args.full_path else path[len(prefix):].strip('.')
@@ -98,16 +93,26 @@ class AutotestMagics(Magics):
         except SystemExit:
             pass
 
-    def _refresh_tests(self, test_config):
-        test_config = Command().build_test_config(test_config['argv_tests'], 
-                                    test_config['methods_regex'],
-                                    test_config['full_reloads'],
-                                    test_config['full_filter'],
-                                    test_config['smoke'],
-                                    test_config['full_argv'],
-                                    test_config['argv'])
-        self.main.test_config.clear()
-        self.main.test_config.update(test_config)
+    module_mtime = {}
+    def _refresh_tests(self):
+        test_config = self.get_test_config()
+        should_refresh = False
+        for p in Command().expand_paths(test_config['argv_tests']):
+            mtime = os.path.getmtime(p.replace('.pyc','.py'))
+            if (self.module_mtime.get(p) != mtime):
+                self.module_mtime[p] = mtime
+                should_refresh = True
+                break
+        if should_refresh:
+            test_config = Command().build_test_config(test_config['argv_tests'],
+                                        test_config['methods_regex'],
+                                        test_config['full_reloads'],
+                                        test_config['full_filter'],
+                                        test_config['smoke'],
+                                        test_config['full_argv'],
+                                        test_config['argv'])
+            self.main.test_config.clear()
+            self.main.test_config.update(test_config)
         return self.get_test_config()
 
     def get_common_prefix(self, test_paths):
