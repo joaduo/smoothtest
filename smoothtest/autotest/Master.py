@@ -97,8 +97,7 @@ class Master(ChildBase):
             self._io_blacklist.add(self.parent_conn)
 
     def parent_conn(self):
-        # Since self._parent_conn can change, we use a method to refer to
-        # it in set operations
+        # Normalize like self.slave_conn
         return self._parent_conn
 
     def slave_conn(self):
@@ -107,8 +106,10 @@ class Master(ChildBase):
         return self._slave.get_conn()
 
     def m_w_conn(self):
-        # Since self._m_w_conn can change, we use a method to refer to
-        # it in set operations
+        '''
+        Master->Watcher connection
+        '''
+        # Normalize like self.slave_conn
         return self._m_w_conn
 
     def set_select_args(self, **select_args):
@@ -134,8 +135,8 @@ class Master(ChildBase):
         self.wait_input = True
         # loop listening events
         while self.wait_input:
-            do_yield, yield_obj, rlist = get_event()
-            self._dispatch(rlist)
+            do_yield, yield_obj, dispatch_rlist = get_event()
+            self._dispatch(dispatch_rlist)
             if do_yield:
                 yield yield_obj
             self.wait_input = self.wait_input and block
@@ -265,8 +266,8 @@ class Master(ChildBase):
 
             def get_event():
                 sockets = poll(build_sockets())
-                sockets, (rlist, _, _) = filter_sockets(sockets, local_rlist())
-                return bool(sockets), sockets, rlist
+                sockets, (dispatch_rlist, _, _) = filter_sockets(sockets, local_rlist())
+                return bool(sockets), sockets, dispatch_rlist
 
         elif select:
             def build_rlist():
@@ -286,9 +287,9 @@ class Master(ChildBase):
                 # filter internal fds/sockets, don't yield them
                 # and make a separated list
                 yieldrlist = list(set(rlist) - set(lrlist))
-                int_rlist = list(set(rlist) & set(lrlist))
+                dispatch_rlist = list(set(rlist) & set(lrlist))
                 yield_obj = (yieldrlist, wlist, xlist)
-                return any(yield_obj), yield_obj, int_rlist
+                return any(yield_obj), yield_obj, dispatch_rlist
         return get_event
 
     def _dispatch(self, rlist):
