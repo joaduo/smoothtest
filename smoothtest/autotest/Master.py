@@ -250,7 +250,7 @@ class Master(ChildBase):
         return self._slave.restart_subprocess(post_callback)
 
     def _build_get_event(self, poll=None, select=None):
-        def local_rlist():
+        def get_watched_rlist():
             rlist = set(self._io_list) - self._io_blacklist
             rlist = [conn().fileno() for conn in rlist]
             return rlist
@@ -261,22 +261,18 @@ class Master(ChildBase):
         if poll:
             def build_sockets():
                 # in interactive mode we need to listen to stdin
-                sockets = lists_to_sockets(local_rlist(), [], [])
+                sockets = lists_to_sockets(get_watched_rlist(), [], [])
                 return sockets + self._poll_sockets
 
             def get_event():
                 sockets = poll(build_sockets())
-                sockets, (dispatch_rlist, _, _) = filter_sockets(sockets, local_rlist())
+                sockets, (dispatch_rlist, _, _) = filter_sockets(sockets, get_watched_rlist())
                 return bool(sockets), sockets, dispatch_rlist
 
         elif select:
-            def build_rlist():
-                # in interactive mode we need to listen to stdin
-                return local_rlist() + list(self._select_args.get('rlist', []))
-
             def get_event():
-                rlist = build_rlist()
-                lrlist = local_rlist()
+                watched_rlist = get_watched_rlist()
+                rlist = watched_rlist + list(self._select_args.get('rlist', []))
                 wlist = self._select_args.get('wlist', [])
                 xlist = self._select_args.get('xlist', [])
                 timeout = self._select_args.get('timeout')
@@ -286,8 +282,8 @@ class Master(ChildBase):
                     rlist, wlist, xlist = select(rlist, wlist, xlist)
                 # filter internal fds/sockets, don't yield them
                 # and make a separated list
-                yieldrlist = list(set(rlist) - set(lrlist))
-                dispatch_rlist = list(set(rlist) & set(lrlist))
+                yieldrlist = list(set(rlist) - set(watched_rlist))
+                dispatch_rlist = list(set(rlist) & set(watched_rlist))
                 yield_obj = (yieldrlist, wlist, xlist)
                 return any(yield_obj), yield_obj, dispatch_rlist
         return get_event
