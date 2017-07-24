@@ -175,25 +175,21 @@ class Master(ChildBase):
 
         def partial_msg(path):
             '''
-            File _watcher thread -> master thread msg
+            (File _watcher thread) -> (master thread msg)
             We use pipes to avoid race conditions on other IO mechanism
             (instead of calling the tests callbacks within the thread)
             '''
             self._w_m_conn.send(self.cmd(self.partial_callback, path))
 
         def full_msg(path):
-            '''
-            File _watcher thread -> master thread msg
-            We use pipes to avoid race conditions on other IO mechanism
-            (instead of calling the tests callbacks within the thread)
-            '''
+            # Same as partial_msg, but for full reloads
             self._w_m_conn.send(self.cmd(self.full_callback, path))
 
         self._watcher.unwatch_all(clear=True)
         for ppath in partial_reloads:
             self._watcher.watch_file(ppath, partial_msg)
 
-        full_filter = self._build_path_filter(partial_reloads, full_filter)
+        full_filter = self._build_full_filter(partial_reloads, full_filter)
         for fpath in full_reloads:
             self._watcher.watch_recursive(fpath, full_msg,
                                           path_filter=full_filter)
@@ -209,6 +205,13 @@ class Master(ChildBase):
         self._watcher.start_observer()
 
     def print_reload(self, path, test_paths, smoke, reload_type):
+        '''
+        This method informs reload_type and affected modules/files to the user.
+        :param path: path to the file that triggered a reload
+        :param test_paths: paths to test methods (dot separated)
+        :param smoke: this is a smoke test, no real test
+        :param reload_type: type of reload (partial or full)
+        '''
         path = path if path else 'user'
         if len(test_paths) > 1:
             prefix = os.path.commonprefix([tp.split('.') for tp in test_paths])
@@ -222,7 +225,14 @@ class Master(ChildBase):
         else:
             self.log.i('No tests')
 
-    def _build_path_filter(self, partial_reloads, path_filter):
+    def _build_full_filter(self, partial_reloads, path_filter=None):
+        '''
+        A partial reload cannot trigger a full reload, make sure the path
+        is not a partial reload path
+
+        :param partial_reloads: list of partial reload paths
+        :param path_filter: custom path_filter
+        '''
         path_filter = path_filter if path_filter else lambda _: True
 
         if isinstance(path_filter, basestring):
