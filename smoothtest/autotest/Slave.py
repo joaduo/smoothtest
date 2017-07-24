@@ -19,7 +19,7 @@ class Slave(ParentBase):
         self._child_cls = child_cls
         self._subprocess = None
         self._subprocess_conn = None
-        self._first_test = True
+        self.is_first_test = True
 
     def start_subprocess(self, post_callback=None):
         '''
@@ -41,7 +41,7 @@ class Slave(ParentBase):
 
     def restart_subprocess(self, post_callback):
         self.kill(block=True, timeout=self._timeout)
-        self._first_test = True
+        self.is_first_test = True
         self.start_subprocess(post_callback)
 
     def test(self, test_paths, argv=[], smoke=False, block=False):
@@ -85,7 +85,7 @@ class Slave(ParentBase):
         if kans and kans.result == self._kill_answer:
             self.log.w('Answer is %r. Perhaps 2 kill commands sent?' %
                        answers)
-        self._first_test = False
+        self.is_first_test = False
         return test_ans
 
 

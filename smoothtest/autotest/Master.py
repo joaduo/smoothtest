@@ -320,7 +320,7 @@ class Master(ChildBase):
         self._slave.kill(block=True, timeout=3)
 
     def _recv_slave(self):
-        first = self._slave._first_test
+        first = self._slave.is_first_test
         answer = self._slave.recv_answer()
         if answer.error and not first:
             self.full_callback('Error on non-first run')
