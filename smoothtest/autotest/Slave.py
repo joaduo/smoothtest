@@ -76,9 +76,9 @@ class Slave(ParentBase):
 
     def recv_answer(self):
         answers = self.recv()
-        tans = self._get_answer(answers, self._child_cls.test)
-        if tans:
-            self.print_results(tans.result)
+        test_ans = self._get_answer(answers, self._child_cls.test)
+        if test_ans:
+            self.print_results(test_ans.result)
         self.log.d('Received TestRunner\'s answer: ' +
                    self.fmt_answers(answers))
         kans = self._get_answer(answers, self._kill_command)
@@ -86,7 +86,7 @@ class Slave(ParentBase):
             self.log.w('Answer is %r. Perhaps 2 kill commands sent?' %
                        answers)
         self._first_test = False
-        return self._get_answer(answers, self._child_cls.test)
+        return test_ans
 
 
 def smoke_test_module():
