@@ -174,11 +174,9 @@ class Master(ChildBase):
         self.full_callback = full_callback
 
         def partial_msg(path):
-            '''
-            (File _watcher thread) -> (master thread msg)
-            We use pipes to avoid race conditions on other IO mechanism
-            (instead of calling the tests callbacks within the thread)
-            '''
+            # (File _watcher thread) -> (master thread) msg
+            # We use pipes to avoid race conditions in other IO mechanism
+            # (instead of calling callbacks within the watcher thread)
             self._w_m_conn.send(self.cmd(self.partial_callback, path))
 
         def full_msg(path):
