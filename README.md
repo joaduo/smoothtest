@@ -1,6 +1,8 @@
-# SmoothTest
+# No longer maintained
 
-[ ![Codeship Status for joaduo/smoothtest](https://codeship.com/projects/cdad4830-b21d-0132-82c3-62decd5a7cb3/status?branch=master)](https://codeship.com/projects/69981)
+This project is no longer maintained. Check [xpathwebdriver](https://github.com/joaduo/xpathwebdriver) for a simpler and maintained alternative.
+
+# SmoothTest
 
 General purpose Testing Utilities and also special testing tools for Web Applications
 
